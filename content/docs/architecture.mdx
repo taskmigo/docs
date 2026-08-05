@@ -1,0 +1,27 @@
+---
+title: Kiến trúc
+description: Cấu trúc trang docs và các thành phần nền tảng.
+---
+
+Trang docs sử dụng Fumadocs UI trên Next.js App Router. Nội dung được viết bằng MDX, sau đó được Fumadocs nạp vào sidebar, bảng mục lục và tính năng tìm kiếm tĩnh.
+
+## Thành phần chính
+
+| Thành phần | Vai trò |
+| --- | --- |
+| `app/docs/[[...slug]]/page.tsx` | Render từng trang tài liệu dựa trên slug. |
+| `content/docs` | Lưu nội dung MDX và cấu hình sidebar. |
+| `lib/source.ts` | Khai báo nguồn nội dung Fumadocs và helper cho markdown/OG. |
+| `components/search.tsx` | Cấu hình tìm kiếm tĩnh chạy trên trình duyệt. |
+
+## Luồng render
+
+1. Fumadocs đọc MDX từ `content/docs`.
+2. Next.js sinh route tĩnh cho từng trang docs.
+3. Workflow GitHub Actions upload thư mục `out/` lên GitHub Pages.
+
+## Nguyên tắc mở rộng
+
+- Đặt nội dung theo nhóm thư mục khi tài liệu tăng lên.
+- Dùng `meta.json` trong từng thư mục để điều khiển sidebar.
+- Tránh phụ thuộc API runtime vì GitHub Pages chỉ phục vụ file tĩnh.

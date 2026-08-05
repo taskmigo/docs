@@ -1,0 +1,25 @@
+---
+title: Vận hành
+description: Checklist vận hành và xử lý sự cố cho trang docs.
+---
+
+## Checklist trước khi merge
+
+- Nội dung mới có tiêu đề và mô tả frontmatter rõ ràng.
+- Link nội bộ trỏ đúng route `/docs/...`.
+- Sidebar trong `meta.json` đã bao gồm trang mới nếu cần.
+- Các lệnh kiểm tra đã chạy thành công.
+
+## Sự cố thường gặp
+
+### Trang con lỗi 404 trên GitHub Pages
+
+Kiểm tra `next.config.mjs` để đảm bảo `basePath` được tính từ tên repository khi chạy trong GitHub Actions.
+
+### Search không trả kết quả
+
+Chạy lại `npm run build` để Fumadocs tạo lại index tìm kiếm tĩnh.
+
+### Asset CSS/JS không tải được
+
+Đảm bảo workflow deploy toàn bộ thư mục `out/` và repository Pages đang dùng nguồn **GitHub Actions**.

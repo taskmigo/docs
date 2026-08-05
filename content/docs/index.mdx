@@ -1,0 +1,26 @@
+---
+title: Tổng quan
+description: Điểm bắt đầu cho tài liệu hệ thống.
+---
+
+Chào mừng bạn đến với trang tài liệu hệ thống. Không gian này dùng để tập trung kiến thức vận hành, kiến trúc và quy trình triển khai cho đội ngũ phát triển.
+
+## Mục tiêu
+
+- Cung cấp một nguồn thông tin chính thức, dễ tìm kiếm.
+- Lưu tài liệu cùng repository để thay đổi hệ thống và tài liệu đi chung trong một pull request.
+- Xuất trang tĩnh để triển khai đơn giản trên GitHub Pages.
+
+## Bắt đầu nhanh
+
+<Cards>
+  <Card title="Kiến trúc" href="/docs/architecture" description="Các thành phần chính và luồng dữ liệu." />
+  <Card title="Triển khai" href="/docs/deployment" description="Quy trình build và publish lên GitHub Pages." />
+  <Card title="Vận hành" href="/docs/operations" description="Checklist kiểm tra và xử lý sự cố thường gặp." />
+</Cards>
+
+## Cách đóng góp tài liệu
+
+1. Thêm hoặc sửa file MDX trong thư mục `content/docs`.
+2. Cập nhật `content/docs/meta.json` nếu cần thay đổi sidebar.
+3. Chạy `npm run lint`, `npm run types:check` và `npm run build` trước khi mở pull request.
