@@ -1,0 +1,52 @@
+---
+title: Resource model
+description: Common manifest rules, revisions, versions, and dependencies.
+---
+
+# Resource model
+
+A resource is an independent YAML manifest. YAML remains canonical; normalized data, diagnostics, and runtime snapshots are derived from it.
+
+## Common manifest shape
+
+```yaml
+apiVersion: taskmigo.io/v1
+kind: Page
+name: users
+version: 1.0.0 # optional
+includes:
+  - kind: Entity
+    name: user
+    version: ^1.2.0 # optional
+spec:
+  # kind-specific configuration
+```
+
+| Field | Rule |
+| --- | --- |
+| `apiVersion` | Required. The MVP value is `taskmigo.io/v1`. |
+| `kind` | Required resource type. |
+| `name` | Required. `(kind, name)` is unique within the Taskmigo schema. The same name may exist under a different kind. |
+| `version` | Optional immutable SemVer tag for this revision. |
+| `includes` | Optional explicit dependency list. |
+| `spec` | Required kind-specific configuration. |
+
+## Revisions and version tags
+
+Every semantic change creates a new revision. A revision may be valid or invalid independently of other revisions of the same resource.
+
+A revision with a `version` tag is immutable. To change it, create a new revision with a new SemVer tag or without a tag. A version tag cannot be reused for different content.
+
+An untagged revision can be the latest revision and can be used by the runtime, but it cannot satisfy `includes.version`.
+
+## Includes
+
+An include identifies another resource by `kind` and `name`. It can optionally set a SemVer constraint using an exact version, `^`, or `~`.
+
+- Without `includes.version`, Taskmigo selects the latest revision of that exact resource.
+- With `includes.version`, Taskmigo selects the highest tagged version that satisfies the constraint.
+- Resolution is deterministic and stays in the same Taskmigo schema.
+- Missing references, duplicate includes, unsatisfied constraints, and cycles are invalid.
+- Taskmigo never falls back to an older revision or lower version when the selected revision is invalid.
+
+The selected revision is recorded in the Site snapshot, so later revisions do not change an already active snapshot.
