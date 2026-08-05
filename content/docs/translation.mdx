@@ -1,0 +1,107 @@
+---
+title: Translation manifests
+description: Define and combine translation data with v0/translation.
+---
+
+# `v0/translation`
+
+A `v0/translation` manifest contributes translation data for one locale.
+
+```yaml
+kind: v0/translation
+name: english
+
+spec:
+  locale: en
+  content:
+    applications:
+      home:
+        label: Home
+```
+
+## Fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/translation`. |
+| `name` | Identifies the manifest. It follows the shared naming rules and must be unique for `(kind, name)`. It is not the locale. |
+| `spec.locale` | Required normalized BCP 47 locale, such as `en`, `vi`, or `pt-BR`. |
+| `spec.content` | Required object. Keys are strings; values can be any manifest-supported value. |
+
+Translation values are commonly strings, but objects, arrays, numbers, booleans, and `null` are valid too.
+
+## Add translations to an existing locale
+
+You can create more than one manifest for the same locale. Each manifest must have a different `name`.
+
+```yaml
+kind: v0/translation
+name: english-errors
+
+spec:
+  locale: en
+  content:
+    errors:
+      unauthorized: You do not have permission to continue.
+```
+
+Manifests with the same normalized locale become one effective catalog.
+
+```yaml
+applications:
+  home:
+    label: Home
+errors:
+  unauthorized: You do not have permission to continue.
+```
+
+Different locales are never merged.
+
+## Merge rules
+
+- Objects merge recursively.
+- Values at a path defined by only one manifest are copied to the catalog.
+- Arrays and non-object values are final values. Arrays are not concatenated.
+- Defining the same path in two manifests is an error, even if the values are identical.
+- An object/non-object collision is also an error.
+- The result must not depend on manifest load order.
+
+For example, these two manifests conflict because both define `applications.home.label` for `en`:
+
+```yaml
+# english-app
+spec:
+  locale: en
+  content:
+    applications:
+      home:
+        label: Home
+
+# english-home-copy
+spec:
+  locale: en
+  content:
+    applications:
+      home:
+        label: Start
+```
+
+The error should identify the locale, the conflicting path, and both manifests.
+
+## Validation
+
+A manifest is invalid when:
+
+- `spec.locale` is missing, empty, or not normalized;
+- `spec.content` is not an object;
+- a map key is empty;
+- a value cannot be stored in the manifest format; or
+- another `v0/translation` manifest already uses the same `name`.
+
+After manifests are grouped by locale, any merge conflict makes the resolved catalog invalid.
+
+## Lookup
+
+Consumers resolve a locale to its merged catalog, then return the value at the requested path unchanged.
+
+Version 0 does not define locale fallback, interpolation, plural handling, behavior for a missing key, or override precedence.
