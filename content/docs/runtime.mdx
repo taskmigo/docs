@@ -1,0 +1,51 @@
+---
+title: Runtime lifecycle
+description: Validation, dependency recovery, and atomic Site snapshots.
+---
+
+# Runtime lifecycle
+
+Taskmigo validates resources as a dependency graph, not as isolated files.
+
+## Validation
+
+A revision is valid only when YAML parsing, common metadata, kind-specific schema checks, dependency resolution, graph checks, and security constraints all succeed.
+
+Invalid revisions keep structured diagnostics. A diagnostic identifies the error, its manifest path, and—when available—the source location. Diagnostics must never expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+
+## Dependency recovery
+
+After create, update, delete, or import, Taskmigo revalidates the changed resource and all reverse dependents.
+
+```text
+A includes B includes C
+
+C becomes invalid
+→ B becomes invalid
+→ A becomes invalid
+
+Fix C
+→ validate C, B, then A
+→ rebuild the graph when all are valid
+```
+
+A dependency error never invalidates unrelated branches. Fixing a root cause does not rewrite dependent manifests; it re-resolves them using their existing declarations.
+
+Deleting a resource invalidates resources that resolve to it. The previous Site snapshot remains active until a complete valid graph produces a replacement.
+
+## Site snapshots
+
+A Site snapshot is an immutable, resolved view of the complete reachable graph. It includes the selected resource revisions and normalized runtime model.
+
+```text
+Change or import
+→ validate changed graph
+→ valid: build a new snapshot and switch it atomically
+→ invalid: store diagnostics and keep the current snapshot
+```
+
+There is no manual activation state. When a complete graph is valid, Taskmigo atomically updates the current snapshot in PostgreSQL. New requests use the new snapshot; requests already in progress may finish on the previous one.
+
+## Import and export
+
+Import and export use portable YAML packages. Export preserves canonical YAML. Import validates the complete package before creating revisions, resolves dependencies inside the target Taskmigo schema, and must not leave a partially active runtime state.
