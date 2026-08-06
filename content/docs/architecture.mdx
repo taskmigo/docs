@@ -1,27 +1,46 @@
 ---
-title: Kiến trúc
-description: Cấu trúc trang docs và các thành phần nền tảng.
+title: Architecture
+description: The product boundary and how a Taskmigo site is composed.
 ---
 
-Trang docs sử dụng Fumadocs UI trên Next.js App Router. Nội dung được viết bằng MDX, sau đó được Fumadocs nạp vào sidebar, bảng mục lục và tính năng tìm kiếm tĩnh.
+# Architecture
 
-## Thành phần chính
+A Taskmigo deployment manages one independent site graph in a user-managed PostgreSQL database.
 
-| Thành phần | Vai trò |
-| --- | --- |
-| `app/docs/[[...slug]]/page.tsx` | Render từng trang tài liệu dựa trên slug. |
-| `content/docs` | Lưu nội dung MDX và cấu hình sidebar. |
-| `lib/source.ts` | Khai báo nguồn nội dung Fumadocs và helper cho markdown/OG. |
-| `components/search.tsx` | Cấu hình tìm kiếm tĩnh chạy trên trình duyệt. |
+## Database boundary
 
-## Luồng render
+Taskmigo owns one configurable PostgreSQL schema (default: `taskmigo`). It may create, read, update, and delete objects only in that schema. It must not access or modify `public` or other user schemas.
 
-1. Fumadocs đọc MDX từ `content/docs`.
-2. Next.js sinh route tĩnh cho từng trang docs.
-3. Workflow GitHub Actions upload thư mục `out/` lên GitHub Pages.
+Taskmigo is not a multi-tenant control plane. The current model has no tenant registry, database routing, or `tenant_id`.
 
-## Nguyên tắc mở rộng
+## Resource graph
 
-- Đặt nội dung theo nhóm thư mục khi tài liệu tăng lên.
-- Dùng `meta.json` trong từng thư mục để điều khiển sidebar.
-- Tránh phụ thuộc API runtime vì GitHub Pages chỉ phục vụ file tĩnh.
+Every YAML manifest is a resource with a unique identity:
+
+```text
+(kind, name)
+```
+
+A resource can explicitly depend on other resources through `includes`. The runtime graph begins at one `Site` resource. Only resources reachable from that Site are included in runtime.
+
+```text
+Site
+├── App: crm
+│   ├── Page: dashboard
+│   └── Entity: customer
+└── Shared resources
+    ├── Theme
+    └── Policy
+```
+
+## Site and App
+
+These concepts describe the planned core composition model; their YAML schemas are not defined yet.
+
+- **Site** is the single composition root for a website or product. It exposes Apps at route prefixes and provides shared runtime defaults.
+- **App** is a functional module such as CRM, Helpdesk, or Admin. It owns internal navigation and entry points, but not its public route prefix.
+- A Site decides which Apps are exposed and at which paths. An App does not auto-discover resources by name; every dependency must be reachable through the declared graph.
+
+## Runtime boundary
+
+Taskmigo compiles the valid reachable graph into one immutable Site snapshot. Each request reads one snapshot, so it never combines old and new revisions. When a change is invalid, the current snapshot continues serving traffic.

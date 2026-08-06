@@ -1,26 +1,29 @@
 ---
-title: Tổng quan
-description: Điểm bắt đầu cho tài liệu hệ thống.
+title: Taskmigo
+description: Build a self-hosted low-code application from declarative resources.
 ---
 
-Chào mừng bạn đến với trang tài liệu hệ thống. Không gian này dùng để tập trung kiến thức vận hành, kiến trúc và quy trình triển khai cho đội ngũ phát triển.
+# Taskmigo
 
-## Mục tiêu
+Taskmigo is an open-source, self-hosted low-code application platform. A site is described by YAML resources that define its UI, behavior, and data model.
 
-- Cung cấp một nguồn thông tin chính thức, dễ tìm kiếm.
-- Lưu tài liệu cùng repository để thay đổi hệ thống và tài liệu đi chung trong một pull request.
-- Xuất trang tĩnh để triển khai đơn giản trên GitHub Pages.
+YAML is the canonical source. Users author resources through the Taskmigo UI and API; Git is not part of the authoring or version-control model.
 
-## Bắt đầu nhanh
+## Start here
 
 <Cards>
-  <Card title="Kiến trúc" href="/docs/architecture" description="Các thành phần chính và luồng dữ liệu." />
-  <Card title="Triển khai" href="/docs/deployment" description="Quy trình build và publish lên GitHub Pages." />
-  <Card title="Vận hành" href="/docs/operations" description="Checklist kiểm tra và xử lý sự cố thường gặp." />
+  <Card title="Architecture" href="/docs/architecture" description="Learn the product boundary, Site, App, and resource graph." />
+  <Card title="Resource model" href="/docs/resources" description="Learn manifest identity, revisions, versions, and includes." />
+  <Card title="Runtime lifecycle" href="/docs/runtime" description="Learn validation, dependency recovery, and snapshots." />
+  <Card title="Manifests" href="/docs/manifests" description="Browse overview and references for defined manifest kinds." />
 </Cards>
 
-## Cách đóng góp tài liệu
+## What is defined today
 
-1. Thêm hoặc sửa file MDX trong thư mục `content/docs`.
-2. Cập nhật `content/docs/meta.json` nếu cần thay đổi sidebar.
-3. Chạy `npm run lint`, `npm run types:check` và `npm run build` trước khi mở pull request.
+| Area | Status |
+| --- | --- |
+| Resource identity, revisions, dependency resolution, validation, and runtime snapshots | Core design |
+| `v0/translation` | Defined manifest kind |
+| Site, App, Page, Entity, Query, Action, Policy, Theme, and Workflow schemas | Planned; not public contracts yet |
+
+Read [Product status](/docs/status) before implementing a planned kind or feature.

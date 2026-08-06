@@ -1,0 +1,22 @@
+---
+title: Manifest overview
+description: Find the contract for each supported manifest kind.
+---
+
+# Manifests
+
+A manifest is a YAML resource. Every manifest uses the shared fields and rules in the [Resource model](/docs/resources), then adds a `spec` that belongs to its `kind`.
+
+This area is the reference for supported manifest kinds. Each kind has its own page, so its fields, examples, and validation rules are kept together.
+
+## Defined kinds
+
+| Kind | Purpose |
+| --- | --- |
+| [`v0/translation`](/docs/manifests/v0-translation) | Contribute values to a locale translation catalog. |
+
+## Planned kinds
+
+`Site`, `App`, `Entity`, `Page`, `Component`, `Query`, `Action`, `Policy`, `Workflow`, `Theme`, and `Navigation` are planned. They are not manifest contracts yet.
+
+When a kind becomes defined, this page will link to its dedicated reference page.
