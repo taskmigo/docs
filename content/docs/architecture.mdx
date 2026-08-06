@@ -21,11 +21,11 @@ Every YAML manifest is a resource with a unique identity:
 (kind, name)
 ```
 
-A resource can explicitly depend on other resources through `includes`. The runtime graph begins at one `Site` resource. Only resources reachable from that Site are included in runtime.
+A resource can explicitly depend on other resources through `includes`. The runtime graph begins at one `v0/site` resource. Only resources reachable from that Site are included in runtime.
 
 ```text
 Site
-├── App: crm
+├── Application: crm
 │   ├── Page: dashboard
 │   └── Entity: customer
 └── Shared resources
@@ -33,13 +33,11 @@ Site
     └── Policy
 ```
 
-## Site and App
+## Site and application
 
-These concepts describe the planned core composition model; their YAML schemas are not defined yet.
-
-- **Site** is the single composition root for a website or product. It exposes Apps at route prefixes and provides shared runtime defaults.
-- **App** is a functional module such as CRM, Helpdesk, or Admin. It owns internal navigation and entry points, but not its public route prefix.
-- A Site decides which Apps are exposed and at which paths. An App does not auto-discover resources by name; every dependency must be reachable through the declared graph.
+- **Site** is the composition root for a website or product. The `v0/site` manifest exposes included applications and provides shared brand configuration. See [v0/site](/docs/manifests/v0-site).
+- **Application** is a functional module such as CRM, Helpdesk, or Admin. Its public manifest contract is not defined yet.
+- An application does not auto-discover resources by name; every dependency must be reachable through the declared graph.
 
 ## Runtime boundary
 
