@@ -1,22 +1,21 @@
-import type { Metadata } from 'next';
 import { Provider } from '@/components/provider';
 import './global.css';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, type MetaFunction } from 'react-router';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
-  title: {
-    default: 'System Docs',
-    template: '%s | System Docs',
-  },
-  description: 'Trang tài liệu hệ thống được xây dựng bằng Fumadocs và Next.js static export.',
-};
+export const meta: MetaFunction = () => [
+  { title: 'System Docs' },
+  { name: 'description', content: 'Trang tài liệu hệ thống được xây dựng bằng Fumadocs, React Router và Vite.' },
+];
 
-export default function Layout({ children }: LayoutProps<'/'>) {
+export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className="flex flex-col min-h-screen">
-        <Provider>{children}</Provider>
+      <head><meta charSet="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><Meta /><Links /></head>
+      <body className="flex min-h-screen flex-col">
+        <Provider>{children}</Provider><ScrollRestoration /><Scripts />
       </body>
     </html>
   );
 }
+
+export default function App() { return <Outlet />; }

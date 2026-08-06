@@ -35,11 +35,25 @@ jobs:
 
       - name: Build static documentation
         run: npm run build
+        env:
+          VITE_GITHUB_OWNER: ${{ github.repository_owner }}
+          VITE_GITHUB_REPO: ${{ github.event.repository.name }}
+          VITE_GITHUB_BRANCH: ${{ github.ref_name }}
+
+      - name: Add SPA fallback for direct navigation
+        run: |
+          mkdir pages-output
+          if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
+            cp -a build/client/. pages-output/
+          else
+            cp -a "build/client/${{ github.event.repository.name }}/." pages-output/
+          fi
+          cp build/client/__spa-fallback.html pages-output/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./out
+          path: ./pages-output
 
   deploy:
     environment:

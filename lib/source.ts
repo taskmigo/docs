@@ -1,20 +1,6 @@
 import { loader } from 'fumadocs-core/source';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
-import { defineDocs } from 'fumadocs-mdx/macro';
-import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
-
-const docs = defineDocs({
-  dir: 'content/docs',
-  docs: {
-    schema: pageSchema,
-    postprocess: {
-      includeProcessedMarkdown: true,
-    },
-  },
-  meta: {
-    schema: metaSchema,
-  },
-});
+import { docs } from '../.source/server';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
@@ -24,11 +10,11 @@ export const source = loader({
 });
 
 export function getPageImageUrl(page: (typeof source)['$inferPage']) {
-  const segments = [...page.slugs, 'image.png'];
+  const segments = [...page.slugs, 'image.svg'];
 
   return {
     segments,
-    url: '/' + [page.locale, ...docsImageRoute.split('/'), ...segments].filter(Boolean).join('/'),
+    url: import.meta.env.BASE_URL.replace(/\/$/, '') + '/' + [page.locale, ...docsImageRoute.split('/'), ...segments].filter(Boolean).join('/'),
   };
 }
 
@@ -37,7 +23,7 @@ export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
 
   return {
     segments,
-    url: '/' + [page.locale, ...docsContentRoute.split('/'), ...segments].filter(Boolean).join('/'),
+    url: import.meta.env.BASE_URL.replace(/\/$/, '') + '/' + [page.locale, ...docsContentRoute.split('/'), ...segments].filter(Boolean).join('/'),
   };
 }
 

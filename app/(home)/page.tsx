@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from 'react-router';
 
 export default function HomePage() {
   return (
@@ -12,13 +12,13 @@ export default function HomePage() {
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
-          href="/docs"
+          to="/docs"
           className="rounded-lg bg-fd-primary px-5 py-3 font-medium text-fd-primary-foreground transition hover:opacity-90"
         >
           Mở tài liệu
         </Link>
         <Link
-          href="/docs/deployment"
+          to="/docs/architecture"
           className="rounded-lg border px-5 py-3 font-medium transition hover:bg-fd-accent"
         >
           Xem triển khai

@@ -1,8 +1,6 @@
 import { source } from '@/lib/source';
 import { llms } from 'fumadocs-core/source';
 
-export const revalidate = false;
-
-export function GET() {
+export function loader() {
   return new Response(llms(source).index());
 }
