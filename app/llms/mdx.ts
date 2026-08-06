@@ -1,4 +1,4 @@
-import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
+import { getLLMText, source } from '@/lib/source';
 export async function loader({ params }: { params: Record<string, string | undefined> }) {
   const slug = params['*']?.split('/');
   // remove the appended "content.md"

@@ -1,7 +1,8 @@
 import { reactRouter } from '@react-router/dev/vite';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
+import tailwindcss from '@tailwindcss/vite';
 import { fumadocsMdx } from 'fumadocs-mdx/vite';
+import { fileURLToPath, URL } from 'node:url';
 
 function githubBasePath() {
   if (process.env.GITHUB_ACTIONS !== 'true') return '/';
@@ -11,5 +12,6 @@ function githubBasePath() {
 
 export default defineConfig({
   base: githubBasePath(),
-  plugins: [fumadocsMdx(), tsconfigPaths(), reactRouter()],
+  plugins: [fumadocsMdx(), tailwindcss(), reactRouter()],
+  resolve: { alias: { '@': fileURLToPath(new URL('./app', import.meta.url)) } },
 });

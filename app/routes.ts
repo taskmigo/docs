@@ -1,11 +1,12 @@
-import { type RouteConfig, index, layout, route } from '@react-router/dev/routes';
+import { type RouteConfig, index, route } from '@react-router/dev/routes';
 
 export default [
-  layout('(home)/layout.tsx', [index('(home)/page.tsx')]),
-  layout('docs/layout.tsx', [route('docs/*', 'docs/[[...slug]]/page.tsx')]),
-  route('api/search', 'api/search/route.ts'),
-  route('llms.txt', 'llms.txt/route.ts'),
-  route('llms-full.txt', 'llms-full.txt/route.ts'),
-  route('llms.mdx/docs/*', 'llms.mdx/docs/[[...slug]]/route.ts'),
-  route('og/docs/*', 'og/docs/[...slug]/route.tsx'),
+  index('routes/home.tsx'),
+  route('docs/*', 'routes/docs.tsx'),
+  route('api/search', 'routes/search.ts'),
+  route('llms.txt', 'llms/index.ts'),
+  route('llms-full.txt', 'llms/full.ts'),
+  route('llms.mdx/docs/*', 'llms/mdx.ts'),
+  route('og/docs/*', 'routes/og.tsx'),
+  route('*', 'routes/not-found.tsx'),
 ] satisfies RouteConfig;

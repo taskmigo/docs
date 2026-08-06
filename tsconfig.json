@@ -14,9 +14,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
-    "paths": {
-      "@/*": ["./*"]
-    },
+    "paths": { "@/*": ["./app/*"] },
     "rootDirs": [".", "./.react-router/types"]
   },
   "include": [
