@@ -1,7 +1,9 @@
-import Link from 'next/link';
+import { Link } from 'react-router';
+import { HomeLayout } from 'fumadocs-ui/layouts/home';
+import { baseOptions } from '@/lib/layout.shared';
 
 export default function HomePage() {
-  return (
+  return <HomeLayout {...baseOptions()}>
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
       <p className="mb-3 rounded-full border bg-fd-muted px-4 py-1 text-sm text-fd-muted-foreground">
         Fumadocs + GitHub Pages
@@ -12,18 +14,18 @@ export default function HomePage() {
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
-          href="/docs"
+          to="/docs"
           className="rounded-lg bg-fd-primary px-5 py-3 font-medium text-fd-primary-foreground transition hover:opacity-90"
         >
           Mở tài liệu
         </Link>
         <Link
-          href="/docs/deployment"
+          to="/docs/architecture"
           className="rounded-lg border px-5 py-3 font-medium transition hover:bg-fd-accent"
         >
           Xem triển khai
         </Link>
       </div>
     </main>
-  );
+  </HomeLayout>;
 }

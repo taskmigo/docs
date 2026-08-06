@@ -1,6 +1,6 @@
 # System Docs
 
-Trang tài liệu tĩnh cho hệ thống, được xây dựng bằng [Fumadocs](https://www.fumadocs.dev/) trên Next.js và triển khai lên GitHub Pages.
+Trang tài liệu tĩnh cho hệ thống, được xây dựng bằng [Fumadocs](https://www.fumadocs.dev/), React Router và Vite, rồi triển khai lên GitHub Pages.
 
 ## Phát triển cục bộ
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Mở <http://localhost:3000> để xem trang docs.
+Mở địa chỉ Vite hiển thị trong terminal (mặc định <http://localhost:5173>) để xem trang docs.
 
 ## Viết tài liệu
 
@@ -24,7 +24,7 @@ npm run build
 npm run start
 ```
 
-`next.config.mjs` bật `output: 'export'`, vì vậy output tĩnh nằm trong thư mục `out/` và có thể được GitHub Pages phục vụ trực tiếp.
+React Router prerender mọi trang tài liệu và resource route khi build. Output tĩnh nằm trong `build/client/`; file `404.html` do workflow tạo cung cấp SPA fallback cho URL mở trực tiếp trên GitHub Pages.
 
 ## Triển khai GitHub Pages
 
