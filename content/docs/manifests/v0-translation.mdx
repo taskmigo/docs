@@ -1,0 +1,67 @@
+---
+title: v0/translation
+description: Define and merge v0/translation catalogs by locale.
+---
+
+# `v0/translation`
+
+A `v0/translation` manifest contributes data to one locale catalog.
+
+```yaml
+kind: v0/translation
+name: english
+
+spec:
+  locale: en
+  content:
+    applications:
+      home:
+        label: Home
+```
+
+## Fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/translation`. |
+| `name` | Identifies this manifest, not the locale. It follows the shared name rules and must be unique under `(kind, name)`. |
+| `spec.locale` | Required normalized BCP 47 locale, such as `en`, `vi`, or `pt-BR`. |
+| `spec.content` | Required object. Keys are strings; values can be any manifest-supported value. |
+
+Values are usually strings, but objects, arrays, numbers, booleans, and `null` are valid.
+
+## Extend an existing locale
+
+Use another manifest with a different `name` and the same locale.
+
+```yaml
+kind: v0/translation
+name: english-errors
+
+spec:
+  locale: en
+  content:
+    errors:
+      unauthorized: You do not have permission to continue.
+```
+
+All manifests with the same normalized locale merge into one effective catalog. Different locales never merge.
+
+## Merge rules
+
+- Objects merge recursively.
+- A path defined by only one manifest is copied to the catalog.
+- Arrays and non-object values are final values; arrays are not concatenated.
+- A duplicate path is always an error, even when the values are identical.
+- An object/non-object collision is an error.
+- Results must not depend on manifest load order.
+
+A merge error identifies the locale, conflicting path, and both manifests.
+
+## Validation and lookup
+
+A manifest is invalid when its locale is missing, empty, or not normalized; its content is not an object; a map key is empty; a value cannot be stored in the manifest format; or its `name` duplicates another `v0/translation` manifest.
+
+A merge conflict invalidates the resolved catalog. Consumers resolve the locale catalog, then return the stored value at the requested path unchanged.
+
+Version 0 does not define locale fallback, interpolation, plural handling, missing-key behavior, or override precedence.
