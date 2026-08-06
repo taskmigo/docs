@@ -1,0 +1,69 @@
+---
+title: v0/site
+description: Compose applications and define shared site branding.
+---
+
+# `v0/site`
+
+A `v0/site` manifest is the composition root for a Taskmigo site. It declares the applications that belong to the site and its shared brand assets.
+
+```yaml
+kind: v0/site
+name: root
+
+includes:
+  - kind: application
+    name: home
+
+spec:
+  brand:
+    label: Taskmigo
+    logo: ./logo.png
+    favicon: ./favicon.ico
+
+  applications:
+    - home
+```
+
+## Fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/site`. |
+| `name` | Identifies this site manifest. It follows the shared name rules and must be unique under `(kind, name)`. |
+| `includes` | Lists application resources that the site depends on. Each application referenced by `spec.applications` must be included as `kind: application`. |
+| `spec.brand` | Required site-branding configuration. |
+| `spec.brand.label` | Required label for the site brand. |
+| `spec.brand.logo` | Required path to the site logo. |
+| `spec.brand.favicon` | Required path to the site favicon. |
+| `spec.applications` | Required ordered list of application names exposed by the site. |
+
+## Applications
+
+The site exposes applications by listing their names in `spec.applications`. An application is only part of the site when it is both included and listed.
+
+```yaml
+includes:
+  - kind: application
+    name: home
+  - kind: application
+    name: admin
+
+spec:
+  brand:
+    label: Taskmigo
+    logo: ./logo.png
+    favicon: ./favicon.ico
+
+  applications:
+    - home
+    - admin
+```
+
+The application list preserves the order specified by the manifest.
+
+## Validation
+
+A `v0/site` manifest is invalid when its brand configuration or any required brand field is missing, an application name is duplicated, or an application in `spec.applications` does not have a matching `kind: application` entry in `includes`.
+
+The shared resource validation rules, including include resolution and cycle detection, also apply.
