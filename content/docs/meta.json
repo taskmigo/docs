@@ -1,4 +1,4 @@
 {
   "title": "Taskmigo",
-  "pages": ["index", "architecture", "resources", "runtime", "translation", "status"]
+  "pages": ["index", "architecture", "resources", "runtime", "manifests", "status"]
 }
