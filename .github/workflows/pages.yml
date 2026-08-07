@@ -46,18 +46,20 @@ jobs:
           if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
             cp -a build/client/. pages-output/
           else
-            # Keep every shared Vite/React Router output (including .nojekyll)
-            # before flattening the prerendered basename directory. This avoids
-            # having to maintain an incomplete allow-list of client artifacts.
-            cp -a build/client/. pages-output/
+            # React Router writes prerendered pages below its basename while
+            # Vite keeps shared assets at the client root. Copy the shared
+            # output without the nested basename, then copy the pages once.
+            rsync -a --exclude "/${{ github.event.repository.name }}" build/client/ pages-output/
             cp -a "build/client/${{ github.event.repository.name }}/." pages-output/
-            rm -rf "pages-output/${{ github.event.repository.name }}"
           fi
           cp build/client/__spa-fallback.html pages-output/404.html
 
           test -f pages-output/index.html
           test -f pages-output/.nojekyll
           test -d pages-output/assets
+
+      - name: Validate static artifact
+        run: npm run check:pages
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
