@@ -12,6 +12,10 @@ function githubBasePath() {
 
 export default defineConfig({
   base: githubBasePath(),
+  // GitHub Pages is also opened from older iOS devices. Vite's default
+  // Baseline target can emit syntax that those Safari versions cannot parse;
+  // a rejected route-chunk import is then rendered by the root error boundary.
+  build: { target: 'safari15' },
   plugins: [fumadocsMdx(), tailwindcss(), reactRouter()],
   resolve: { alias: { '@': fileURLToPath(new URL('./app', import.meta.url)) } },
 });
