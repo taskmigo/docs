@@ -47,6 +47,9 @@ jobs:
             cp -a build/client/. pages-output/
           else
             cp -a "build/client/${{ github.event.repository.name }}/." pages-output/
+            # React Router writes prerendered pages under the basename, while
+            # Vite keeps shared bundles at the client output root.
+            cp -a build/client/assets pages-output/assets
           fi
           cp build/client/__spa-fallback.html pages-output/404.html
 
