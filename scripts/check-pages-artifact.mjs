@@ -2,7 +2,9 @@ import { constants } from 'node:fs';
 import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const [artifactArgument = 'pages-output', prefixArgument = '/docs/'] = process.argv.slice(2);
+const repository = process.env.GITHUB_REPOSITORY?.split('/').at(-1);
+const defaultPrefix = repository && !repository.toLowerCase().endsWith('.github.io') ? `/${repository}/` : '/';
+const [artifactArgument = 'pages-output', prefixArgument = defaultPrefix] = process.argv.slice(2);
 const artifact = path.resolve(artifactArgument);
 const prefix = `/${prefixArgument.split('/').filter(Boolean).join('/')}/`;
 
@@ -45,6 +47,14 @@ for (const required of [prefix, `${prefix}docs/`, `${prefix}docs/manifests/v0-si
 
 const htmlFiles = (await filesBelow(artifact)).filter((file) => file.endsWith('.html'));
 if (htmlFiles.length === 0) throw new Error(`No HTML files found in ${artifact}`);
+
+const browserBundles = (await filesBelow(path.join(artifact, 'assets'))).filter((file) => file.endsWith('.js'));
+for (const bundle of browserBundles) {
+  const source = await readFile(bundle, 'utf8');
+  if (source.includes('`createRelativeLink` is only supported in Node.js environment')) {
+    throw new Error(`Server-only createRelativeLink was bundled for the browser: ${bundle}`);
+  }
+}
 
 for (const htmlFile of htmlFiles) {
   const html = await readFile(htmlFile, 'utf8');
