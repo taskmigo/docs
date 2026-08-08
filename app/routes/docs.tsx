@@ -2,7 +2,6 @@ import { use } from 'react';
 import type { Route } from './+types/docs';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { DocsBody, DocsDescription, DocsPage, DocsTitle, MarkdownCopyButton, ViewOptionsPopover } from 'fumadocs-ui/layouts/docs/page';
-import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { useFumadocsLoader } from 'fumadocs-core/source/client';
 import { docs, getPageImageUrl, getPageMarkdownUrl, source } from '@/lib/source';
 import { baseOptions } from '@/lib/layout.shared';
@@ -27,8 +26,7 @@ function Content({ path, markdownUrl }: { path: string; markdownUrl: string }) {
   if (!page) throw new Error(`Unknown documentation page: ${path}`);
   const data = use(page.load());
   const MDX = page.body;
-  const sourcePage = source.getPages().find((candidate) => candidate.path === path);
-  return <DocsPage toc={data.toc}><DocsTitle>{page.title}</DocsTitle><DocsDescription className="mb-0">{page.description}</DocsDescription><div className="flex flex-row items-center gap-2 border-b pb-6"><MarkdownCopyButton markdownUrl={markdownUrl} /><ViewOptionsPopover markdownUrl={markdownUrl} githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${path}`} /></div><DocsBody><MDX components={useMDXComponents(sourcePage ? { a: createRelativeLink(source, sourcePage) } : undefined)} /></DocsBody></DocsPage>;
+  return <DocsPage toc={data.toc}><DocsTitle>{page.title}</DocsTitle><DocsDescription className="mb-0">{page.description}</DocsDescription><div className="flex flex-row items-center gap-2 border-b pb-6"><MarkdownCopyButton markdownUrl={markdownUrl} /><ViewOptionsPopover markdownUrl={markdownUrl} githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${path}`} /></div><DocsBody><MDX components={useMDXComponents()} /></DocsBody></DocsPage>;
 }
 
 export default function Docs({ loaderData }: Route.ComponentProps) {

@@ -6,10 +6,14 @@
 
 # test & build
 /coverage
+/playwright-report
+/test-results
 /.next/
 /.react-router/
 /out/
 /build
+/pages-output
+/.pages-preview
 *.tsbuildinfo
 
 # misc

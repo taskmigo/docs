@@ -41,25 +41,16 @@ jobs:
           VITE_GITHUB_BRANCH: ${{ github.ref_name }}
 
       - name: Add SPA fallback for direct navigation
-        run: |
-          mkdir pages-output
-          if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
-            cp -a build/client/. pages-output/
-          else
-            # React Router writes prerendered pages below its basename while
-            # Vite keeps shared assets at the client root. Copy the shared
-            # output without the nested basename, then copy the pages once.
-            rsync -a --exclude "/${{ github.event.repository.name }}" build/client/ pages-output/
-            cp -a "build/client/${{ github.event.repository.name }}/." pages-output/
-          fi
-          cp build/client/__spa-fallback.html pages-output/404.html
-
-          test -f pages-output/index.html
-          test -f pages-output/.nojekyll
-          test -d pages-output/assets
+        run: npm run prepare:pages -- "${{ github.event.repository.name }}"
 
       - name: Validate static artifact
         run: npm run check:pages
+
+      - name: Install browser for smoke tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test prerendered pages
+        run: npm run test:pages
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
