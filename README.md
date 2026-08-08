@@ -24,7 +24,18 @@ npm run build
 npm run start
 ```
 
-React Router prerender mọi trang tài liệu và resource route khi build. Output tĩnh nằm trong `build/client/`; file `404.html` do workflow tạo cung cấp SPA fallback cho URL mở trực tiếp trên GitHub Pages.
+React Router prerender mọi trang tài liệu và resource route khi build. Output tĩnh nằm trong `build/client/`.
+
+Để kiểm tra chính xác artifact GitHub Pages ở máy cục bộ, đặt tên repository rồi chạy:
+
+```bash
+export GITHUB_REPOSITORY=owner/repository
+GITHUB_ACTIONS=true npm run build
+npm run prepare:pages -- "${GITHUB_REPOSITORY##*/}"
+npm run check:pages
+```
+
+Lệnh `prepare:pages` tạo artifact `pages-output/` và file `404.html` để cung cấp SPA fallback cho URL mở trực tiếp trên GitHub Pages.
 
 ## Triển khai GitHub Pages
 

@@ -2,7 +2,9 @@ import { constants } from 'node:fs';
 import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const [artifactArgument = 'pages-output', prefixArgument = '/docs/'] = process.argv.slice(2);
+const repository = process.env.GITHUB_REPOSITORY?.split('/').at(-1);
+const defaultPrefix = repository && !repository.toLowerCase().endsWith('.github.io') ? `/${repository}/` : '/';
+const [artifactArgument = 'pages-output', prefixArgument = defaultPrefix] = process.argv.slice(2);
 const artifact = path.resolve(artifactArgument);
 const prefix = `/${prefixArgument.split('/').filter(Boolean).join('/')}/`;
 
