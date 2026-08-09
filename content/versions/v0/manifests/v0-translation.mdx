@@ -40,18 +40,18 @@ description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
 <Callout title="Catalogs do not participate in imports" type="info">
-  A translation manifest may declare `imports: []` for compatibility with the common resource
-  shape, but it cannot import any resource. No manifest may import `v0/translation`. Taskmigo
-  assembles the effective catalog for the active locale.
+  A translation manifest may declare `imports: []` for compatibility with the common resource shape,
+  but it cannot import any resource. No manifest may import `v0/translation`. Taskmigo assembles the
+  effective catalog for the active locale.
 </Callout>
 
 ## Create a catalog
 
-| Field          | Required | Rule                                                                                              |
-| -------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `kind`         | Yes      | Must be `v0/translation`.                                                                         |
+| Field          | Required | Rule                                                                                               |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `kind`         | Yes      | Must be `v0/translation`.                                                                          |
 | `spec.locale`  | Yes      | Normalized [BCP 47](https://www.rfc-editor.org/info/bcp47/) locale such as `en`, `vi`, or `pt-BR`. |
-| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                          |
+| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                           |
 
 `spec.locale` selects the catalog; `name` identifies the contribution. All translation resources with the same normalized locale merge into one effective catalog.
 

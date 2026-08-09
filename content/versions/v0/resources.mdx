@@ -82,16 +82,16 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
 Only one import edge is currently allowed: a Site may import an Application.
 This matrix is exhaustive; every other import target is invalid.
 
-| Importer         |  `v0/site`  | `v0/application` |  `v0/translation`  |
-| ---------------- | :---------: | :--------------: | :----------------: |
-| `v0/site`        |      —      |     Allowed      |    Not allowed     |
-| `v0/application` | Not allowed |   Not allowed    |    Not allowed     |
-| `v0/translation` | Not allowed |   Not allowed    |    Not allowed     |
+| Importer         |  `v0/site`  | `v0/application` | `v0/translation` |
+| ---------------- | :---------: | :--------------: | :--------------: |
+| `v0/site`        |      —      |     Allowed      |   Not allowed    |
+| `v0/application` | Not allowed |   Not allowed    |   Not allowed    |
+| `v0/translation` | Not allowed |   Not allowed    |   Not allowed    |
 
 <Callout title="Translation catalogs are never import targets" type="warn">
-  No manifest may import `v0/translation`. A translation manifest may include the common
-  `imports` field only as an empty list. Taskmigo attaches the effective locale catalog
-  automatically when it builds a Site snapshot.
+  No manifest may import `v0/translation`. A translation manifest may include the common `imports`
+  field only as an empty list. Taskmigo attaches the effective locale catalog automatically when it
+  builds a Site snapshot.
 </Callout>
 
 ### Resolution
