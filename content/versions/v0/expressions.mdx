@@ -52,10 +52,17 @@ Names and paths are case-sensitive.
 
 ## Global functions
 
-Taskmigo exposes its Expression functions anywhere a field accepts an Expression. `Trans` reads and
-formats a translated message; `TransN` selects a locale-aware plural message. Built-in functions
-and operators include `and`, `or`, `not`, `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `len`, `index`,
-`slice`, and `printf`.
+Taskmigo exposes these functions anywhere a field accepts an Expression.
+
+| Group | Functions |
+| ----- | --------- |
+| Translation | `Trans`, `TransN` |
+| Boolean | `and`, `or`, `not` |
+| Comparison | `eq`, `ne`, `lt`, `le`, `gt`, `ge` |
+| Values and collections | `len`, `index`, `slice` |
+| Formatting | `printf` |
+
+`Trans` reads and formats a translated message; `TransN` selects a locale-aware plural message.
 
 ```yaml
 description: '{{ Trans "applications.home.description" }}'
@@ -67,6 +74,16 @@ description: '{{ TransN "cart.items" 3 }}'
 
 See [Translation](/versions/v0/manifests/v0-translation) for catalog structure, placeholders,
 plural selection, fallbacks, and errors.
+
+## Global variables
+
+Expressions can use these global variable roots:
+
+- `.Runtime`
+- `.This`
+
+See [Context variables](/versions/v0/context-variables) for their available fields and when each
+value is set.
 
 ## Context values
 
