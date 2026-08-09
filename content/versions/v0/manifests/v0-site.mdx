@@ -3,7 +3,7 @@ title: v0/site
 description: Compose applications and define shared site branding.
 ---
 
-A `v0/site` manifest is the composition root for a Taskmigo site. It declares the applications that belong to the site and its shared brand assets.
+A `v0/site` manifest is the composition root for a Taskmigo site. It selects the applications exposed by the site and defines shared brand assets. Its common fields follow the [Resource model](/versions/v0/resources).
 
 ```yaml
 kind: v0/site
@@ -23,13 +23,11 @@ spec:
     - home
 ```
 
-## Fields
+## Site fields
 
 | Field | Rule |
 | --- | --- |
 | `kind` | Must be `v0/site`. |
-| `name` | Identifies this site manifest. It follows the shared name rules and must be unique under `(kind, name)`. |
-| `includes` | Lists application resources that the site depends on. Each application referenced by `spec.applications` must be included as `kind: v0/application`. All included kinds must use the versioned `v0/...` form. |
 | `spec.brand` | Required site-branding configuration. |
 | `spec.brand.label` | Required label for the site brand. |
 | `spec.brand.logo` | Required path to the site logo. |
@@ -38,7 +36,10 @@ spec:
 
 ## Applications
 
-The site exposes applications by listing their names in `spec.applications`. An application is only part of the site when it is both included and listed.
+The site exposes an application only when both of the following are true:
+
+1. `includes` contains the application as `kind: v0/application`.
+2. `spec.applications` contains the application's name.
 
 ```yaml
 includes:
@@ -58,10 +59,12 @@ spec:
     - admin
 ```
 
-The application list preserves the order specified by the manifest.
+The order in `spec.applications` is preserved.
 
 ## Validation
 
-A `v0/site` manifest is invalid when its brand configuration or any required brand field is missing, an application name is duplicated, or an application in `spec.applications` does not have a matching `kind: v0/application` entry in `includes`.
+In addition to the [common resource validation](/versions/v0/resources), a site is invalid when its brand configuration or a required brand field is missing, an application name is duplicated, or an application in `spec.applications` has no matching `v0/application` include.
 
-The shared resource validation rules, including include resolution and cycle detection, also apply.
+## Good to know
+
+`includes` defines dependency availability, while `spec.applications` defines which applications the site exposes and in what order. Including an application alone does not expose it.
