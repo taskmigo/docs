@@ -74,6 +74,13 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   lifecycle](/versions/v0/runtime).
 </Accordion>
 
+<Accordion title="Can dependency recovery attempts conflict?" id="dependency-recovery-queue">
+  No. Taskmigo queues dependency recovery and processes one candidate at a time. Each candidate must
+  finish validation and activation, or fail, before the next candidate starts. The current snapshot
+  remains active while recovery is queued or when a candidate fails. See [Dependency
+  recovery](/versions/v0/runtime#dependency-recovery).
+</Accordion>
+
 <Accordion title="Can a package import partially activate?" id="package-atomicity">
   No. The complete package is validated first, including the one-Site invariant. A failed import
   does not change active runtime state. See [Package

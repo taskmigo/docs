@@ -18,6 +18,25 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
 - Use Mermaid only when it makes a workflow or relationship materially easier to understand; do not repeat a table or simple prose as a diagram.
 
+## MDX and content components
+
+Use components to improve navigation, comparison, sequence, or emphasis. Do not add a component only for decoration, and do not hide information required to understand the primary reading path.
+
+- **Accordion and Accordions:** Use for FAQs, optional details, or long secondary explanations. Do not place required contract rules only inside a collapsed item.
+- **Banner:** Reserve for a high-priority, site-wide announcement configured at the page or layout level. Use a Callout for an important note inside an article.
+- **Code blocks:** Use fenced Markdown code blocks for static code, commands, configuration, and manifests. Add a language such as `yaml`, `bash`, or `tsx`. Use the dynamic code-block component only when the rendered example must change at runtime.
+- **Files, Folder, and File:** Use a file tree for directory layouts or multi-file architecture. Do not represent a short flat list as a file tree.
+- **GitHub Info:** Use only when live repository stars or forks materially help a repository or installation page. Use an ordinary source link when live statistics are unnecessary.
+- **Image Zoom:** Use for screenshots, diagrams, or mockups whose details are difficult to inspect at inline size. Always provide meaningful alternative text.
+- **Inline TOC:** Use on long overview or index pages with many peer sections. Avoid duplicating a short page's normal table of contents.
+- **Steps:** Use for procedures and lifecycle sequences where order is meaningful. Use headings or a list when items are not sequential.
+- **Tabs:** Use for equivalent alternatives, such as package managers or platforms, or for comparing closely related outcomes in the same context. Do not split a single sequential procedure across tabs.
+- **Type Table:** Use for compact, manually maintained field, prop, or option references. Keep normative validation rules in surrounding prose when a table alone would be ambiguous.
+- **Cards:** Use on landing pages or for a small set of clear next steps. Each card must lead to a useful destination; do not use cards as decorative containers.
+- **Callouts:** Use sparingly for notes, tips, warnings, and safety-critical constraints. Keep the primary contract in normal prose and choose the callout type that matches its severity.
+
+`Auto Type Table` and `Graph View` are not available in the repository's current `fumadocs-ui` version. Do not use or document them as available components unless the dependency and site integration are added first. Import non-global components from their existing `fumadocs-ui/components/*` entry points and follow examples already present in this repository. Components provided by the default MDX mapping, such as `Callout`, `Card`, and `Cards`, do not need local imports.
+
 ## Change checklist
 
 - For a user-facing contract change, update every affected canonical page, example, cross-link, and FAQ entry.
