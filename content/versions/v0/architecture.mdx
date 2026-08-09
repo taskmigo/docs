@@ -3,7 +3,7 @@ title: Architecture
 description: Understand the deployment boundary and resource graph.
 ---
 
-A Taskmigo deployment manages one independent site graph in a user-managed PostgreSQL database.
+A Taskmigo system manages one site graph in a user-managed PostgreSQL database.
 
 ## Database boundary
 
@@ -13,7 +13,7 @@ Version 0 has no tenant registry, database routing, or `tenant_id`.
 
 ## Resource graph
 
-The graph starts at one `v0/site`. Every regular runtime resource must be reachable through an `imports` edge.
+The graph starts at the system's only Site manifest. Every regular runtime resource must be reachable through an `imports` edge.
 
 ```text
 Site
@@ -24,6 +24,8 @@ Site
     ├── Theme
     └── Policy
 ```
+
+The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
 Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
 
