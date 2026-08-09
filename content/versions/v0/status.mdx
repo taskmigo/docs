@@ -13,7 +13,7 @@ This documentation distinguishes settled contracts from design direction.
 | --- | --- |
 | Common resource model | Identity is `(kind, name)`; YAML is canonical; revisions, explicit includes, validation, and immutable snapshots follow the rules in this documentation. |
 | `v0/site` | A stable manifest kind that composes included applications and configures shared site branding. See [v0/site](/versions/v0/manifests/v0-site). |
-| `v0/translation` | A stable manifest kind for locale catalogs. See [v0/translation](/versions/v0/manifests/v0-translation). |
+| `v0/translation` | A stable manifest kind for locale catalogs, positional placeholder interpolation, and quantity-based pluralization. See [v0/translation](/versions/v0/manifests/v0-translation). |
 | `v0/application` | A stable manifest kind for application metadata, dependencies, and entry routes. See [v0/application](/versions/v0/manifests/v0-application). |
 
 ## Planned resource kinds
@@ -29,6 +29,6 @@ Do not treat a candidate kind as a public API until it has a dedicated reference
 
 ## Not defined in version 0
 
-The translation contract does not define locale fallback, plural handling, missing-key behavior, override precedence, or how the runtime interprets optional `Trans` arguments.
+The translation contract does not define locale fallback, missing-key behavior, override precedence, the placeholder notation stored inside catalog messages, or the returned fallback string after a recovered translation failure.
 
-Beyond the documented `{{ Trans "key" ...args }}` syntax, the platform design leaves the expression language, complete MVP kind list, exact PostgreSQL table layout, and public schema/versioning policy open.
+Beyond the documented `Trans` and `TransN` functions, the platform design leaves the expression language, complete MVP kind list, exact PostgreSQL table layout, and public schema/versioning policy open.
