@@ -6,10 +6,10 @@ description: Resolve common questions about Taskmigo v0 contracts and runtime be
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 <Accordions type="single">
-  <Accordion title="How many Site manifests can a system contain?" id="one-site">
-    Exactly one. The rule applies across the Site kind family, so a different
-    name, resource version, or schema prefix does not permit another Site.
-    `v0/site` and a future `v1/site` cannot coexist. See
+  <Accordion title="How many Site resources can a system contain?" id="one-site">
+    Exactly one logical Site. It may have multiple revisions, but a different
+    name or schema prefix does not create another slot. `v0/site` and a future
+    `v1/site` cannot coexist as separate Site resources. See
     [Site cardinality](/versions/v0/resources#site-cardinality).
   </Accordion>
 
