@@ -35,6 +35,21 @@ The pair `(kind, name)` identifies a resource. The optional `version` tags one o
 
 Every semantic change creates a revision that is validated independently. A tagged revision is immutable, and one version tag cannot refer to different content. An untagged revision may be selected only by an import without a version constraint.
 
+### Site cardinality
+
+A valid Taskmigo system contains exactly one Site manifest. This invariant applies to the Site kind family, not one `(kind, name)` identity: changing the name, resource version, or schema prefix does not permit another Site.
+
+```yaml
+# Invalid in the same system
+kind: v0/site
+name: primary
+---
+kind: v1/site
+name: replacement
+```
+
+Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` is invalid.
+
 ## Imports
 
 Use `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
@@ -93,7 +108,7 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
   </Step>
 </Steps>
 
-Malformed references, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, and invalid selected revisions fail resolution.
+Malformed references, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title="Latest is resolved at build time" type="info">
   An unconstrained import follows the latest revision when a new snapshot is built. Existing snapshots remain unchanged.
