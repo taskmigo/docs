@@ -32,6 +32,7 @@ Planned kinds are not public contracts until they have dedicated reference pages
 ## Known limitations and open decisions
 
 - Multi-tenancy is not available: one deployment manages one Site graph in one configured PostgreSQL schema.
+- Multi-level dependency recovery is an [RFC](/versions/v0/runtime#dependency-recovery-rfc), not a defined runtime contract.
 - Missing-translation-key behavior is not defined.
 - Translation override precedence is not defined.
 - The expression language beyond `Trans` and `TransN` is not defined.
