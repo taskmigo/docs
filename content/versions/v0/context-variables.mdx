@@ -1,23 +1,39 @@
 ---
 title: Context variables
-description: Reference the runtime and current manifest values available in Expressions.
+description: Read the current runtime and manifest data in an Expression.
 ---
 
-Context variables provide values for the active runtime and the manifest currently being evaluated.
-Use them only in fields that accept an Expression.
+Use a context variable when an Expression needs information about where it is being evaluated.
 
-## Global variables
+## Quick example
 
-| Variable | Type | Description |
-| -------- | ---- | ----------- |
-| `.Runtime.Hostname` | string | The hostname at evaluation time. |
-| `.This.kind` | string | The current manifest kind. |
-| `.This.name` | string | The current manifest name. |
-| `.This.version` | string | The current manifest version. |
-| `.This.revision` | string | The current manifest revision. |
+This Expression creates text from the current manifest name and the hostname at evaluation time:
 
-## Component props
+```yaml
+description: '{{ printf "%s is running on %s" .This.name .Runtime.Hostname }}'
+```
 
-A reusable Component also exposes its declared `spec.props` values through `props.<name>` while
-evaluating its `spec.template`. See [Expressions](/versions/v0/expressions#component-props) for an
-example and the manifest-specific availability rules.
+Use context variables only in fields that accept an Expression. See
+[Expressions](/versions/v0/expressions#where-expressions-are-supported) for supported fields.
+
+## Runtime data
+
+| Variable | Returns | Use it when |
+| --- | --- | --- |
+| `.Runtime.Hostname` | The hostname at evaluation time. | The rendered value must identify the active host. |
+
+## Current manifest data
+
+`.This` refers to the manifest whose field Taskmigo is evaluating.
+
+| Variable | Returns | Use it when |
+| --- | --- | --- |
+| `.This.kind` | The manifest kind. | The rendered value must include its resource kind. |
+| `.This.name` | The manifest name. | The rendered value must identify the current manifest. |
+| `.This.version` | The manifest version. | The rendered value must include its version. |
+| `.This.revision` | The manifest revision. | The rendered value must distinguish a specific revision. |
+
+<Callout title="Component props are separate" type="info">
+  In a Component template, `props.<name>` reads values declared by that Component. It is not a
+  global variable. See [Expressions](/versions/v0/expressions#use-component-props).
+</Callout>
