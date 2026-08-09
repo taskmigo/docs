@@ -3,44 +3,12 @@ title: v0/site
 description: Compose applications and define shared site branding.
 ---
 
-A `v0/site` manifest is the composition root for a Taskmigo site. It selects the applications exposed by the site and defines shared brand assets. Its common fields follow the [Resource model](/versions/v0/resources).
+A `v0/site` is the composition root. It imports applications, selects which ones to expose, and defines shared brand assets.
 
 ```yaml
 kind: v0/site
 name: root
 
-imports:
-  - v0/application/home
-
-spec:
-  brand:
-    label: Taskmigo
-    logo: ./logo.png
-    favicon: ./favicon.ico
-
-  applications:
-    - home
-```
-
-## Site fields
-
-| Field | Rule |
-| --- | --- |
-| `kind` | Must be `v0/site`. |
-| `spec.brand` | Required site-branding configuration. |
-| `spec.brand.label` | Required label for the site brand. |
-| `spec.brand.logo` | Required path to the site logo. |
-| `spec.brand.favicon` | Required path to the site favicon. |
-| `spec.applications` | Required ordered list of application names exposed by the site. |
-
-## Applications
-
-The site exposes an application only when both of the following are true:
-
-1. `imports` contains the application's `v0/application/<name>` reference.
-2. `spec.applications` contains the application's name.
-
-```yaml
 imports:
   - v0/application/home
   - v0/application/admin
@@ -56,16 +24,21 @@ spec:
     - admin
 ```
 
-The order in `spec.applications` is preserved.
+## Fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/site`. |
+| `spec.brand` | Required branding configuration. |
+| `spec.brand.label` | Required site label. |
+| `spec.brand.logo` | Required logo path. |
+| `spec.brand.favicon` | Required favicon path. |
+| `spec.applications` | Required ordered list of exposed application names. |
+
+## Expose applications
+
+Each name in `spec.applications` must have a matching `v0/application/<name>` import. List order controls display order; importing an application alone does not expose it.
 
 ## Validation
 
-In addition to the [common resource validation](/versions/v0/resources), a site is invalid when its brand configuration or a required brand field is missing, an application name is duplicated, or an application in `spec.applications` has no matching `v0/application` import.
-
-## Good to know
-
-<Callout title="Imported does not mean exposed" type="idea">
-  `imports` makes a dependency available. `spec.applications` decides which
-  applications the site exposes and in what order. Importing an application alone
-  does not expose it.
-</Callout>
+Beyond [common resource validation](/versions/v0/resources), a site is invalid when branding or a required brand field is missing, an application name is duplicated, or an exposed application has no matching import.
