@@ -3,6 +3,8 @@ title: Resource model
 description: Common manifest rules, revisions, versions, and dependencies.
 ---
 
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
 # Resource model
 
 A resource is an independent YAML manifest. YAML is the source of truth; normalized data, diagnostics, and runtime snapshots are derived from it.
@@ -65,18 +67,51 @@ includes:
 
 The optional `version` is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
-Resolution works as follows:
+<Steps>
+  <Step>
 
-1. Taskmigo finds the resource with the exact included `kind` and `name`.
-2. Without `includes.version`, it selects that resource's latest revision.
-3. With `includes.version`, it selects the highest tagged version satisfying the constraint.
-4. The selected revision must be valid. Taskmigo does not silently fall back to an older revision or lower version.
-5. The selected revision is recorded in the Site snapshot, so later resource revisions do not alter an already active snapshot.
+  ### Find the dependency
+
+  Taskmigo finds the resource with the exact included `kind` and `name`.
+
+  </Step>
+  <Step>
+
+  ### Select a revision
+
+  Without `includes.version`, Taskmigo selects the latest revision. With a
+  constraint, it selects the highest tagged version that satisfies it.
+
+  </Step>
+  <Step>
+
+  ### Validate the selection
+
+  The selected revision must be valid. Taskmigo does not silently fall back to an
+  older revision or lower version.
+
+  </Step>
+  <Step>
+
+  ### Record the snapshot
+
+  The selected revision is recorded in the Site snapshot, so later resource
+  revisions do not alter an already active snapshot.
+
+  </Step>
+</Steps>
 
 Missing resources, duplicate includes, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
 
 ## Good to know
 
-A version constraint controls which revision may be selected; it does not select the manifest schema. The `kind` value selects the schema, while `includes.version` selects a compatible revision of that kind.
+<Callout title="Schema version and resource version are independent" type="idea">
+  A version constraint controls which revision may be selected; it does not select
+  the manifest schema. The `kind` value selects the schema, while
+  `includes.version` selects a compatible revision of that kind.
+</Callout>
 
-Omitting `includes.version` follows the latest revision when a new snapshot is built. It does not mutate snapshots that are already active.
+<Callout title="Latest is resolved when a snapshot is built" type="info">
+  Omitting `includes.version` follows the latest revision when a new snapshot is
+  built. It does not mutate snapshots that are already active.
+</Callout>
