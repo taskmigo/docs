@@ -9,9 +9,8 @@ A `v0/site` manifest is the composition root for a Taskmigo site. It selects the
 kind: v0/site
 name: root
 
-includes:
-  - kind: v0/application
-    name: home
+imports:
+  - v0/application/home
 
 spec:
   brand:
@@ -38,15 +37,13 @@ spec:
 
 The site exposes an application only when both of the following are true:
 
-1. `includes` contains the application as `kind: v0/application`.
+1. `imports` contains the application's `v0/application/<name>` reference.
 2. `spec.applications` contains the application's name.
 
 ```yaml
-includes:
-  - kind: v0/application
-    name: home
-  - kind: v0/application
-    name: admin
+imports:
+  - v0/application/home
+  - v0/application/admin
 
 spec:
   brand:
@@ -63,12 +60,12 @@ The order in `spec.applications` is preserved.
 
 ## Validation
 
-In addition to the [common resource validation](/versions/v0/resources), a site is invalid when its brand configuration or a required brand field is missing, an application name is duplicated, or an application in `spec.applications` has no matching `v0/application` include.
+In addition to the [common resource validation](/versions/v0/resources), a site is invalid when its brand configuration or a required brand field is missing, an application name is duplicated, or an application in `spec.applications` has no matching `v0/application` import.
 
 ## Good to know
 
-<Callout title="Included does not mean exposed" type="idea">
-  `includes` makes a dependency available. `spec.applications` decides which
-  applications the site exposes and in what order. Including an application alone
+<Callout title="Imported does not mean exposed" type="idea">
+  `imports` makes a dependency available. `spec.applications` decides which
+  applications the site exposes and in what order. Importing an application alone
   does not expose it.
 </Callout>
