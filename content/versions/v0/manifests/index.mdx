@@ -5,9 +5,9 @@ description: Find the contract for each supported manifest kind.
 
 # Manifests
 
-A manifest is a YAML resource. Every manifest uses the shared fields and rules in the [Resource model](/versions/v0/resources), then adds a `spec` that belongs to its `kind`.
+A manifest is a YAML resource. Every manifest follows the identity, version, dependency, and validation rules in the [Resource model](/versions/v0/resources), then adds a `spec` defined by its `kind`.
 
-This area is the reference for supported manifest kinds. Each kind has its own page, so its fields, examples, and validation rules are kept together.
+Use the kind reference pages below for kind-specific fields and examples.
 
 ## Defined kinds
 
@@ -20,7 +20,5 @@ This area is the reference for supported manifest kinds. Each kind has its own p
 ## Planned kinds
 
 `v0/entity`, `v0/page`, `v0/component`, `v0/query`, `v0/action`, `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation` are planned. They are not manifest contracts yet.
-
-Kind names are always versioned. In version 0 manifests, use the complete `v0/...` value in both the top-level `kind` and every `includes[].kind`; unversioned names such as `application` or `page` are invalid.
 
 When a kind becomes defined, this page will link to its dedicated reference page.
