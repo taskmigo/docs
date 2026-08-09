@@ -39,22 +39,14 @@ spec:
       description: "Information used to present this Page.",
     },
     "spec.meta.title": {
-      type: "string",
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: (
-        <>
-          <ExpressionSupport /> Name used to identify this Page.
-        </>
-      ),
+      description: "Name used to identify this Page.",
     },
     "spec.meta.description": {
-      type: "string",
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: (
-        <>
-          <ExpressionSupport /> Short summary of this Page.
-        </>
-      ),
+      description: "Short summary of this Page.",
     },
     "spec.body": {
       type: "ComponentNode[]",

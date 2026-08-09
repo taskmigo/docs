@@ -30,13 +30,9 @@ children: Hello World
       description: "Selects the semantic HTML element used for the text.",
     },
     children: {
-      type: "string",
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: (
-        <>
-          <ExpressionSupport /> Text rendered by Typography.
-        </>
-      ),
+      description: "Text rendered by Typography.",
     },
   }}
 />

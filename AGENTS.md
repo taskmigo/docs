@@ -34,7 +34,7 @@ Use components only when they improve navigation, comparison, sequence, or empha
 - **Inline TOC:** Long overview or index pages with many peer sections.
 - **Steps:** Procedures and lifecycle sequences where order is meaningful.
 - **Tabs:** Equivalent alternatives such as package managers or platforms; never split one sequential procedure across tabs.
-- **Type Table:** Use for every section titled `Fields` and for UI component prop or field references. Keep validation rules in prose when the table would be ambiguous. `type` describes only the field's data type. Write each `description` to explain the field's purpose, behavior, relationship, or constraint; do not repeat its name or type. If a field supports Expression, keep its actual data type and begin that field's `description` with the `<ExpressionSupport />` tag; never use `Expression`, `Expression<T>`, or a union with `Expression` as a type.
+- **Type Table:** Use the `TypeTable` component for `Fields` sections and UI component prop references. Keep validation rules in prose when needed. The `type` column should describe only the data type; the `description` should explain purpose, behavior, or constraints without repeating the name or type. For Expression-capable fields, wrap the underlying type in `FieldType` with `supportsExpression={true}` (for example, `<FieldType supportsExpression={true}>string</FieldType>`). Do not spell the type as `Expression`, `Expression<T>`, or a union including `Expression`.
 - **Cards:** Landing-page navigation or a small set of useful next steps.
 - **Callouts:** Notes, tips, warnings, and safety-critical constraints; keep the primary contract in normal prose.
 

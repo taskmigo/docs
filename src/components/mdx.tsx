@@ -1,12 +1,12 @@
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
-import { ExpressionSupport } from "./mdx/expression-support";
+import { FieldType } from "./mdx/field-type";
 import { Mermaid } from "./mdx/mermaid";
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
-    ExpressionSupport,
+    FieldType,
     Mermaid,
     ...components,
   } satisfies MDXComponents;

@@ -47,22 +47,14 @@ The example exposes `v0/page/index` at `<host>/home/`.
       description: "An absolute image URL with a scheme and host.",
     },
     "spec.label": {
-      type: "string",
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: (
-        <>
-          <ExpressionSupport /> Name shown when presenting this application.
-        </>
-      ),
+      description: "Name shown when presenting this application.",
     },
     "spec.description": {
-      type: "string",
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: (
-        <>
-          <ExpressionSupport /> Summary shown alongside the application name.
-        </>
-      ),
+      description: "Summary shown alongside the application name.",
     },
     "spec.path": {
       type: "AbsolutePath",
