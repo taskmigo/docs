@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "schemas:generate": "node scripts/generate-manifest-schemas.mjs && oxfmt public/schemas/v0",
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
     "lint:check": "oxlint",

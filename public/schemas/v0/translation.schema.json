@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taskmigo.github.io/docs/schemas/v0/translation.schema.json",
+  "title": "Taskmigo v0/translation manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "name", "spec"],
+  "properties": {
+    "kind": {
+      "const": "v0/translation",
+      "description": "The complete versioned manifest kind."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "The resource name."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+      "description": "An optional immutable Semantic Version tag for this revision."
+    },
+    "imports": {
+      "type": "array",
+      "maxItems": 0,
+      "description": "This manifest kind cannot import resources."
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "content"],
+      "properties": {
+        "locale": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A normalized BCP 47 locale."
+        },
+        "content": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/contentValue"
+          },
+          "description": "The locale catalog contribution."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "contentValue": {
+      "oneOf": [
+        {
+          "type": ["string", "number", "boolean", "null"]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contentValue"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/contentValue"
+          }
+        }
+      ]
+    }
+  }
+}

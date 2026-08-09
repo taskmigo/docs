@@ -1,0 +1,58 @@
+---
+title: Manifest autocomplete
+description: Connect Taskmigo JSON schemas to your YAML editor.
+---
+
+Taskmigo publishes one JSON schema for each defined manifest kind. Connect a manifest file to its
+schema to autocomplete fields and surface structural errors while you edit YAML.
+
+## Choose a schema
+
+| Manifest kind    | JSON schema                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| `v0/site`        | [`site.schema.json`](/schemas/v0/site.schema.json)               |
+| `v0/application` | [`application.schema.json`](/schemas/v0/application.schema.json) |
+| `v0/page`        | [`page.schema.json`](/schemas/v0/page.schema.json)               |
+| `v0/translation` | [`translation.schema.json`](/schemas/v0/translation.schema.json) |
+
+Each schema is self-contained and uses JSON Schema Draft 2020-12.
+
+## Enable autocomplete in VS Code
+
+Install a YAML extension that supports JSON Schema associations, then add a modeline to the first
+line of the manifest. Use the schema that matches `kind`:
+
+```yaml
+# yaml-language-server: $schema=https://taskmigo.github.io/docs/schemas/v0/application.schema.json
+kind: v0/application
+name: home
+
+imports:
+  - v0/page/index
+
+spec:
+  icon: https://example.com/images/home.png
+  label: '{{ Trans "applications.home.label" }}'
+  description: '{{ Trans "applications.home.description" }}'
+  path: /home
+  routes:
+    - page: v0/page/index
+      path: /
+```
+
+The modeline associates only that file. To apply a schema to a filename pattern, configure the YAML
+extension's schema mapping instead.
+
+## Validation boundary
+
+The schemas validate one manifest at a time: required fields, supported values, component nodes,
+and reference syntax. Taskmigo still performs graph validation when it resolves a candidate Site.
+That validation catches rules that need more than one resource, including:
+
+- an exposed application without a matching Site import;
+- an Application route whose Page is not imported;
+- duplicate reference identities that use different version constraints;
+- missing resources, unsatisfied versions, translation merge conflicts, and Site cardinality.
+
+Continue with the [Resource model](/versions/v0/resources) for these cross-resource rules, or open
+the [manifest reference](/versions/v0/manifests) for kind-specific examples and failure states.
