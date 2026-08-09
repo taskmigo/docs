@@ -4,7 +4,7 @@ description: Put dynamic text or values into fields that accept an Expression.
 ---
 
 Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the
-manifest: translated text, the current manifest identity, the runtime hostname, or a Component prop.
+manifest: translated text, the current manifest identity, or the runtime hostname.
 
 ## Start here
 
@@ -32,8 +32,7 @@ In this example:
 | --- | --- |
 | Show text from a translation catalog | [Translate a message](#translate-a-message) |
 | Change text for a count | [Translate a quantity](#translate-a-quantity) |
-| Use the Site hostname or current manifest metadata | [Use global variables](#use-global-variables) |
-| Render a prop in a reusable Component | [Use Component props](#use-component-props) |
+| Use the Site hostname or current manifest metadata | [Use context values](#use-context-values) |
 | Format, compare, or transform a value | [Use built-in functions](#use-built-in-functions) |
 
 ## Translate a message
@@ -58,36 +57,19 @@ description: '{{ TransN "cart.items" 3 }}'
 The second argument is the count. Taskmigo selects the locale's plural form. See
 [Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for the complete rule.
 
-## Use global variables
+## Use context values
 
-Global variables describe the runtime or the manifest currently being evaluated.
+| Value | Available in | Returns |
+| --- | --- | --- |
+| `.Runtime.Hostname` | Any Expression | Hostname at evaluation time |
+| `.This.kind` | Any Expression | Current manifest kind |
+| `.This.name` | Any Expression | Current manifest name |
+| `.This.version` | Any Expression | Current manifest version |
+| `.This.revision` | Any Expression | Current manifest revision |
+| `props.<name>` | Component `spec.template` | A prop passed to that Component |
 
-```yaml
-description: '{{ printf "%s is running on %s" .This.name .Runtime.Hostname }}'
-```
-
-This example reads the current manifest name and the hostname at evaluation time. See
-[Context variables](/versions/v0/context-variables) for the complete list and each value's meaning.
-
-## Use Component props
-
-Inside a reusable Component's `spec.template`, read a declared prop with `props.<name>`.
-
-```yaml
-spec:
-  props:
-    title:
-      type: string
-      required: true
-
-  template:
-    component: Typography
-    children: '{{ props.title }}'
-```
-
-`props.title` is available because this Component declares `spec.props.title`. It is not
-available in a Site, Application, Page, or Translation manifest. See
-[Component](/versions/v0/manifests/v0-component#fields) to define and pass props.
+Use `props.<name>` only in a Component template. To declare or pass props, see
+[Component](/versions/v0/manifests/v0-component#fields).
 
 ## Use built-in functions
 
