@@ -21,7 +21,14 @@ Every YAML manifest is a resource with a unique identity:
 (kind, name)
 ```
 
-A resource can explicitly depend on other resources through `includes`. The runtime graph begins at one `v0/site` resource. Only resources reachable from that Site are included in runtime.
+A resource can explicitly depend on other resources through `includes`. The
+runtime graph begins at one `v0/site` resource. Regular resources must be
+reachable from that Site to be included in runtime.
+
+Translation resources are resolved through the effective locale catalog instead
+of explicit graph edges. A resource that uses `Trans` or `TransN` does not include
+individual `v0/translation` resources; Taskmigo attaches the catalog for the
+active locale when it builds the Site snapshot.
 
 ```text
 Site
@@ -36,8 +43,9 @@ Site
 ## Site and application
 
 - **Site** is the composition root for a website or product. The `v0/site` manifest exposes included applications and provides shared brand configuration. See [v0/site](/versions/v0/manifests/v0-site).
-- **Application** is a functional module such as CRM, Helpdesk, or Admin. Its public manifest contract is not defined yet.
+- **Application** is a functional module such as CRM, Helpdesk, or Admin. See [v0/application](/versions/v0/manifests/v0-application).
 - An application does not auto-discover resources by name; every dependency must be reachable through the declared graph.
+- Translation catalogs are the exception to explicit dependency declarations. They are selected by locale, not by translation resource name.
 
 ## Runtime boundary
 
