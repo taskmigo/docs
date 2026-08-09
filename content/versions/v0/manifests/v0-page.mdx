@@ -1,6 +1,6 @@
 ---
 title: v0/page
-description: Define a page metadata and declarative component tree.
+description: Define page metadata and a declarative component tree.
 ---
 
 A `v0/page` describes one user interface as metadata and an ordered tree of registered components. An application includes the page and assigns its route.
@@ -93,7 +93,7 @@ children:
 
 Beyond [common resource validation](/versions/v0/resources), a page is invalid when:
 
-- `imports` contains an entry.
+- `imports` contains an entry or `includes` is present.
 - A required metadata or body field is missing.
 - `spec.body` is not a list.
 - A component is not registered or its node does not satisfy that component's contract.
