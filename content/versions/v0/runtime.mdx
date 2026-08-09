@@ -60,8 +60,8 @@ it uses that locale catalog.
 
 ### Resolve a candidate graph
 
-The `v0/site` manifest is resolved from its existing declarations. Site and
-Application imports select a revision per graph edge; translation
+The `v0/site` manifest is resolved from its existing declarations. Site, Application, and Page
+imports select a revision per graph edge; translation
 catalogs are attached for the effective locale.
 
 Separate branches may select different versions of the same `(kind, name)`.
@@ -176,9 +176,9 @@ different dependency, or falls back to an older revision.
 
 ### Validate dependencies before dependents
 
-Dependencies must be valid before their importers can be valid. For an
-`Application → Page` edge, Page validation therefore completes before the
-Application can validate; the complete Site graph must then pass validation.
+Dependencies must be valid before their importers can be valid. For a
+`Page → Component` edge, Component validation therefore completes before the Page can validate;
+the Application and complete Site graph must then pass validation.
 This dependency constraint is stable, but the internal validator call order is
 not part of the public API.
 

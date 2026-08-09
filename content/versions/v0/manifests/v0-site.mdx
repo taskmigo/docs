@@ -54,6 +54,10 @@ spec:
 
 Each name in `spec.applications` must have a matching `v0/application/<name>` import. List order controls display order; importing an application alone does not expose it.
 
+Site fields use literal YAML values. Expressions are not accepted in Site branding, application
+names, imports, or common resource fields. See
+[Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind).
+
 ## Validation
 
 Beyond [common resource validation](/versions/v0/resources), a site is invalid when another logical Site exists in the system, an import does not target `v0/application`, branding or a required brand field is missing, an application name is duplicated, or an exposed application has no matching import.

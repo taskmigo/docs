@@ -22,9 +22,14 @@ flowchart TD
   crm -->|imports| crmIndex["Page: index"]
   crm -->|imports| accounts["Page: accounts"]
   helpdesk -->|imports| helpdeskIndex["Page: index"]
+  crmIndex -->|imports| header["Component: header"]
+  accounts -->|imports| header
+  helpdeskIndex -->|imports| header
 ```
 
-A Site imports Applications. Only an Application may import Pages. Resources are never discovered by name, so a resource outside this graph cannot become part of the running Site.
+A Site imports Applications, an Application imports Pages, and a Page may import reusable Components.
+Multiple Pages may point to the same Component while supplying different typed props. Resources are
+never discovered by name, so a resource outside this graph cannot become part of the running Site.
 
 The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
@@ -34,7 +39,7 @@ The [Reference ability matrix](/versions/v0/resources#reference-ability) defines
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path. A [Page manifest](/versions/v0/manifests/v0-page) imports [Components](/versions/v0/manifests/v0-component) that it reuses in its body.
 
 ## Runtime boundary
 

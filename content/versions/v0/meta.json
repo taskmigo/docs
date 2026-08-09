@@ -5,6 +5,7 @@
     "index",
     "architecture",
     "resources",
+    "expressions",
     "runtime",
     "manifests",
     "ui-components",

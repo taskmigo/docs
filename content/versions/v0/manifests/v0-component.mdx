@@ -1,0 +1,111 @@
+---
+title: Component
+description: Define a typed, reusable UI template for Pages.
+---
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+A `v0/component` packages a component tree once so any Page can import and render it. Declare the
+values each Page may provide in `spec.props`, then read those values from `spec.template` through
+`{{ props.<name> }}`.
+
+```yaml
+kind: v0/component
+name: header
+
+spec:
+  props:
+    title:
+      type: string
+      required: true
+    showDescription:
+      type: boolean
+      required: false
+      default: true
+
+  template:
+    component: Stack
+    children:
+      - component: Typography
+        props:
+          variant: h1
+        children: "{{ props.title }}"
+```
+
+## Fields
+
+<TypeTable
+  type={{
+    kind: { type: '"v0/component"', required: true, description: "The manifest kind." },
+    "spec.props": {
+      type: "Record<string, PropDefinition>",
+      required: true,
+      description: "The typed props accepted from an importing Page.",
+    },
+    "spec.props.*.type": {
+      type: '"string" | "number" | "boolean"',
+      required: true,
+      description: "The value type accepted for this prop.",
+    },
+    "spec.props.*.required": {
+      type: "boolean",
+      required: true,
+      description: "Whether an importing Page must provide this prop.",
+    },
+    "spec.props.*.default": {
+      type: "string | number | boolean",
+      required: false,
+      description: "The value used when the Page omits this prop.",
+    },
+    "spec.template": {
+      type: "ComponentNode",
+      required: true,
+      description: "The root node rendered wherever the component is used.",
+    },
+  }}
+/>
+
+Prop names are case-sensitive. A `default` value must match its declared `type`. Values in
+`spec.template` may use the full Taskmigo Expression syntax and access declared props through
+`props.<name>`. See [Expressions](/versions/v0/expressions#component-props) for syntax and context.
+
+## Use the Component in a Page
+
+Import the Component by resource reference, then use the same reference as the node's `component`
+value. The node's `props` are validated against `spec.props`.
+
+```yaml
+kind: v0/page
+name: dashboard
+
+imports:
+  - v0/component/header
+
+spec:
+  meta:
+    title: Dashboard
+    description: Account overview
+
+  body:
+    - component: v0/component/header
+      props:
+        title: Dashboard
+        showDescription: false
+```
+
+Any number of Pages may import the same Component. Each Page supplies its own props while every use
+renders the same template.
+
+## Validation
+
+Beyond [common resource validation](/versions/v0/resources), a Component is invalid when:
+
+- `spec.props` or `spec.template` is missing.
+- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`, or
+  `boolean`.
+- A prop's `default` does not match its declared type.
+- The template reads a prop that is not declared in `spec.props`.
+- The template root or one of its descendants does not satisfy the referenced component contract.
+
+An importing Page is invalid when it omits a required prop, supplies an undeclared prop, or provides
+a value that does not match the declared prop type.

@@ -46,6 +46,10 @@ description: '{{ Trans "applications.home.welcome" .User.Name }}'
   effective catalog for the active locale.
 </Callout>
 
+`spec.content` defines literal catalog data; Taskmigo does not evaluate expressions inside the
+catalog. Other manifests consume that data with `Trans` and `TransN`. Start with
+[Expressions](/versions/v0/expressions) for the common YAML syntax and the fields that accept them.
+
 ## Create a catalog
 
 <TypeTable
