@@ -22,19 +22,19 @@ children: Hello World
     component: {
       type: '"Typography"',
       required: true,
-      description: "The case-sensitive registered component name.",
+      description: "Selects the Typography renderer; casing must match exactly.",
     },
     "props.variant": {
       type: '"h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "span" | "p"',
       required: true,
-      description: "The text variant.",
+      description: "Selects the semantic HTML element used for the text.",
     },
     children: {
       type: "string",
       required: true,
       description: (
         <>
-          <ExpressionSupport /> Text content. The result must be a string.
+          <ExpressionSupport /> Text rendered by Typography.
         </>
       ),
     },

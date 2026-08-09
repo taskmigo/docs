@@ -30,18 +30,18 @@ children:
     component: {
       type: '"Stack"',
       required: true,
-      description: "The case-sensitive registered component name.",
+      description: "Selects the Stack renderer; casing must match exactly.",
     },
     props: {
       type: "Record<`data-${string}`, unknown>",
-      description: "Component settings. Every field name must begin with `data-`.",
+      description: "Data attributes passed to Stack. Every key must begin with `data-`.",
     },
     children: {
       type: "ReactNode",
       required: true,
       description: (
         <>
-          <ExpressionSupport /> String children may use an Expression; the result must be a string.
+          <ExpressionSupport /> Content arranged by Stack in source order.
         </>
       ),
     },

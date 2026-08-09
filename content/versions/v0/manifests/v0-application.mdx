@@ -31,7 +31,11 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 <TypeTable
   type={{
-    kind: { type: '"v0/application"', required: true, description: "The manifest kind." },
+    kind: {
+      type: '"v0/application"',
+      required: true,
+      description: "Selects the Application contract.",
+    },
     imports: {
       type: "PageReference[]",
       required: true,
@@ -47,7 +51,7 @@ The example exposes `v0/page/index` at `<host>/home/`.
       required: true,
       description: (
         <>
-          <ExpressionSupport /> The translated application name. The result must be a string.
+          <ExpressionSupport /> Name shown when presenting this application.
         </>
       ),
     },
@@ -56,29 +60,29 @@ The example exposes `v0/page/index` at `<host>/home/`.
       required: true,
       description: (
         <>
-          <ExpressionSupport /> The translated application description. The result must be a string.
+          <ExpressionSupport /> Summary shown alongside the application name.
         </>
       ),
     },
     "spec.path": {
       type: "AbsolutePath",
       required: true,
-      description: "The application path beginning with `/`.",
+      description: "URL prefix shared by every route in this application.",
     },
     "spec.routes": {
       type: "Route[]",
       required: true,
-      description: "A non-empty list mapping imported pages to application-relative paths.",
+      description: "Connects each imported Page to a URL below this application.",
     },
     "spec.routes[].page": {
       type: "PageReference",
       required: true,
-      description: "A page reference that also appears in `imports`.",
+      description: "Imported Page exposed by this route.",
     },
     "spec.routes[].path": {
       type: "AbsolutePath",
       required: true,
-      description: "A path beginning with `/`, relative to `spec.path`.",
+      description: "Route suffix appended to the application path.",
     },
   }}
 />

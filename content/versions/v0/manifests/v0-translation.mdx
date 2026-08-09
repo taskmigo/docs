@@ -54,16 +54,20 @@ catalog. Other manifests consume that data with `Trans` and `TransN`. Start with
 
 <TypeTable
   type={{
-    kind: { type: '"v0/translation"', required: true, description: "The manifest kind." },
+    kind: {
+      type: '"v0/translation"',
+      required: true,
+      description: "Selects the translation catalog contract.",
+    },
     "spec.locale": {
       type: "BCP 47 language tag",
       required: true,
-      description: "A normalized locale such as `en`, `vi`, or `pt-BR`.",
+      description: "Locale served by this catalog, such as `en`, `vi`, or `pt-BR`.",
     },
     "spec.content": {
       type: "Record<string, unknown>",
       required: true,
-      description: "The catalog content. Every key must be a non-empty string.",
+      description: "Messages available through dotted lookup keys. Keys cannot be empty.",
     },
   }}
 />

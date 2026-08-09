@@ -32,14 +32,18 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/page"', required: true, description: "The manifest kind." },
-    "spec.meta": { type: "object", required: true, description: "Page metadata." },
+    kind: { type: '"v0/page"', required: true, description: "Selects the Page contract." },
+    "spec.meta": {
+      type: "object",
+      required: true,
+      description: "Information used to present this Page.",
+    },
     "spec.meta.title": {
       type: "string",
       required: true,
       description: (
         <>
-          <ExpressionSupport /> The page title. The result must be a string.
+          <ExpressionSupport /> Name used to identify this Page.
         </>
       ),
     },
@@ -48,14 +52,14 @@ spec:
       required: true,
       description: (
         <>
-          <ExpressionSupport /> The page description. The result must be a string.
+          <ExpressionSupport /> Short summary of this Page.
         </>
       ),
     },
     "spec.body": {
       type: "ComponentNode[]",
       required: true,
-      description: "An ordered list of component nodes.",
+      description: "Top-level component nodes rendered in source order.",
     },
   }}
 />

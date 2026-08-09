@@ -37,15 +37,27 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/site"', required: true, description: "The manifest kind." },
-    "spec.brand": { type: "object", required: true, description: "Shared branding configuration." },
-    "spec.brand.label": { type: "string", required: true, description: "The site label." },
-    "spec.brand.logo": { type: "string", required: true, description: "The logo path." },
-    "spec.brand.favicon": { type: "string", required: true, description: "The favicon path." },
+    kind: { type: '"v0/site"', required: true, description: "Selects the Site contract." },
+    "spec.brand": {
+      type: "object",
+      required: true,
+      description: "Brand values shared by every exposed application.",
+    },
+    "spec.brand.label": {
+      type: "string",
+      required: true,
+      description: "Name shown in shared site branding.",
+    },
+    "spec.brand.logo": { type: "string", required: true, description: "Primary brand image." },
+    "spec.brand.favicon": {
+      type: "string",
+      required: true,
+      description: "Icon shown in browser tabs.",
+    },
     "spec.applications": {
       type: "string[]",
       required: true,
-      description: "The ordered names of exposed applications.",
+      description: "Applications to expose, in display order.",
     },
   }}
 />
