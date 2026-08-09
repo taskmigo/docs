@@ -1,45 +1,48 @@
-# docs
+# Taskmigo docs
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+This repository contains the documentation site for Taskmigo, built with
+Next.js and Fumadocs.
 
-Run development server:
+Quick start
+----------
+
+Install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-pnpm dev
-# or
-yarn dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-## Explore
+Project layout
+--------------
 
-In the project, you can see:
+- `src/` — Next.js app and components.
+- `content/` — Documentation content and versioned docs.
+- `lib/source.ts` — Content source adapter and collection definitions.
+- `lib/layout.shared.tsx` — Shared layout utilities used across pages.
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
+Useful routes
+-------------
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+| Route                     | Description                                 |
+| ------------------------- | ------------------------------------------- |
+| `app/(home)`              | Landing page and home routes.               |
+| `app/versions`            | Versioned documentation pages.              |
+| `app/api/search/route.ts` | Search route handler used by the docs site. |
 
-### Fumadocs MDX
+Notes
+-----
 
-Collections are defined with the [Macro API](https://fumadocs.dev/docs/mdx/macro) in `lib/source.ts`.
+- This site uses Fumadocs' MDX tooling and macros — see
+  https://fumadocs.dev for docs and the Macro API.
+- Content lives under `content/versions/`; update or add new versions there.
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+Learn more
+----------
 
-## Learn More
+- Next.js docs: https://nextjs.org/docs
+- Fumadocs: https://fumadocs.dev
 
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+If you'd like a different README structure or want me to add badges, CI instructions, or contributor guidance, tell me what to include and I'll update it.

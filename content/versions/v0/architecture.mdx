@@ -1,44 +1,37 @@
 ---
 title: Architecture
-description: The product boundary and how a Taskmigo site is composed.
+description: Understand the deployment boundary and resource graph.
 ---
 
-# Architecture
-
-A Taskmigo deployment manages one independent site graph in a user-managed PostgreSQL database.
+A Taskmigo system manages one site graph in a user-managed PostgreSQL database.
 
 ## Database boundary
 
-Taskmigo owns one configurable PostgreSQL schema (default: `taskmigo`). It may create, read, update, and delete objects only in that schema. It must not access or modify `public` or other user schemas.
+Taskmigo owns one configurable PostgreSQL schema, named `taskmigo` by default. It must not access or modify `public` or other user schemas.
 
-Taskmigo is not a multi-tenant control plane. The current model has no tenant registry, database routing, or `tenant_id`.
+Version 0 has no tenant registry, database routing, or `tenant_id`.
 
 ## Resource graph
 
-Every YAML manifest is a resource with a unique identity:
-
-```text
-(kind, name)
-```
-
-A resource can explicitly depend on other resources through `includes`. The runtime graph begins at one `v0/site` resource. Only resources reachable from that Site are included in runtime.
+The graph starts at the system's only logical Site resource. Every regular runtime resource must be reachable through an `imports` edge.
 
 ```text
 Site
 ├── Application: crm
-│   ├── Page: dashboard
-│   └── Entity: customer
-└── Shared resources
-    ├── Theme
-    └── Policy
+│   └── Lower-ranked kinds (when defined)
+└── Application: helpdesk
 ```
 
-## Site and application
+The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
-- **Site** is the composition root for a website or product. The `v0/site` manifest exposes included applications and provides shared brand configuration. See [v0/site](/versions/v0/manifests/v0-site).
-- **Application** is a functional module such as CRM, Helpdesk, or Admin. Its public manifest contract is not defined yet.
-- An application does not auto-discover resources by name; every dependency must be reachable through the declared graph.
+Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
+
+Import edges only descend the [kind hierarchy](/versions/v0/resources#kind-hierarchy). Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
+
+## Composition root
+
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) may only import lower-ranked kinds; resources are never discovered by name.
 
 ## Runtime boundary
 
-Taskmigo compiles the valid reachable graph into one immutable Site snapshot. Each request reads one snapshot, so it never combines old and new revisions. When a change is invalid, the current snapshot continues serving traffic.
+A valid graph compiles into an immutable Site snapshot. Each request reads one snapshot. Invalid changes retain diagnostics while the current snapshot continues serving traffic.

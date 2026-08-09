@@ -1,51 +1,164 @@
 ---
 title: Runtime lifecycle
-description: Validation, dependency recovery, and atomic Site snapshots.
+description: Follow a resource change from validation to atomic Site snapshot activation.
 ---
 
-# Runtime lifecycle
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { GitBranch, RefreshCw, ShieldCheck } from "lucide-react";
 
-Taskmigo validates resources as a dependency graph, not as isolated files.
+Taskmigo never activates a manifest directly. It resolves and validates a
+candidate Site graph, compiles that graph into an immutable snapshot, then makes
+the snapshot current in one atomic switch.
 
-## Validation
+<Callout title="The current Site stays available" type="info">
+  Building or rejecting a candidate does not disturb the current snapshot. A replacement becomes
+  visible only after the complete candidate graph is valid.
+</Callout>
 
-A revision is valid only when YAML parsing, common metadata, kind-specific schema checks, dependency resolution, graph checks, and security constraints all succeed.
+<Cards>
+  <Card
+    icon={<GitBranch />}
+    title="Validation scope"
+    href="#from-change-to-active-snapshot"
+    description="See how one change expands to a candidate Site graph."
+  />
+  <Card
+    icon={<RefreshCw />}
+    title="Recovery order"
+    href="#dependency-recovery"
+    description="Trace invalidation and recovery through reverse dependents."
+  />
+  <Card
+    icon={<ShieldCheck />}
+    title="Snapshot handoff"
+    href="#validation-outcome"
+    description="Compare the activation and rejection paths."
+  />
+</Cards>
 
-Invalid revisions keep structured diagnostics. A diagnostic identifies the error, its manifest path, and—when available—the source location. Diagnostics must never expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+## From change to active snapshot
+
+Create, update, delete, and package import all enter the same lifecycle.
+
+<Steps>
+  <Step>
+
+### Find the affected graph
+
+Taskmigo starts with the changed resource and follows reverse dependencies to
+the Site. Resources outside its reachable graph are not revalidated.
+
+Translation catalogs are tracked by effective locale rather than explicit
+import edges. Changing a translation resource also marks the Site graph when it
+uses that locale catalog.
+
+  </Step>
+  <Step>
+
+### Resolve a candidate graph
+
+The `v0/site` manifest is resolved from its existing declarations. Explicit
+imports select a revision per graph edge; translation catalogs are attached for
+the effective locale.
+
+Separate branches may select different versions of the same `(kind, name)`.
+Both revisions can coexist in the candidate graph and, if valid, its snapshot.
+See [Resource model](/versions/v0/resources#imports) for import and version
+selection rules.
+
+  </Step>
+  <Step>
+
+### Validate the complete candidate
+
+Activation requires all of the following to succeed:
+
+- YAML parsing and common manifest metadata
+- kind-specific schema validation
+- import hierarchy, dependency resolution, and graph checks
+- security constraints
+
+Taskmigo validates the complete reachable graph before changing runtime state.
+
+  </Step>
+  <Step>
+
+### Build an immutable snapshot
+
+A valid candidate is compiled into one Site snapshot containing every selected
+resource revision and the normalized runtime model. Later resource revisions
+cannot alter this snapshot.
+
+  </Step>
+  <Step>
+
+### Switch the current snapshot
+
+Taskmigo stores the replacement and atomically makes it current in PostgreSQL.
+New requests read the replacement. Requests already in progress may finish on
+the snapshot they started with.
+
+  </Step>
+</Steps>
+
+## Validation outcome
+
+<Tabs items={['Valid candidate', 'Invalid candidate']}>
+  <Tab>
+
+The candidate proceeds through snapshot build and activation. There is no
+separate publish step or manual activation state.
+
+  </Tab>
+  <Tab>
+
+Validation stops before snapshot build. Taskmigo stores structured diagnostics
+with the affected revisions and leaves runtime state unchanged.
+
+<Callout title="Diagnostics are safe to display" type="info">
+  A diagnostic identifies the error, manifest path, and source location when available. It must not
+  expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+</Callout>
+
+  </Tab>
+</Tabs>
 
 ## Dependency recovery
 
-After create, update, delete, or import, Taskmigo revalidates the changed resource and all reverse dependents.
+Taskmigo revalidates in dependency order. Consider a graph where `A` imports
+`B`, and `B` imports `C`:
 
-```text
-A includes B includes C
+<Tabs items={['Dependency breaks', 'Dependency recovers']}>
+  <Tab>
 
-C becomes invalid
-→ B becomes invalid
-→ A becomes invalid
+1. `C` becomes missing or invalid.
+2. Candidate validation fails for `B`, then `A`.
+3. The candidate follows the invalid outcome above.
 
-Fix C
-→ validate C, B, then A
-→ rebuild the graph when all are valid
-```
+  </Tab>
+  <Tab>
 
-A dependency error never invalidates unrelated branches. Fixing a root cause does not rewrite dependent manifests; it re-resolves them using their existing declarations.
+1. `C` becomes valid again.
+2. Taskmigo validates `C`, then `B`, then `A`.
+3. The valid graph continues to snapshot build and activation.
 
-Deleting a resource invalidates resources that resolve to it. The previous Site snapshot remains active until a complete valid graph produces a replacement.
+  </Tab>
+</Tabs>
 
-## Site snapshots
+Recovery re-resolves the existing declarations; it does not rewrite dependent
+manifests. Deleting a resource follows the same path as an invalid dependency:
+the candidate fails while the last valid snapshot remains active.
 
-A Site snapshot is an immutable, resolved view of the complete reachable graph. It includes the selected resource revisions and normalized runtime model.
+## Package boundary
 
-```text
-Change or import
-→ validate changed graph
-→ valid: build a new snapshot and switch it atomically
-→ invalid: store diagnostics and keep the current snapshot
-```
+<Callout title="A package is activated as one unit" type="success">
+  Import validates the complete package, including the one-Site invariant and import hierarchy,
+  before resolving dependencies inside the target Taskmigo schema. A failed import must not leave a
+  partially active runtime state.
+</Callout>
 
-There is no manual activation state. When a complete graph is valid, Taskmigo atomically updates the current snapshot in PostgreSQL. New requests use the new snapshot; requests already in progress may finish on the previous one.
-
-## Import and export
-
-Import and export use portable YAML packages. Export preserves canonical YAML. Import validates the complete package before creating revisions, resolves dependencies inside the target Taskmigo schema, and must not leave a partially active runtime state.
+Export produces a portable package of canonical YAML. Importing that package
+still runs the lifecycle above; exported resolution results are not trusted as
+runtime state.

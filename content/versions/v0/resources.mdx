@@ -1,117 +1,140 @@
 ---
 title: Resource model
-description: Common manifest rules, revisions, versions, and dependencies.
+description: Define manifest identity, revisions, versions, and imports.
 ---
 
-import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Step, Steps } from "fumadocs-ui/components/steps";
 
-# Resource model
+These rules apply to every manifest. Kind reference pages document only their additional `spec` fields and validation.
 
-A resource is an independent YAML manifest. YAML is the source of truth; normalized data, diagnostics, and runtime snapshots are derived from it.
-
-Every manifest kind uses the rules on this page. A kind reference only documents the fields and validation specific to that kind.
-
-## Common manifest shape
+## Common shape
 
 ```yaml
-kind: v0/page
-name: users
+kind: v0/site
+name: root
 version: 1.0.0 # optional
 
-includes:
-  - kind: v0/entity
-    name: user
-    version: ^1.2.0 # optional
+imports:
+  - v0/application/home@^1.2.0
 
 spec:
   # kind-specific configuration
 ```
 
-| Field | Rule |
-| --- | --- |
-| `kind` | Required resource type, including its API version. Version 0 kinds use the complete `v0/...` form. |
-| `name` | Required resource name. Together, `kind` and `name` identify a resource. |
-| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision. |
-| `includes` | Optional explicit list of resources on which this resource depends. |
-| `spec` | Required configuration defined by the selected `kind`. |
+| Field     | Rule                                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `kind`    | Required schema identifier in its complete versioned form, such as `v0/application`.                                 |
+| `name`    | Required resource name matching `[a-zA-Z0-9_-]+`.                                                                    |
+| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision.                                    |
+| `imports` | Optional dependency references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
+| `spec`    | Required kind-specific configuration.                                                                                |
 
-## Resource identity
+## Identity and revisions
 
-Taskmigo identifies a resource by the pair `(kind, name)`, not by `name` alone. Names must therefore be unique within one kind, while two different kinds may use the same name.
+The pair `(kind, name)` identifies a resource. The optional `version` tags one of its revisions; it does not change the identity or select the manifest schema.
 
-Kind names are always versioned. Use `v0/application`, `v0/page`, and similar complete values in both top-level `kind` fields and `includes[].kind`. Values such as `application`, `page`, or `Page` do not identify a versioned manifest contract and are invalid.
+Every semantic change creates a revision that is validated independently. A tagged revision is immutable, and one version tag cannot refer to different content. An untagged revision may be selected only by an import without a version constraint.
 
-The API version in `kind` is separate from the optional resource `version`:
+### Site cardinality
 
-- `kind: v0/application` selects the version 0 application schema.
-- `version: 1.2.0` tags one immutable revision of a particular application resource.
+A valid Taskmigo system contains exactly one logical Site resource. The Site may have multiple revisions under the revision rules above; those revisions do not create additional Sites.
 
-## Revisions and version tags
-
-A revision is one saved state of a resource. Every semantic change creates a new revision, and each revision is validated independently.
-
-A revision with a `version` tag is immutable. To change its content, create another revision with a new SemVer tag or leave the new revision untagged. The same version tag cannot refer to different content.
-
-An untagged revision may be the latest revision and may be selected by an include without a version constraint. It cannot satisfy `includes.version`, because a constraint can only be evaluated against tagged SemVer versions.
-
-## Includes
-
-An include identifies a dependency by the exact pair `(kind, name)`:
+Cardinality is enforced across the Site kind family rather than per `(kind, name)`. A different name or schema prefix cannot establish a second Site:
 
 ```yaml
-includes:
-  - kind: v0/application
-    name: home
-    version: ^1.2.0
+# Invalid in the same system
+kind: v0/site
+name: primary
+---
+kind: v1/site
+name: replacement
 ```
 
-The optional `version` is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
+Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` resources is invalid.
+
+## Imports
+
+Use `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
+
+```yaml
+imports:
+  - v0/application/home@^1.2.0
+  - v0/application/admin
+```
+
+Version 0 accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
+
+### Uniqueness scope
+
+Within one manifest, imports are unique by `(kind, name)`. A different or omitted version constraint does not make a second import valid:
+
+```yaml
+# Invalid: both entries import v0/application/home
+imports:
+  - v0/application/home@^1.0.0
+  - v0/application/home@^2.0.0
+```
+
+The rule is not graph-wide. Different manifests may resolve the same identity to different versions, and both revisions may coexist in one snapshot.
+
+### Import ability
+
+Version 0 has one explicit import edge: a Site may import an Application.
+This is the complete matrix; every other explicit import is invalid.
+
+| Importer         |  `v0/site`  | `v0/application` |  `v0/translation`  |
+| ---------------- | :---------: | :--------------: | :----------------: |
+| `v0/site`        |      —      |     Allowed      |    Not allowed     |
+| `v0/application` | Not allowed |   Not allowed    |    Not allowed     |
+| `v0/translation` | Not allowed |   Not allowed    | No `imports` field |
+
+```mermaid
+flowchart TD
+  Site["v0/site"] -->|imports| Application["v0/application"]
+  Translation["v0/translation"] -. "locale catalog; not an import" .-> Runtime["Site snapshot"]
+```
+
+<Callout title="Translation catalogs are never import targets" type="warn">
+  No manifest may import `v0/translation`. Taskmigo attaches the effective locale catalog
+  automatically when it builds a Site snapshot.
+</Callout>
+
+### Resolution
 
 <Steps>
   <Step>
 
-  ### Find the dependency
+### Find the resource
 
-  Taskmigo finds the resource with the exact included `kind` and `name`.
-
-  </Step>
-  <Step>
-
-  ### Select a revision
-
-  Without `includes.version`, Taskmigo selects the latest revision. With a
-  constraint, it selects the highest tagged version that satisfies it.
+Parse the reference and match its exact `(kind, name)`.
 
   </Step>
   <Step>
 
-  ### Validate the selection
+### Select a revision
 
-  The selected revision must be valid. Taskmigo does not silently fall back to an
-  older revision or lower version.
+Select the latest revision when no constraint is present; otherwise select the highest tagged version that satisfies the constraint.
 
   </Step>
   <Step>
 
-  ### Record the snapshot
+### Validate the selection
 
-  The selected revision is recorded in the Site snapshot, so later resource
-  revisions do not alter an already active snapshot.
+The selected revision must be valid. Resolution never falls back to an older or lower version.
+
+  </Step>
+  <Step>
+
+### Record the snapshot
+
+Record the selected revision so later changes cannot alter the active snapshot.
 
   </Step>
 </Steps>
 
-Missing resources, duplicate includes, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
+Malformed references, hierarchy violations, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, invalid selected revisions, and Site cardinality violations fail resolution.
 
-## Good to know
-
-<Callout title="Schema version and resource version are independent" type="idea">
-  A version constraint controls which revision may be selected; it does not select
-  the manifest schema. The `kind` value selects the schema, while
-  `includes.version` selects a compatible revision of that kind.
-</Callout>
-
-<Callout title="Latest is resolved when a snapshot is built" type="info">
-  Omitting `includes.version` follows the latest revision when a new snapshot is
-  built. It does not mutate snapshots that are already active.
+<Callout title="Latest is resolved at build time" type="info">
+  An unconstrained import follows the latest revision when a new snapshot is built. Existing
+  snapshots remain unchanged.
 </Callout>

@@ -1,0 +1,69 @@
+---
+title: FAQ
+description: Resolve common questions about Taskmigo v0 contracts and runtime behavior.
+---
+
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+
+<Accordions type="single">
+  <Accordion title="How many Site resources can a system contain?" id="one-site">
+    Exactly one logical Site. It may have multiple revisions, but a different
+    name or schema prefix does not create another slot. `v0/site` and a future
+    `v1/site` cannot coexist as separate Site resources. See
+    [Site cardinality](/versions/v0/resources#site-cardinality).
+  </Accordion>
+
+<Accordion
+  title="Are the kind prefix and resource version the same?"
+  id="kind-prefix-vs-resource-version"
+>
+  No. `kind: v0/application` selects the manifest schema. The optional top-level `version` tags an
+  immutable resource revision. See [Identity and
+  revisions](/versions/v0/resources#identity-and-revisions).
+</Accordion>
+
+<Accordion title="Can one manifest import the same resource more than once?" id="duplicate-imports">
+  No. Imports are unique by `(kind, name)` within a manifest, even when their version constraints
+  differ. Separate graph branches may resolve that identity to different versions. See [Uniqueness
+  scope](/versions/v0/resources#uniqueness-scope).
+</Accordion>
+
+<Accordion title="What does an import without a version select?" id="unversioned-import">
+  It selects the latest revision when a candidate snapshot is built. Existing snapshots remain
+  unchanged. See [Import resolution](/versions/v0/resources#resolution).
+</Accordion>
+
+<Accordion title="Do consumers import translation resources?" id="translation-imports">
+  No. A `v0/translation` manifest cannot declare `imports`, and no manifest may import it. Taskmigo
+  assembles the catalog for the active locale. Consumers use `Trans` or `TransN`. See
+  [v0/translation](/versions/v0/manifests/v0-translation).
+</Accordion>
+
+<Accordion title="Which kinds can import each other?" id="kind-hierarchy">
+  Imports must move to a strictly lower kind. In v0, `v0/site` imports `v0/application`; an
+  application cannot import a Site, another application, or a translation catalog. See [Kind
+  hierarchy](/versions/v0/resources#kind-hierarchy).
+</Accordion>
+
+<Accordion title="What happens when a resource change is invalid?" id="invalid-change">
+  Candidate activation stops, diagnostics are stored, and the current Site snapshot continues
+  serving traffic. See [Validation outcome](/versions/v0/runtime#validation-outcome).
+</Accordion>
+
+<Accordion title="Is there a manual publish or activation step?" id="manual-activation">
+  No. A complete valid candidate is compiled and activated atomically. See [Runtime
+  lifecycle](/versions/v0/runtime).
+</Accordion>
+
+<Accordion title="Can a package import partially activate?" id="package-atomicity">
+  No. The complete package is validated first, including the one-Site invariant. A failed import
+  does not change active runtime state. See [Package
+  boundary](/versions/v0/runtime#package-boundary).
+</Accordion>
+
+  <Accordion title="Which manifest kinds are stable in v0?" id="stable-kinds">
+    The dedicated reference pages list the defined contracts. Candidate kinds
+    remain planned until they have a reference page. See
+    [Product status](/versions/v0/status).
+  </Accordion>
+</Accordions>

@@ -1,20 +1,11 @@
 ---
 title: v0/application
-description: Define an application, its metadata, dependencies, and entry route.
+description: Define application metadata and an entry route.
 ---
-
-A `v0/application` manifest defines an application that can be included in a Taskmigo site. Its common fields follow the [Resource model](/versions/v0/resources).
 
 ```yaml
 kind: v0/application
 name: home
-
-includes:
-  - kind: v0/translation
-    name: english-applications
-    version: ^1.0.0
-  - kind: v0/translation
-    name: vietnamese-applications
 
 spec:
   icon: https://example.com/images/home.png
@@ -23,48 +14,22 @@ spec:
   route: home-app
 ```
 
-## Application fields
+## Fields
 
-| Field | Rule |
-| --- | --- |
-| `kind` | Must be `v0/application`. |
-| `spec.icon` | Required absolute URL of the application image. |
-| `spec.label` | Required translated application name. |
-| `spec.description` | Required translated application description. |
-| `spec.route` | Required, non-empty entry route for the application. |
+| Field              | Rule                                                         |
+| ------------------ | ------------------------------------------------------------ |
+| `kind`             | Must be `v0/application`.                                    |
+| `spec.icon`        | Required absolute image URL with a scheme and host.          |
+| `spec.label`       | Required `Trans` expression for the application name.        |
+| `spec.description` | Required `Trans` expression for the application description. |
+| `spec.route`       | Required non-empty entry route.                              |
 
-## Translated metadata
+Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
-`spec.label` and `spec.description` use the `Trans` expression to look up values in the effective locale catalog:
+## Imports
 
-```yaml
-spec:
-  label: '{{ Trans "applications.home.label" }}'
-  description: '{{ Trans "applications.home.description" }}'
-```
-
-They do not accept locale maps embedded directly in the application manifest. See [Use translations](/versions/v0/manifests/v0-translation#use-translations) for the expression syntax, arguments, catalog structure, and lookup behavior.
-
-## Icon URL
-
-`spec.icon` must contain an absolute URL with a scheme and host.
-
-```yaml
-# Valid
-icon: https://cdn.example.com/apps/home.png
-
-# Invalid
-icon: ./images/home.png
-```
+An application may import only lower-ranked kinds as their contracts become defined. It cannot import `v0/site`, another `v0/application`, or `v0/translation`. No lower-ranked import target is defined in v0 yet. See [Kind hierarchy](/versions/v0/resources#kind-hierarchy).
 
 ## Validation
 
-In addition to the [common resource validation](/versions/v0/resources), an application is invalid when a required application field is missing, `spec.icon` is not an absolute URL, a translated metadata field is not a valid `Trans` expression, or `spec.route` is empty.
-
-## Good to know
-
-<Callout title="Stable identity, localized display" type="idea">
-  Translations keep locale-specific labels and descriptions outside the application
-  manifest. The same application can keep one identity and route while its displayed
-  metadata changes with the active locale.
-</Callout>
+Beyond [common resource validation](/versions/v0/resources), an application is invalid when a required field is missing, an import violates the kind hierarchy, `spec.icon` is not an absolute URL, translated metadata is not a valid `Trans` expression, or `spec.route` is empty.
