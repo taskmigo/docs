@@ -1,5 +1,14 @@
 {
   "title": "v0",
   "root": true,
-  "pages": ["index", "architecture", "resources", "runtime", "manifests", "faq", "status"]
+  "pages": [
+    "index",
+    "architecture",
+    "resources",
+    "runtime",
+    "manifests",
+    "ui-components",
+    "faq",
+    "status"
+  ]
 }

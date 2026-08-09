@@ -1,6 +1,6 @@
 ---
 title: Resource model
-description: Define manifest identity, revisions, versions, imports, and includes.
+description: Define manifest identity, revisions, versions, and imports.
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
@@ -21,14 +21,13 @@ spec:
   # kind-specific configuration
 ```
 
-| Field      | Rule                                                                                                                 |
-| ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| `kind`   | Required schema identifier in its complete versioned form, such as `v0/application`.                                |
-| `name`   | Required resource name matching `[a-zA-Z0-9_-]+`.                                                                  |
-| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision.                                   |
+| Field     | Rule                                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `kind`    | Required schema identifier in its complete versioned form, such as `v0/application`.                                 |
+| `name`    | Required resource name matching `[a-zA-Z0-9_-]+`.                                                                    |
+| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision.                                    |
 | `imports` | Optional dependency references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
-| `includes` | Optional composition references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
-| `spec`   | Required kind-specific configuration.                                                                                |
+| `spec`    | Required kind-specific configuration.                                                                                |
 
 ## Identity and revisions
 
@@ -53,21 +52,18 @@ name: replacement
 
 Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` resources is invalid.
 
-## Imports and includes
+## Imports
 
-Both fields use `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
+The field uses `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
 
 ```yaml
 imports:
   - v0/application/home@^1.2.0
-
-includes:
-  - v0/page/index
 ```
 
 Taskmigo accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
-`imports` declare dependency edges. `includes` declare resources composed by a kind-specific owner; currently, only an Application may include Pages.
+`imports` declare dependency edges. A Site may import Applications, and only an Application may import Pages.
 
 ### Uniqueness scope
 
@@ -84,30 +80,19 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
 
 ### Reference ability
 
-The following matrices are exhaustive. Every unlisted relationship is invalid.
+The following matrix is exhaustive. Every unlisted relationship is invalid.
 
-#### Imports
-
-| Importer         | `v0/site` | `v0/application` | `v0/page` | `v0/translation` |
-| ---------------- | :---------: | :----------------: | :-------: | :----------------: |
-| `v0/site`        |      —      |      Allowed       | Not allowed | Not allowed      |
-| `v0/application` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
-| `v0/page`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
-| `v0/translation` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
-
-#### Includes
-
-| Including kind   | `v0/site` | `v0/application` | `v0/page` | `v0/translation` |
-| ---------------- | :---------: | :----------------: | :-------: | :----------------: |
-| `v0/site`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
-| `v0/application` | Not allowed |    Not allowed     | Allowed   | Not allowed      |
-| `v0/page`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
-| `v0/translation` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+| Importer         |  `v0/site`  | `v0/application` |  `v0/page`  | `v0/translation` |
+| ---------------- | :---------: | :--------------: | :---------: | :--------------: |
+| `v0/site`        |      —      |     Allowed      | Not allowed |   Not allowed    |
+| `v0/application` | Not allowed |   Not allowed    |   Allowed   |   Not allowed    |
+| `v0/page`        | Not allowed |   Not allowed    | Not allowed |   Not allowed    |
+| `v0/translation` | Not allowed |   Not allowed    | Not allowed |   Not allowed    |
 
 <Callout title="Translation catalogs are never reference targets" type="warn">
-  No manifest may import or include `v0/translation`. A translation manifest may include the common
-  `imports` field only as an empty list. Taskmigo attaches the effective locale catalog
-  automatically when it builds a Site snapshot.
+  No manifest may import `v0/translation`. A translation manifest may declare the common `imports`
+  field only as an empty list. Taskmigo attaches the effective locale catalog automatically when it
+  builds a Site snapshot.
 </Callout>
 
 ### Resolution

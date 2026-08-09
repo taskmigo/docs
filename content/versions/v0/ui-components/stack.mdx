@@ -1,0 +1,39 @@
+---
+title: Stack
+description: Group React nodes in a Page component tree.
+---
+
+`Stack` groups React nodes. Component names are case-sensitive, so `stack` is invalid.
+
+```yaml
+component: Stack
+props:
+  data-component-id: hero
+children:
+  - component: Typography
+    props:
+      variant: h1
+    children: Hello World
+  - component: Typography
+    props:
+      variant: p
+    children: '{{ Trans "pages.index.introduction" }}'
+```
+
+## Fields
+
+| Field       | Rule                                                             |
+| ----------- | ---------------------------------------------------------------- |
+| `component` | Must be `Stack`.                                                 |
+| `props`     | Optional object. Every field name must begin with `data-`.       |
+| `children`  | A ReactNode represented by content supported by the Page schema. |
+
+At minimum, component nodes and strings are supported as children. A list preserves source order.
+
+## Validation
+
+A `Stack` node is invalid when:
+
+- `component` does not exactly match `Stack`.
+- A `props` field does not begin with `data-`.
+- `children` cannot be represented as a ReactNode by the Page schema.

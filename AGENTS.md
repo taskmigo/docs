@@ -26,15 +26,25 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Update the nearest `meta.json` when adding, removing, or reordering pages.
 - Do not hand-edit generated output. Preserve unrelated changes and keep the diff scoped to the request.
 
-Run the relevant checks from the repository root:
+## Verification and publishing workflow
+
+Before creating any commit or pushing to GitHub, run these required checks from the repository root in this exact order:
 
 ```bash
-npm run format
-npm run format:check
 npm run lint:check
-npm run types:check
+npm run format:check
 npm run build
-git diff --check
 ```
 
-If a check cannot run, report it accurately instead of claiming it passed.
+If any check fails, fix every failure and restart the sequence from `npm run lint:check`. Do not commit or push until all three checks pass successfully.
+
+The required sequence is:
+
+1. Run `npm run lint:check`, `npm run format:check`, then `npm run build`.
+2. Fix any failures and rerun the complete sequence until it passes.
+3. Commit the complete verified change.
+4. Push the commit to GitHub.
+
+Keep commit history concise. By default, make at most one commit and one push per completed round of work. Finish the requested changes and verification before committing; do not create incremental commits for individual files, formatting fixes, or failed verification attempts. Create multiple commits only when the user explicitly requests them or when independently reviewable changes must remain separate, and explain the split before committing.
+
+If a required check cannot run or cannot pass, stop before commit and push, then report the blocker accurately instead of claiming the check passed.

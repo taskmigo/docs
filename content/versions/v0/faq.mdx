@@ -22,10 +22,13 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   revisions](/versions/v0/resources#identity-and-revisions).
 </Accordion>
 
-<Accordion title="Can one manifest reference the same resource more than once?" id="duplicate-references">
-  No. Imports and includes are each unique by `(kind, name)` within a manifest, even when version
-  constraints differ. Separate graph branches may resolve that identity to different versions. See
-  [Uniqueness scope](/versions/v0/resources#uniqueness-scope).
+<Accordion
+  title="Can one manifest reference the same resource more than once?"
+  id="duplicate-references"
+>
+  No. Imports are unique by `(kind, name)` within a manifest, even when version constraints differ.
+  Separate graph branches may resolve that identity to different versions. See [Uniqueness
+  scope](/versions/v0/resources#uniqueness-scope).
 </Accordion>
 
 <Accordion title="What does a reference without a version select?" id="unversioned-reference">
@@ -33,10 +36,9 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   unchanged. See [Reference resolution](/versions/v0/resources#resolution).
 </Accordion>
 
-<Accordion title="What is the difference between imports and includes?" id="imports-vs-includes">
-  Imports declare dependency edges; includes declare resources composed by a kind-specific owner.
-  A Site imports Applications, while only an Application may include Pages. See
-  [Imports and includes](/versions/v0/resources#imports-and-includes).
+<Accordion title="Which resources may a manifest import?" id="import-relationships">
+  A Site may import Applications, while only an Application may import Pages. Every other kind pair
+  is invalid. See [Imports](/versions/v0/resources#imports).
 </Accordion>
 
 <Accordion title="Where is a Page route defined?" id="page-route">
@@ -46,8 +48,8 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="Do consumers import translation resources?" id="translation-imports">
-  No. No manifest may import or include `v0/translation`. Taskmigo assembles the catalog for the
-  active locale, and consumers use `Trans` or `TransN`. See
+  No. No manifest may import `v0/translation`. Taskmigo assembles the catalog for the active locale,
+  and consumers use `Trans` or `TransN`. See
   [v0/translation](/versions/v0/manifests/v0-translation).
 </Accordion>
 
@@ -58,8 +60,8 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="Which kinds can reference each other?" id="kind-hierarchy">
-  The [Reference ability matrices](/versions/v0/resources#reference-ability) are exhaustive.
-  A Site may import an Application, and only an Application may include a Page.
+  The [Reference ability matrix](/versions/v0/resources#reference-ability) is exhaustive. A Site may
+  import an Application, and only an Application may import a Page.
 </Accordion>
 
 <Accordion title="What happens when a resource change is invalid?" id="invalid-change">

@@ -1,0 +1,31 @@
+---
+title: Typography
+description: Render string content with a semantic text variant.
+---
+
+`Typography` renders string content with a semantic text variant. Component names are case-sensitive, so `typography` is invalid.
+
+```yaml
+component: Typography
+props:
+  variant: h1
+children: Hello World
+```
+
+## Fields
+
+| Field           | Rule                                                    |
+| --------------- | ------------------------------------------------------- |
+| `component`     | Must be `Typography`.                                   |
+| `props.variant` | Required: `h1`–`h6`, `span`, or `p`.                    |
+| `children`      | Required string. A `Trans` expression is also a string. |
+
+`Typography.children` cannot contain nested component nodes.
+
+## Validation
+
+A `Typography` node is invalid when:
+
+- `component` does not exactly match `Typography`.
+- `props.variant` is outside `h1`–`h6`, `span`, and `p`.
+- `children` is not a string.

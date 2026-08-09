@@ -47,8 +47,8 @@ Create, update, delete, and package import all enter the same lifecycle.
 
 ### Find the affected graph
 
-Taskmigo starts with the changed resource and follows reverse `imports` and
-`includes` references to the Site. Resources outside its reachable graph are
+Taskmigo starts with the changed resource and follows reverse `imports`
+references to the Site. Resources outside its reachable graph are
 not revalidated.
 
 Translation catalogs are tracked by effective locale rather than explicit
@@ -61,12 +61,12 @@ it uses that locale catalog.
 ### Resolve a candidate graph
 
 The `v0/site` manifest is resolved from its existing declarations. Site
-imports and Application includes select a revision per graph edge; translation
+Site and Application imports select a revision per graph edge; translation
 catalogs are attached for the effective locale.
 
 Separate branches may select different versions of the same `(kind, name)`.
 Both revisions can coexist in the candidate graph and, if valid, its snapshot.
-See [Resource model](/versions/v0/resources#imports-and-includes) for reference
+See [Resource model](/versions/v0/resources#imports) for reference
 and version selection rules.
 
   </Step>
@@ -78,7 +78,7 @@ Activation requires all of the following to succeed:
 
 - YAML parsing and common manifest metadata
 - kind-specific schema validation
-- import and include hierarchy, dependency resolution, and graph checks
+- import hierarchy, dependency resolution, and graph checks
 - security constraints
 
 Taskmigo validates the complete reachable graph before changing runtime state.
@@ -129,12 +129,12 @@ with the affected revisions and leaves runtime state unchanged.
 ## Dependency recovery RFC
 
 <Callout title="RFC: proposed behavior, not the current contract" type="warn">
-  The resource graph now supports `Site → Application → Page`, but dependency recovery order
-  after a Page becomes invalid or valid again is not yet a defined runtime contract. This section
-  records the intended behavior. Details may change before the proposal becomes defined.
+  The resource graph now supports `Site → Application → Page`, but dependency recovery order after a
+  Page becomes invalid or valid again is not yet a defined runtime contract. This section records
+  the intended behavior. Details may change before the proposal becomes defined.
 </Callout>
 
-The proposal revalidates resources in dependency order. For the current graph, consider an Application that includes a Page:
+The proposal revalidates resources in dependency order. For the current graph, consider an Application that imports a Page:
 
 <Tabs items={['Dependency breaks', 'Dependency recovers']}>
   <Tab>

@@ -3,7 +3,7 @@ title: v0/page
 description: Define page metadata and a declarative component tree.
 ---
 
-A `v0/page` describes one user interface as metadata and an ordered tree of registered components. An application includes the page and assigns its route.
+A `v0/page` describes one user interface as metadata and an ordered tree of registered components. An application imports the page and assigns its route.
 
 ```yaml
 kind: v0/page
@@ -15,11 +15,11 @@ spec:
     description: '{{ Trans "pages.index.meta.description" }}'
 
   body:
-    - component: stack
+    - component: Stack
       props:
         data-component-id: container
       children:
-        - component: typography
+        - component: Typography
           props:
             variant: h1
           children: Hello World
@@ -27,76 +27,34 @@ spec:
 
 ## Fields
 
-| Field                   | Rule                                                             |
-| ----------------------- | ---------------------------------------------------------------- |
-| `kind`                | Must be `v0/page`.                                             |
-| `spec.meta`           | Required page metadata.                                          |
-| `spec.meta.title`     | Required string or `Trans` expression.                          |
-| `spec.meta.description` | Required string or `Trans` expression.                        |
-| `spec.body`           | Required ordered list of component nodes.                        |
+| Field                   | Rule                                      |
+| ----------------------- | ----------------------------------------- |
+| `kind`                  | Must be `v0/page`.                        |
+| `spec.meta`             | Required page metadata.                   |
+| `spec.meta.title`       | Required string or `Trans` expression.    |
+| `spec.meta.description` | Required string or `Trans` expression.    |
+| `spec.body`             | Required ordered list of component nodes. |
 
-A page does not define a route. Route ownership belongs to the including [v0/application](/versions/v0/manifests/v0-application).
+A page does not define a route. Route ownership belongs to the importing [v0/application](/versions/v0/manifests/v0-application).
 
 ## Component nodes
 
 Every node has a registered component name, optional component-specific props, and content accepted by that component:
 
 ```yaml
-component: stack
+component: Stack
 props:
   data-component-id: example
 children: []
 ```
 
-The initial component contract defines `stack` and `typography`. Additional components and props may be added in future contract revisions.
-
-### stack
-
-`stack` groups React nodes.
-
-| Field       | Rule                                                                  |
-| ----------- | --------------------------------------------------------------------- |
-| `component` | Must be `stack`.                                                   |
-| `props`   | Optional object. Every field name must begin with `data-`.           |
-| `children` | A ReactNode represented by content supported by the page schema.      |
-
-At minimum, component nodes and strings are supported as stack children. A list preserves source order.
-
-```yaml
-component: stack
-props:
-  data-component-id: hero
-children:
-  - component: typography
-    props:
-      variant: h1
-    children: Hello World
-  - component: typography
-    props:
-      variant: p
-    children: '{{ Trans "pages.index.introduction" }}'
-```
-
-### typography
-
-`typography` renders string content with a semantic text variant.
-
-| Field                 | Rule                                                     |
-| --------------------- | -------------------------------------------------------- |
-| `component`          | Must be `typography`.                                  |
-| `props.variant`      | Required: `h1`–`h6`, `span`, or `p`.             |
-| `children`           | Required string. A `Trans` expression is also a string. |
-
-`typography.children` cannot contain nested component nodes.
+Component names are case-sensitive. The initial contract defines [Stack](/versions/v0/ui-components/stack) and [Typography](/versions/v0/ui-components/typography). Additional components and props may be added in future contract revisions.
 
 ## Validation
 
 Beyond [common resource validation](/versions/v0/resources), a page is invalid when:
 
-- `imports` contains an entry or `includes` is present.
+- `imports` contains an entry.
 - A required metadata or body field is missing.
 - `spec.body` is not a list.
-- A component is not registered or its node does not satisfy that component's contract.
-- A `stack.props` key does not begin with `data-`.
-- A `typography.props.variant` value is outside `h1`–`h6`, `span`, and `p`.
-- `typography.children` is not a string.
+- A component name uses incorrect casing, is not registered, or its node does not satisfy that component's contract.
