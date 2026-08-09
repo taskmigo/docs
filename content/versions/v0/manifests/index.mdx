@@ -14,10 +14,13 @@ This area is the reference for supported manifest kinds. Each kind has its own p
 | Kind | Purpose |
 | --- | --- |
 | [`v0/site`](/versions/v0/manifests/v0-site) | Compose applications and define shared site branding. |
+| [`v0/application`](/versions/v0/manifests/v0-application) | Define application metadata, dependencies, and an entry route. |
 | [`v0/translation`](/versions/v0/manifests/v0-translation) | Contribute values to a locale translation catalog. |
 
 ## Planned kinds
 
-`application`, `Entity`, `Page`, `Component`, `Query`, `Action`, `Policy`, `Workflow`, `Theme`, and `Navigation` are planned. They are not manifest contracts yet.
+`v0/entity`, `v0/page`, `v0/component`, `v0/query`, `v0/action`, `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation` are planned. They are not manifest contracts yet.
+
+Kind names are always versioned. In version 0 manifests, use the complete `v0/...` value in both the top-level `kind` and every `includes[].kind`; unversioned names such as `application` or `page` are invalid.
 
 When a kind becomes defined, this page will link to its dedicated reference page.
