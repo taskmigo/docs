@@ -87,7 +87,9 @@ Use additional arguments for messages with multiple placeholders:
 
 ### Translate a plural message with `TransN`
 
-`TransN` resolves a pluralized translation. The quantity is a dedicated argument and is not part of `args`.
+`TransN` resolves a pluralized translation by applying the Unicode CLDR plural
+rules for the active locale. CLDR compliance is mandatory: implementations must
+not replace locale-specific rules with a custom binary check such as `n === 1`.
 
 ```go
 func TransN(rawKey any, rawN any, args ...any) string
@@ -95,20 +97,76 @@ func TransN(rawKey any, rawN any, args ...any) string
 
 | Parameter | Description |
 | --- | --- |
-| `rawKey` | Translation key containing the plural forms. |
-| `rawN` | Quantity used to select the plural form for the active locale. |
-| `args` | Optional positional values used to interpolate placeholders after the plural form is selected. |
+| `rawKey` | Translation key containing a mapping of CLDR plural categories. |
+| `rawN` | Numeric quantity evaluated against the active locale's CLDR plural rules. |
+| `args` | Optional positional values interpolated after the quantity. |
 
 ```text
 {{ TransN "items.count" .Cart.Count .User.Name }}
 ```
 
-In this example, `.Cart.Count` selects the plural form and `.User.Name` supplies the first interpolation argument.
+In this example, `.Cart.Count` determines the CLDR category. The runtime also
+prepends that normalized count to the formatting arguments, so the selected
+message can use `%d` for the quantity. `.User.Name` is the next argument and
+can be consumed by `%s`.
+
+<Callout title="CLDR rules are required" type="warn">
+  `TransN` must use the Unicode CLDR plural rules for the active locale. Do not
+  assume that zero selects `zero`, that one always selects `one`, or that every
+  locale has only `one` and `other`. The meaning and use of each category are
+  locale-specific.
+</Callout>
 
 <Callout title="Count comes before placeholder values" type="info">
-  The second argument to `TransN` is always the quantity. Placeholder values begin
-  with the third argument. Do not pass the count as an ordinary `args` value.
+  The second argument to `TransN` is always the quantity. The runtime prepends
+  it to the formatting arguments; values supplied after the count follow in
+  their original order.
 </Callout>
+
+### CLDR plural catalog
+
+A pluralized catalog value is an object keyed by CLDR category identifiers:
+`zero`, `one`, `two`, `few`, `many`, and `other`. A catalog only needs
+the categories used by its locale, but it must define `other` as the fallback.
+
+```yaml
+spec:
+  locale: en
+  content:
+    items:
+      count:
+        one: You have %d item, %s.
+        other: You have %d items, %s.
+```
+
+Languages with additional CLDR categories can define them under the same key:
+
+```yaml
+spec:
+  locale: ar
+  content:
+    items:
+      count:
+        zero: You have no items, %s.
+        one: You have one item, %s.
+        two: You have two items, %s.
+        few: You have a few (%d) items, %s.
+        many: You have many (%d) items, %s.
+        other: You have %d items, %s.
+```
+
+The presence of a category in a catalog does not define when it is selected.
+Selection always comes from the CLDR rule for the active locale.
+
+### Defensive behavior
+
+| Condition | Result |
+| --- | --- |
+| `rawN` is not numeric | `[invalid_plural_count:key]` |
+| Selected CLDR category is absent | Fall back to `other` |
+| Both the selected category and `other` are absent | `[untranslated_form:key]` |
+| Active locale cannot be resolved | Use the configured global fallback locale |
+| Formatting fails or panics | `[translation_format_error:key]` |
 
 ### Resolution flow
 
@@ -132,8 +190,9 @@ In this example, `.Cart.Count` selects the plural form and `.User.Name` supplies
 
   ### Select the plural form
 
-  For `TransN`, the runtime uses `rawN` and the active locale's pluralization
-  rules. `Trans` skips this step.
+  For `TransN`, the runtime evaluates `rawN` with the active locale's Unicode
+  CLDR plural rules, then selects the matching category. If that category is
+  absent, it selects `other`. `Trans` skips this step.
 
   </Step>
   <Step>
@@ -184,7 +243,7 @@ A merge error identifies the locale, conflicting path, and both source manifests
 
 In addition to the [common resource validation](/versions/v0/resources), a translation manifest is invalid when its locale is missing, empty, or not normalized; `spec.content` is not an object; a content key is empty; or a value cannot be represented by the manifest format.
 
-Version 0 does not define locale fallback, missing-key behavior, override precedence, or the returned fallback string after a recovered translation failure.
+Version 0 does not define missing-key behavior or override precedence. `TransN` requires a configured global fallback locale for locale-resolution failures.
 
 ## Good to know
 
