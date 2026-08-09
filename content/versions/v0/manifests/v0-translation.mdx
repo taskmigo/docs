@@ -3,7 +3,7 @@ title: v0/translation
 description: Define and merge v0/translation catalogs by locale.
 ---
 
-A `v0/translation` manifest contributes data to one locale catalog.
+A `v0/translation` manifest contributes values to one locale catalog. Its common fields follow the [Resource model](/versions/v0/resources).
 
 ```yaml
 kind: v0/translation
@@ -17,30 +17,44 @@ spec:
         label: Home
 ```
 
-## Fields
+## Translation fields
 
 | Field | Rule |
 | --- | --- |
 | `kind` | Must be `v0/translation`. |
-| `name` | Identifies this manifest, not the locale. It follows the shared name rules and must be unique under `(kind, name)`. |
-| `spec.locale` | Required normalized BCP 47 locale, such as `en`, `vi`, or `pt-BR`. |
-| `spec.content` | Required object. Keys are strings; values can be any manifest-supported value. |
+| `spec.locale` | Required normalized [BCP 47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) locale, such as `en`, `vi`, or `pt-BR`. |
+| `spec.content` | Required object containing the values contributed to the locale catalog. Every key must be a non-empty string. |
 
-Values are usually strings, but objects, arrays, numbers, booleans, and `null` are valid.
+Content values are usually strings, but objects, arrays, numbers, booleans, and `null` are valid manifest-supported values.
+
+## Locale catalogs
+
+`spec.locale`, rather than the manifest name, selects the catalog. Taskmigo merges all translation manifests with the same normalized locale into one effective catalog. Manifests for different locales remain separate.
+
+The nested keys under `spec.content` form lookup paths. For example, this content defines the path `applications.home.label`:
+
+```yaml
+spec:
+  locale: en
+  content:
+    applications:
+      home:
+        label: Home
+```
 
 ## Use translations
 
-Fields that support translated values use the `Trans` expression:
+A field documented as translated uses this expression:
 
 ```text
 {{ Trans "key" ...args }}
 ```
 
-- `key` is the quoted path to a value in the effective locale catalog.
-- `args` are optional arguments passed to the translation lookup when the referenced value needs them.
-- The expression must use the exact `Trans` function name and a quoted key.
+- `key` is a quoted, dotted path into the effective catalog for the active locale.
+- `args` are optional values passed to the translation runtime.
+- `Trans` is case-sensitive, and the key must be quoted.
 
-For example, given this catalog:
+Given this English catalog:
 
 ```yaml
 kind: v0/translation
@@ -55,7 +69,7 @@ spec:
         description: Open the home application.
 ```
 
-An application can reference the values by their complete dotted paths:
+A translated field can reference its values by their complete paths:
 
 ```yaml
 spec:
@@ -63,11 +77,13 @@ spec:
   description: '{{ Trans "applications.home.description" }}'
 ```
 
-Do not provide a locale map directly in a translated field. The active locale selects the effective catalog; the key identifies the value within that catalog.
+At runtime, the active locale selects the effective catalog and the key selects a value from that catalog. Do not put a locale map directly in a translated field.
 
-## Extend an existing locale
+Version 0 passes optional arguments to the translation runtime but does not define how that runtime interprets them.
 
-Use another manifest with a different `name` and the same locale.
+## Extend a locale catalog
+
+Create another translation manifest with a different resource name and the same locale:
 
 ```yaml
 kind: v0/translation
@@ -80,23 +96,29 @@ spec:
       unauthorized: You do not have permission to continue.
 ```
 
-All manifests with the same normalized locale merge into one effective catalog. Different locales never merge.
+This manifest adds `errors.unauthorized` to the effective `en` catalog.
 
 ## Merge rules
 
 - Objects merge recursively.
 - A path defined by only one manifest is copied to the catalog.
 - Arrays and non-object values are final values; arrays are not concatenated.
-- A duplicate path is always an error, even when the values are identical.
+- A duplicate path is an error, even when both manifests provide the same value.
 - An object/non-object collision is an error.
-- Results must not depend on manifest load order.
+- Results do not depend on manifest load order.
 
-A merge error identifies the locale, conflicting path, and both manifests.
+A merge error identifies the locale, conflicting path, and both source manifests. A conflict invalidates the resolved catalog.
 
 ## Validation and lookup
 
-A manifest is invalid when its locale is missing, empty, or not normalized; its content is not an object; a map key is empty; a value cannot be stored in the manifest format; or its `name` duplicates another `v0/translation` manifest.
+In addition to the [common resource validation](/versions/v0/resources), a translation manifest is invalid when its locale is missing, empty, or not normalized; `spec.content` is not an object; a content key is empty; or a value cannot be represented by the manifest format.
 
-A merge conflict invalidates the resolved catalog. Consumers resolve the locale catalog, then return the stored value at the requested path unchanged.
+After resolving a locale catalog, a lookup returns the stored value at the requested path unchanged.
 
-Version 0 does not define locale fallback, plural handling, missing-key behavior, or override precedence. Consumers may pass optional arguments through the `Trans` expression, but argument interpretation belongs to the translation runtime rather than the catalog merge contract.
+Version 0 does not define locale fallback, plural handling, missing-key behavior, or override precedence.
+
+## Good to know
+
+The manifest `name` identifies one contribution; it does not have to match `spec.locale`. Multiple resources such as `english-applications` and `english-errors` can contribute different paths to the same `en` catalog.
+
+Because duplicate paths are errors rather than overrides, independently maintained translation resources cannot silently replace each other's values.
