@@ -21,11 +21,6 @@ In this example:
 - `{{ ... }}` is the Expression.
 - `Trans` is a global function.
 
-<Callout title="Use Expressions only where a field allows them" type="info">
-  Expression syntax is not valid in every YAML field. Check
-  [where Expressions are supported](#where-expressions-are-supported) before adding one.
-</Callout>
-
 ## Choose what you need
 
 | I want to… | Start with |
@@ -68,12 +63,9 @@ The second argument is the count. Taskmigo selects the locale's plural form. See
 | `.This.revision` | Any Expression | Current manifest revision |
 | `props.<name>` | Component `spec.template` | A prop passed to that Component |
 
-Use `props.<name>` only in a Component template. To declare or pass props, see
-[Component](/versions/v0/manifests/v0-component#fields).
-
 ## Use built-in functions
 
-These global functions are available wherever a field accepts an Expression.
+These global functions are available wherever a field's type includes `Expression`.
 
 | Need | Functions | Example |
 | --- | --- | --- |
@@ -97,28 +89,9 @@ Expressions can also use pipelines, local variables, conditions, and iteration.
 
 Names and paths are case-sensitive.
 
-## Where Expressions are supported
-
-First check the exact field. When it accepts an Expression, you can use the syntax above; the
-available context values still depend on where Taskmigo evaluates it.
-
-| Manifest kind | Fields that accept Expressions | Extra context |
-| --- | --- | --- |
-| Common fields | None | None |
-| `v0/site` | None | None |
-| `v0/application` | `spec.label`, `spec.description` | None |
-| `v0/page` | `spec.meta.title`, `spec.meta.description`; component values when that component field accepts an Expression | None |
-| `v0/component` | Values in `spec.template` when the target component field accepts the resolved type | Declared `props.<name>` |
-| `v0/translation` | None; `spec.content` is catalog data used by `Trans` and `TransN` | None |
-
-<Callout title="Manifest structure stays literal" type="warn">
-  `kind`, `name`, `version`, `imports`, field names, resource references, routes, and component
-  names do not accept Expressions unless their field contract explicitly says so.
-</Callout>
-
 ## Before you save
 
-1. Confirm that the exact field accepts an Expression.
+1. Confirm that the field's Type Table includes `Expression`.
 2. Quote the YAML value when it includes Expression syntax.
 3. Use only functions and context values available in that field.
 4. Ensure that the evaluated result matches the field's required type.
