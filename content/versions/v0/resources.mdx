@@ -37,7 +37,9 @@ Every semantic change creates a revision that is validated independently. A tagg
 
 ### Site cardinality
 
-A valid Taskmigo system contains exactly one Site manifest. This invariant applies to the Site kind family, not one `(kind, name)` identity: changing the name, resource version, or schema prefix does not permit another Site.
+A valid Taskmigo system contains exactly one logical Site resource. The Site may have multiple revisions under the revision rules above; those revisions do not create additional Sites.
+
+Cardinality is enforced across the Site kind family rather than per `(kind, name)`. A different name or schema prefix cannot establish a second Site:
 
 ```yaml
 # Invalid in the same system
@@ -48,7 +50,7 @@ kind: v1/site
 name: replacement
 ```
 
-Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` is invalid.
+Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` resources is invalid.
 
 ## Imports
 
