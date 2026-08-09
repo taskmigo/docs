@@ -1,11 +1,11 @@
 ---
 title: Resource model
-description: Define manifest identity, revisions, versions, and imports.
+description: Define manifest identity, revisions, versions, imports, and includes.
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-These rules apply to every manifest. Kind reference pages document only their additional `spec` fields and validation.
+These rules apply to every manifest. Kind reference pages document only their additional fields and validation.
 
 ## Common shape
 
@@ -21,19 +21,20 @@ spec:
   # kind-specific configuration
 ```
 
-| Field     | Rule                                                                                                                 |
-| --------- | -------------------------------------------------------------------------------------------------------------------- |
-| `kind`    | Required schema identifier in its complete versioned form, such as `v0/application`.                                 |
-| `name`    | Required resource name matching `[a-zA-Z0-9_-]+`.                                                                    |
-| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision.                                    |
+| Field      | Rule                                                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| `kind`   | Required schema identifier in its complete versioned form, such as `v0/application`.                                |
+| `name`   | Required resource name matching `[a-zA-Z0-9_-]+`.                                                                  |
+| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision.                                   |
 | `imports` | Optional dependency references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
-| `spec`    | Required kind-specific configuration.                                                                                |
+| `includes` | Optional composition references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
+| `spec`   | Required kind-specific configuration.                                                                                |
 
 ## Identity and revisions
 
 The pair `(kind, name)` identifies a resource. The optional `version` tags one of its revisions; it does not change the identity or select the manifest schema.
 
-Every semantic change creates a revision that is validated independently. A tagged revision is immutable, and one version tag cannot refer to different content. An untagged revision may be selected only by an import without a version constraint.
+Every semantic change creates a revision that is validated independently. A tagged revision is immutable, and one version tag cannot refer to different content. An untagged revision may be selected only by a reference without a version constraint.
 
 ### Site cardinality
 
@@ -52,21 +53,25 @@ name: replacement
 
 Creating or importing a second Site fails validation. A manifest set containing both `v0/site` and `v1/site` resources is invalid.
 
-## Imports
+## Imports and includes
 
-Use `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
+Both fields use `<kind>/<name>` to select the latest revision or append `@<version>` to apply a SemVer constraint:
 
 ```yaml
 imports:
   - v0/application/home@^1.2.0
-  - v0/application/admin
+
+includes:
+  - v0/page/index
 ```
 
 Taskmigo accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
+`imports` declare dependency edges. `includes` declare resources composed by a kind-specific owner; currently, only an Application may include Pages.
+
 ### Uniqueness scope
 
-Within one manifest, imports are unique by `(kind, name)`. A different or omitted version constraint does not make a second import valid:
+Within one field of one manifest, references are unique by `(kind, name)`. A different or omitted version constraint does not make a second reference valid:
 
 ```yaml
 # Invalid: both entries import v0/application/home
@@ -77,21 +82,32 @@ imports:
 
 The rule is not graph-wide. Different manifests may resolve the same identity to different versions, and both revisions may coexist in one snapshot.
 
-### Import ability
+### Reference ability
 
-Only one import edge is currently allowed: a Site may import an Application.
-This matrix is exhaustive; every other import target is invalid.
+The following matrices are exhaustive. Every unlisted relationship is invalid.
 
-| Importer         |  `v0/site`  | `v0/application` | `v0/translation` |
-| ---------------- | :---------: | :--------------: | :--------------: |
-| `v0/site`        |      —      |     Allowed      |   Not allowed    |
-| `v0/application` | Not allowed |   Not allowed    |   Not allowed    |
-| `v0/translation` | Not allowed |   Not allowed    |   Not allowed    |
+#### Imports
 
-<Callout title="Translation catalogs are never import targets" type="warn">
-  No manifest may import `v0/translation`. A translation manifest may include the common `imports`
-  field only as an empty list. Taskmigo attaches the effective locale catalog automatically when it
-  builds a Site snapshot.
+| Importer         | `v0/site` | `v0/application` | `v0/page` | `v0/translation` |
+| ---------------- | :---------: | :----------------: | :-------: | :----------------: |
+| `v0/site`        |      —      |      Allowed       | Not allowed | Not allowed      |
+| `v0/application` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+| `v0/page`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+| `v0/translation` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+
+#### Includes
+
+| Including kind   | `v0/site` | `v0/application` | `v0/page` | `v0/translation` |
+| ---------------- | :---------: | :----------------: | :-------: | :----------------: |
+| `v0/site`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+| `v0/application` | Not allowed |    Not allowed     | Allowed   | Not allowed      |
+| `v0/page`        | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+| `v0/translation` | Not allowed |    Not allowed     | Not allowed | Not allowed      |
+
+<Callout title="Translation catalogs are never reference targets" type="warn">
+  No manifest may import or include `v0/translation`. A translation manifest may include the common
+  `imports` field only as an empty list. Taskmigo attaches the effective locale catalog
+  automatically when it builds a Site snapshot.
 </Callout>
 
 ### Resolution
@@ -127,9 +143,9 @@ Record the selected revision so later changes cannot alter the active snapshot.
   </Step>
 </Steps>
 
-Malformed references, disallowed kind pairs, missing resources, duplicate imports, unsatisfied constraints, invalid selected revisions, and Site cardinality violations fail resolution.
+Malformed references, disallowed kind pairs, missing resources, duplicate references, unsatisfied constraints, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title="Latest is resolved at build time" type="info">
-  An unconstrained import follows the latest revision when a new snapshot is built. Existing
+  An unconstrained reference follows the latest revision when a new snapshot is built. Existing
   snapshots remain unchanged.
 </Callout>
