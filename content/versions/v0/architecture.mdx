@@ -23,7 +23,9 @@ Every YAML manifest is a resource with a unique identity:
 
 A resource can explicitly depend on other resources through `imports`. The
 runtime graph begins at one `v0/site` resource. Regular resources must be
-reachable from that Site to be part of runtime.
+reachable from that Site to be part of runtime. Versions are selected per import
+edge, so multiple revisions of the same resource identity may coexist in the
+resolved graph.
 
 Translation resources are resolved through the effective locale catalog instead
 of explicit graph edges. A resource that uses `Trans` or `TransN` does not import

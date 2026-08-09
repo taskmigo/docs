@@ -30,7 +30,7 @@ spec:
 | `kind` | Required resource type, including its API version. Version 0 kinds use the complete `v0/...` form. |
 | `name` | Required resource name containing only ASCII letters, digits, hyphens, and underscores (`[a-zA-Z0-9_-]+`). Together, `kind` and `name` identify a resource. |
 | `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision. |
-| `imports` | Optional explicit list of resource references on which this resource depends. Each item uses `<kind>/<name>` or `<kind>/<name>@<version>`. |
+| `imports` | Optional explicit list of resource references on which this resource depends. Each item uses `<kind>/<name>` or `<kind>/<name>@<version>`. The same `(kind, name)` may appear only once in one manifest. |
 | `spec` | Required configuration defined by the selected `kind`. |
 
 ## Resource identity
@@ -66,6 +66,21 @@ The required shape is `<kind>/<name>`, optionally followed by `@<version>`. Beca
 
 The optional `@<version>` suffix is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
+Within one manifest, imports must be unique by `(kind, name)`. Changing or omitting
+the version constraint does not create a different import. For example, this
+manifest is invalid because both entries import `v0/application/home`:
+
+```yaml
+imports:
+  - v0/application/home@^1.0.0
+  - v0/application/home@^2.0.0
+```
+
+This uniqueness rule is local to each manifest, not global to the resolved graph.
+Two different manifests may import the same `(kind, name)` with different version
+constraints, and the graph may contain multiple revisions of that resource when
+those constraints resolve to different versions.
+
 <Steps>
   <Step>
 
@@ -100,7 +115,10 @@ The optional `@<version>` suffix is a SemVer constraint. Version 0 supports exac
   </Step>
 </Steps>
 
-Malformed imports, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
+Malformed imports, missing resources, duplicate `(kind, name)` imports within one
+manifest, unsatisfied constraints, dependency cycles, and invalid selected
+revisions make resolution fail. Resolution is deterministic and remains within
+the same Taskmigo schema.
 
 ## Good to know
 

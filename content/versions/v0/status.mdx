@@ -11,7 +11,7 @@ This documentation distinguishes settled contracts from design direction.
 
 | Area | Contract |
 | --- | --- |
-| Common resource model | Identity is `(kind, name)`; names contain only ASCII letters, digits, hyphens, and underscores; YAML is canonical; revisions, explicit imports, validation, and immutable snapshots follow the rules in this documentation. |
+| Common resource model | Identity is `(kind, name)`; names contain only ASCII letters, digits, hyphens, and underscores; YAML is canonical; imports use manifest-scoped uniqueness and per-edge version resolution; revisions, validation, and immutable snapshots follow the rules in this documentation. |
 | `v0/site` | A stable manifest kind that composes imported applications and configures shared site branding. See [v0/site](/versions/v0/manifests/v0-site). |
 | `v0/translation` | A stable manifest kind for automatically available locale catalogs, positional placeholder interpolation, and mandatory Unicode CLDR-based pluralization. Consumers do not import translation resources. See [v0/translation](/versions/v0/manifests/v0-translation). |
 | `v0/application` | A stable manifest kind for application metadata, dependencies, and entry routes. See [v0/application](/versions/v0/manifests/v0-application). |

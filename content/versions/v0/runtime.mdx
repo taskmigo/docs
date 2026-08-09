@@ -11,6 +11,10 @@ Taskmigo validates resources as a dependency graph, not as isolated files.
 
 A revision is valid only when YAML parsing, common metadata, kind-specific schema checks, dependency resolution, graph checks, and security constraints all succeed.
 
+Import uniqueness is checked per manifest. Version selection remains local to
+each graph edge, so separate branches may resolve the same resource identity to
+different versions.
+
 Invalid revisions keep structured diagnostics. A diagnostic identifies the error, its manifest path, and—when available—the source location. Diagnostics must never expose credentials, connection strings, or data from schemas that Taskmigo does not own.
 
 ## Dependency recovery
@@ -38,7 +42,7 @@ Deleting a resource invalidates resources that resolve to it. The previous Site 
 
 ## Site snapshots
 
-A Site snapshot is an immutable, resolved view of the complete reachable graph. It includes the selected resource revisions and normalized runtime model.
+A Site snapshot is an immutable, resolved view of the complete reachable graph. It includes every selected resource revision and the normalized runtime model. When separate dependency branches select different versions of the same `(kind, name)`, both revisions may be present in the snapshot.
 
 ```text
 Change or import
