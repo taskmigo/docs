@@ -26,9 +26,9 @@ the snapshot current in one atomic switch.
   />
   <Card
     icon={<RefreshCw />}
-    title="Recovery order"
-    href="#dependency-recovery"
-    description="Trace invalidation and recovery through reverse dependents."
+    title="Dependency recovery RFC"
+    href="#dependency-recovery-rfc"
+    description="Preview the proposed recovery order for future multi-level graphs."
   />
   <Card
     icon={<ShieldCheck />}
@@ -125,10 +125,16 @@ with the affected revisions and leaves runtime state unchanged.
   </Tab>
 </Tabs>
 
-## Dependency recovery
+## Dependency recovery RFC
 
-Taskmigo revalidates in dependency order. Consider a graph where `A` imports
-`B`, and `B` imports `C`:
+<Callout title="RFC: proposed behavior, not the current contract" type="warn">
+  The current import graph only supports `Site → Application`, so it does not yet require
+  multi-level dependency recovery. This section records the intended behavior for future kinds and
+  import edges. Details may change before the proposal becomes part of the defined contract.
+</Callout>
+
+The proposal revalidates resources in dependency order. Consider a future graph
+where `A` imports `B`, and `B` imports `C`:
 
 <Tabs items={['Dependency breaks', 'Dependency recovers']}>
   <Tab>
@@ -147,9 +153,10 @@ Taskmigo revalidates in dependency order. Consider a graph where `A` imports
   </Tab>
 </Tabs>
 
-Recovery re-resolves the existing declarations; it does not rewrite dependent
-manifests. Deleting a resource follows the same path as an invalid dependency:
-the candidate fails while the last valid snapshot remains active.
+The proposed recovery process re-resolves existing declarations; it does not
+rewrite dependent manifests. Deleting a resource follows the same path as an
+invalid dependency: the candidate fails while the last valid snapshot remains
+active.
 
 ## Package boundary
 

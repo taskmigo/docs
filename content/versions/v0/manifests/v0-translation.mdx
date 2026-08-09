@@ -40,17 +40,18 @@ description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
 <Callout title="Catalogs do not participate in imports" type="info">
-  A `v0/translation` manifest cannot declare `imports`, and no manifest may import it. Taskmigo
-  assembles the effective catalog for the active locale.
+  A translation manifest may declare `imports: []` for compatibility with the common resource shape,
+  but it cannot import any resource. No manifest may import `v0/translation`. Taskmigo assembles the
+  effective catalog for the active locale.
 </Callout>
 
 ## Create a catalog
 
-| Field          | Required | Rule                                                                                                     |
-| -------------- | -------- | -------------------------------------------------------------------------------------------------------- |
-| `kind`         | Yes      | Must be `v0/translation`.                                                                                |
-| `spec.locale`  | Yes      | Normalized [BCP 47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) locale such as `en`, `vi`, or `pt-BR`. |
-| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                                 |
+| Field          | Required | Rule                                                                                               |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `kind`         | Yes      | Must be `v0/translation`.                                                                          |
+| `spec.locale`  | Yes      | Normalized [BCP 47](https://www.rfc-editor.org/info/bcp47/) locale such as `en`, `vi`, or `pt-BR`. |
+| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                           |
 
 `spec.locale` selects the catalog; `name` identifies the contribution. All translation resources with the same normalized locale merge into one effective catalog.
 
@@ -191,7 +192,7 @@ Merge results never depend on load order. Errors identify the locale, path, and 
 | A message receives too few values                | Stop rendering with a runtime error.       |
 | A value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
-Missing-key behavior is not defined in version 0.
+Missing-key behavior is not yet defined. See [Product status](/versions/v0/status#known-limitations-and-open-decisions).
 
 ## Validation
 
@@ -202,6 +203,6 @@ Beyond [common resource validation](/versions/v0/resources), a translation manif
 - A content key is empty.
 - A value cannot be represented by the manifest format.
 - Multiple resources create a merge conflict.
-- An `imports` field is present.
+- `imports` contains one or more entries.
 
 Saving, updating, or deleting a translation resource revalidates snapshots that use its locale catalog.
