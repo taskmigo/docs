@@ -94,7 +94,8 @@ A page path of `/` designates the index page for the application path. Applicati
 
 ## Imports
 
-Only an application may import a page, and an application's `imports` entries may target only `v0/page`. Importing a page makes it available to the application; it does not expose the page until a matching entry appears in `spec.routes`.
+An application's `imports` entries may target only `v0/page`. Importing a page makes it available to the application;
+it does not expose the page until a matching entry appears in `spec.routes`.
 
 Every routed page must be imported. Page resources are not discovered by name. See [Resource model](/versions/v0/resources#imports).
 

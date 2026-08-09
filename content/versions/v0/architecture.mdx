@@ -27,7 +27,8 @@ flowchart TD
   helpdeskIndex -->|imports| header
 ```
 
-A Site imports Applications, an Application imports Pages, and a Page may import reusable Components.
+A Site imports Applications. An Application imports Pages. A Page may import Pages or Components, and a Component
+may import Components.
 Multiple Pages may point to the same Component while supplying different typed props. Resources are
 never discovered by name, so a resource outside this graph cannot become part of the running Site.
 
@@ -39,7 +40,7 @@ The [Reference ability matrix](/versions/v0/resources#reference-ability) defines
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path. A [Page manifest](/versions/v0/manifests/v0-page) imports [Components](/versions/v0/manifests/v0-component) that it reuses in its body.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path. A [Page manifest](/versions/v0/manifests/v0-page) may import Pages and [Components](/versions/v0/manifests/v0-component); a Component may import other Components.
 
 ## Runtime boundary
 

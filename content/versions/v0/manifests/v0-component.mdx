@@ -9,6 +9,9 @@ A `v0/component` packages a component tree once so any Page can import and rende
 values each Page may provide in `spec.props`, then read those values from `spec.template` through
 `{{ props.<name> }}`.
 
+A Component may import other Components. Every reusable Component used in `spec.template` must
+appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
+
 ```yaml
 kind: v0/component
 name: header
