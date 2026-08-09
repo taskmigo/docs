@@ -7,42 +7,72 @@ Taskmigo is an open-source, self-hosted low-code application platform. YAML reso
 
 Resources are authored through the Taskmigo UI or API. YAML remains canonical; Git is not part of the authoring or version-control model.
 
-## Start here
+## Build what you need
 
 <Cards>
   <Card
-    title="Architecture"
-    href="/versions/v0/architecture"
-    description="Understand the deployment boundary and resource graph."
+    title="Compose a Site"
+    href="/versions/v0/manifests/v0-site"
+    description="Choose the applications to expose and define shared branding."
   />
   <Card
-    title="Resource model"
-    href="/versions/v0/resources"
-    description="Define identities, versions, revisions, imports, and Site cardinality."
+    title="Add an Application"
+    href="/versions/v0/manifests/v0-application"
+    description="Group Pages under a path and assign their routes."
   />
   <Card
-    title="Expressions"
-    href="/versions/v0/expressions"
-    description="Use translations and typed Component props in YAML fields."
+    title="Build a Page"
+    href="/versions/v0/manifests/v0-page"
+    description="Create an interface from registered UI Components."
   />
   <Card
-    title="Runtime lifecycle"
-    href="/versions/v0/runtime"
-    description="Follow validation, dependency recovery, and snapshot activation."
+    title="Reuse a Component"
+    href="/versions/v0/manifests/v0-component"
+    description="Share one typed component tree across Pages."
   />
   <Card
-    title="Manifests"
-    href="/versions/v0/manifests"
-    description="Open the reference for each defined manifest kind."
-  />
-  <Card
-    title="FAQ"
-    href="/versions/v0/faq"
-    description="Resolve common contract and runtime questions."
-  />
-  <Card
-    title="Product status"
-    href="/versions/v0/status"
-    description="Separate defined contracts from planned work."
+    title="Translate content"
+    href="/versions/v0/manifests/v0-translation"
+    description="Add messages, placeholders, and plural forms for a locale."
   />
 </Cards>
+
+## Find an answer
+
+<Cards>
+  <Card
+    title="Choose a manifest"
+    href="/versions/v0/manifests"
+    description="Match a task to the resource that defines it."
+  />
+  <Card
+    title="Reference resources"
+    href="/versions/v0/resources"
+    description="Check identity, versions, imports, and allowed references."
+  />
+  <Card
+    title="Write an Expression"
+    href="/versions/v0/expressions"
+    description="Use dynamic values where the field contract accepts them."
+  />
+  <Card
+    title="Understand runtime behavior"
+    href="/versions/v0/runtime"
+    description="Follow validation, recovery, and snapshot activation."
+  />
+  <Card
+    title="Check support and limitations"
+    href="/versions/v0/status"
+    description="Separate defined contracts from planned work and open decisions."
+  />
+  <Card
+    title="Resolve a common question"
+    href="/versions/v0/faq"
+    description="Find concise answers with links to the canonical contract."
+  />
+</Cards>
+
+<Callout title="Start from the outcome" type="info">
+  Open a manifest page when you know what you want to define. Open Resources, Expressions, or
+  Runtime lifecycle when you need rules that apply across manifest types.
+</Callout>
