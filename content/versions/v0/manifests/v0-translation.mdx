@@ -3,6 +3,8 @@ title: v0/translation
 description: Define and merge v0/translation catalogs by locale.
 ---
 
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
 A `v0/translation` manifest contributes values to one locale catalog. Its common fields follow the [Resource model](/versions/v0/resources).
 
 ```yaml
@@ -77,7 +79,34 @@ spec:
   description: '{{ Trans "applications.home.description" }}'
 ```
 
-At runtime, the active locale selects the effective catalog and the key selects a value from that catalog. Do not put a locale map directly in a translated field.
+At runtime, lookup follows three steps:
+
+<Steps>
+  <Step>
+
+  ### Select the locale catalog
+
+  The active locale selects the effective catalog assembled from translation
+  resources with the same normalized `spec.locale`.
+
+  </Step>
+  <Step>
+
+  ### Resolve the key
+
+  The quoted dotted key, such as `applications.home.label`, selects a value from
+  that catalog.
+
+  </Step>
+  <Step>
+
+  ### Return the value
+
+  Taskmigo returns the stored value to the translated field. Do not put a locale map
+  directly in that field.
+
+  </Step>
+</Steps>
 
 Version 0 passes optional arguments to the translation runtime but does not define how that runtime interprets them.
 
@@ -119,6 +148,13 @@ Version 0 does not define locale fallback, plural handling, missing-key behavior
 
 ## Good to know
 
-The manifest `name` identifies one contribution; it does not have to match `spec.locale`. Multiple resources such as `english-applications` and `english-errors` can contribute different paths to the same `en` catalog.
+<Callout title="Resource name and locale serve different purposes" type="idea">
+  The manifest `name` identifies one contribution; it does not have to match
+  `spec.locale`. Resources such as `english-applications` and `english-errors` can
+  contribute different paths to the same `en` catalog.
+</Callout>
 
-Because duplicate paths are errors rather than overrides, independently maintained translation resources cannot silently replace each other's values.
+<Callout title="Catalogs do not use override precedence" type="info">
+  Duplicate paths are errors, so independently maintained translation resources
+  cannot silently replace each other's values.
+</Callout>
