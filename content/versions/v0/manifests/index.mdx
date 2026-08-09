@@ -1,15 +1,9 @@
 ---
-title: Manifest overview
-description: Find the contract for each supported manifest kind.
+title: Manifests
+description: Open the reference for each defined manifest kind.
 ---
 
-# Manifests
-
-A manifest is a YAML resource. Every manifest follows the identity, version, dependency, and validation rules in the [Resource model](/versions/v0/resources), then adds a `spec` defined by its `kind`.
-
-Use the kind reference pages below for kind-specific fields and examples.
-
-## Defined kinds
+Common identity, version, import, and revision rules live in the [Resource model](/versions/v0/resources). Each reference below covers its kind-specific `spec` and validation.
 
 <Cards>
   <Card href="/versions/v0/manifests/v0-site" title="v0/site">
@@ -19,15 +13,8 @@ Use the kind reference pages below for kind-specific fields and examples.
     Define application metadata, dependencies, and an entry route.
   </Card>
   <Card href="/versions/v0/manifests/v0-translation" title="v0/translation">
-    Contribute values to a locale translation catalog.
+    Contribute messages to a locale catalog.
   </Card>
 </Cards>
 
-## Planned kinds
-
-`v0/entity`, `v0/page`, `v0/component`, `v0/query`, `v0/action`, `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation` are planned. They are not manifest contracts yet.
-
-<Callout title="Contract boundary" type="info">
-  Planned kinds are design direction, not public manifest contracts. A kind becomes
-  defined only when this page links to its dedicated reference.
-</Callout>
+See [Product status](/versions/v0/status) for planned kinds and open decisions.
