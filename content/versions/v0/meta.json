@@ -6,6 +6,7 @@
     "manifests",
     "ui-components",
     "expressions",
+    "context-variables",
     "resources",
     "architecture",
     "runtime",
