@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: Resolve common questions about Taskmigo v0 contracts and runtime behavior.
+description: Resolve common questions about Taskmigo contracts and runtime behavior.
 ---
 
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
@@ -34,15 +34,20 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="Do consumers import translation resources?" id="translation-imports">
-  No. A `v0/translation` manifest cannot declare `imports`, and no manifest may import it. Taskmigo
-  assembles the catalog for the active locale. Consumers use `Trans` or `TransN`. See
+  No. No manifest may import `v0/translation`. Taskmigo assembles the catalog for the active
+  locale, and consumers use `Trans` or `TransN`. See
   [v0/translation](/versions/v0/manifests/v0-translation).
 </Accordion>
 
+<Accordion title="Can a translation manifest declare imports?" id="translation-imports-field">
+  Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the
+  common resource shape; any entry makes the translation manifest invalid. See [Import
+  ability](/versions/v0/resources#import-ability).
+</Accordion>
+
 <Accordion title="Which kinds can import each other?" id="kind-hierarchy">
-  Imports must move to a strictly lower kind. In v0, `v0/site` imports `v0/application`; an
-  application cannot import a Site, another application, or a translation catalog. See [Kind
-  hierarchy](/versions/v0/resources#kind-hierarchy).
+  The [Import ability matrix](/versions/v0/resources#import-ability) is exhaustive. Currently,
+  `v0/site` may import `v0/application`; every other kind pair is rejected.
 </Accordion>
 
 <Accordion title="What happens when a resource change is invalid?" id="invalid-change">
@@ -61,9 +66,14 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   boundary](/versions/v0/runtime#package-boundary).
 </Accordion>
 
-  <Accordion title="Which manifest kinds are stable in v0?" id="stable-kinds">
+  <Accordion title="Which manifest kinds are currently defined?" id="defined-kinds">
     The dedicated reference pages list the defined contracts. Candidate kinds
     remain planned until they have a reference page. See
     [Product status](/versions/v0/status).
+  </Accordion>
+
+  <Accordion title="Where can I find known limitations?" id="known-limitations">
+    See [Product status](/versions/v0/status#known-limitations-and-open-decisions). It records
+    unresolved behavior and planned contracts that should not be relied on yet.
   </Accordion>
 </Accordions>
