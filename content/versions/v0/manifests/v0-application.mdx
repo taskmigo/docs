@@ -1,0 +1,70 @@
+---
+title: v0/application
+description: Define an application, its metadata, dependencies, and entry route.
+---
+
+A `v0/application` manifest defines an application that can be included in a Taskmigo site. Its common fields follow the [Resource model](/versions/v0/resources).
+
+```yaml
+kind: v0/application
+name: home
+
+includes:
+  - kind: v0/translation
+    name: english-applications
+    version: ^1.0.0
+  - kind: v0/translation
+    name: vietnamese-applications
+
+spec:
+  icon: https://example.com/images/home.png
+  label: '{{ Trans "applications.home.label" }}'
+  description: '{{ Trans "applications.home.description" }}'
+  route: home-app
+```
+
+## Application fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/application`. |
+| `spec.icon` | Required absolute URL of the application image. |
+| `spec.label` | Required translated application name. |
+| `spec.description` | Required translated application description. |
+| `spec.route` | Required, non-empty entry route for the application. |
+
+## Translated metadata
+
+`spec.label` and `spec.description` use the `Trans` expression to look up values in the effective locale catalog:
+
+```yaml
+spec:
+  label: '{{ Trans "applications.home.label" }}'
+  description: '{{ Trans "applications.home.description" }}'
+```
+
+They do not accept locale maps embedded directly in the application manifest. See [Use translations](/versions/v0/manifests/v0-translation#use-translations) for the expression syntax, arguments, catalog structure, and lookup behavior.
+
+## Icon URL
+
+`spec.icon` must contain an absolute URL with a scheme and host.
+
+```yaml
+# Valid
+icon: https://cdn.example.com/apps/home.png
+
+# Invalid
+icon: ./images/home.png
+```
+
+## Validation
+
+In addition to the [common resource validation](/versions/v0/resources), an application is invalid when a required application field is missing, `spec.icon` is not an absolute URL, a translated metadata field is not a valid `Trans` expression, or `spec.route` is empty.
+
+## Good to know
+
+<Callout title="Stable identity, localized display" type="idea">
+  Translations keep locale-specific labels and descriptions outside the application
+  manifest. The same application can keep one identity and route while its displayed
+  metadata changes with the active locale.
+</Callout>

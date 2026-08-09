@@ -13,22 +13,22 @@ This documentation distinguishes settled contracts from design direction.
 | --- | --- |
 | Common resource model | Identity is `(kind, name)`; YAML is canonical; revisions, explicit includes, validation, and immutable snapshots follow the rules in this documentation. |
 | `v0/site` | A stable manifest kind that composes included applications and configures shared site branding. See [v0/site](/versions/v0/manifests/v0-site). |
-| `v0/translation` | A stable manifest kind for locale catalogs. See [v0/translation](/versions/v0/manifests/v0-translation). |
+| `v0/translation` | A stable manifest kind for locale catalogs, positional placeholder interpolation, and mandatory Unicode CLDR-based pluralization. See [v0/translation](/versions/v0/manifests/v0-translation). |
+| `v0/application` | A stable manifest kind for application metadata, dependencies, and entry routes. See [v0/application](/versions/v0/manifests/v0-application). |
 
 ## Planned resource kinds
 
 The following kinds are candidates for the MVP, but their manifest schemas are not defined yet:
 
-- `application`
-- `Entity`
-- `Page` and `Component`
-- `Query` and `Action`
-- `Policy`, `Workflow`, `Theme`, and `Navigation`
+- `v0/entity`
+- `v0/page` and `v0/component`
+- `v0/query` and `v0/action`
+- `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation`
 
 Do not treat a candidate kind as a public API until it has a dedicated reference page.
 
 ## Not defined in version 0
 
-The translation contract does not define locale fallback, interpolation, plural handling, missing-key behavior, or override precedence.
+The translation contract does not define missing-key behavior or override precedence. Plural selection is defined by Unicode CLDR and locale-resolution failure uses the configured global fallback locale.
 
-The platform design also leaves the expression language, complete MVP kind list, exact PostgreSQL table layout, and public schema/versioning policy open.
+Beyond the documented `Trans` and `TransN` functions, the platform design leaves the expression language, complete MVP kind list, exact PostgreSQL table layout, and public schema/versioning policy open.

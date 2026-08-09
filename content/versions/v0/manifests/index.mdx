@@ -5,19 +5,29 @@ description: Find the contract for each supported manifest kind.
 
 # Manifests
 
-A manifest is a YAML resource. Every manifest uses the shared fields and rules in the [Resource model](/versions/v0/resources), then adds a `spec` that belongs to its `kind`.
+A manifest is a YAML resource. Every manifest follows the identity, version, dependency, and validation rules in the [Resource model](/versions/v0/resources), then adds a `spec` defined by its `kind`.
 
-This area is the reference for supported manifest kinds. Each kind has its own page, so its fields, examples, and validation rules are kept together.
+Use the kind reference pages below for kind-specific fields and examples.
 
 ## Defined kinds
 
-| Kind | Purpose |
-| --- | --- |
-| [`v0/site`](/versions/v0/manifests/v0-site) | Compose applications and define shared site branding. |
-| [`v0/translation`](/versions/v0/manifests/v0-translation) | Contribute values to a locale translation catalog. |
+<Cards>
+  <Card href="/versions/v0/manifests/v0-site" title="v0/site">
+    Compose applications and define shared site branding.
+  </Card>
+  <Card href="/versions/v0/manifests/v0-application" title="v0/application">
+    Define application metadata, dependencies, and an entry route.
+  </Card>
+  <Card href="/versions/v0/manifests/v0-translation" title="v0/translation">
+    Contribute values to a locale translation catalog.
+  </Card>
+</Cards>
 
 ## Planned kinds
 
-`application`, `Entity`, `Page`, `Component`, `Query`, `Action`, `Policy`, `Workflow`, `Theme`, and `Navigation` are planned. They are not manifest contracts yet.
+`v0/entity`, `v0/page`, `v0/component`, `v0/query`, `v0/action`, `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation` are planned. They are not manifest contracts yet.
 
-When a kind becomes defined, this page will link to its dedicated reference page.
+<Callout title="Contract boundary" type="info">
+  Planned kinds are design direction, not public manifest contracts. A kind becomes
+  defined only when this page links to its dedicated reference.
+</Callout>
