@@ -10,7 +10,7 @@ kind: v0/site
 name: root
 
 includes:
-  - kind: application
+  - kind: v0/application
     name: home
 
 spec:
@@ -29,7 +29,7 @@ spec:
 | --- | --- |
 | `kind` | Must be `v0/site`. |
 | `name` | Identifies this site manifest. It follows the shared name rules and must be unique under `(kind, name)`. |
-| `includes` | Lists application resources that the site depends on. Each application referenced by `spec.applications` must be included as `kind: application`. |
+| `includes` | Lists application resources that the site depends on. Each application referenced by `spec.applications` must be included as `kind: v0/application`. All included kinds must use the versioned `v0/...` form. |
 | `spec.brand` | Required site-branding configuration. |
 | `spec.brand.label` | Required label for the site brand. |
 | `spec.brand.logo` | Required path to the site logo. |
@@ -42,9 +42,9 @@ The site exposes applications by listing their names in `spec.applications`. An 
 
 ```yaml
 includes:
-  - kind: application
+  - kind: v0/application
     name: home
-  - kind: application
+  - kind: v0/application
     name: admin
 
 spec:
@@ -62,6 +62,6 @@ The application list preserves the order specified by the manifest.
 
 ## Validation
 
-A `v0/site` manifest is invalid when its brand configuration or any required brand field is missing, an application name is duplicated, or an application in `spec.applications` does not have a matching `kind: application` entry in `includes`.
+A `v0/site` manifest is invalid when its brand configuration or any required brand field is missing, an application name is duplicated, or an application in `spec.applications` does not have a matching `kind: v0/application` entry in `includes`.
 
 The shared resource validation rules, including include resolution and cycle detection, also apply.
