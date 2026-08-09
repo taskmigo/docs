@@ -1,0 +1,34 @@
+---
+title: Product status
+description: Separate defined contracts from planned work.
+---
+
+# Product status
+
+This documentation distinguishes settled contracts from design direction.
+
+## Defined
+
+| Area | Contract |
+| --- | --- |
+| Common resource model | Identity is `(kind, name)`; YAML is canonical; revisions, explicit includes, validation, and immutable snapshots follow the rules in this documentation. |
+| `v0/site` | A stable manifest kind that composes included applications and configures shared site branding. See [v0/site](/docs/manifests/v0-site). |
+| `v0/translation` | A stable manifest kind for locale catalogs. See [v0/translation](/docs/manifests/v0-translation). |
+
+## Planned resource kinds
+
+The following kinds are candidates for the MVP, but their manifest schemas are not defined yet:
+
+- `application`
+- `Entity`
+- `Page` and `Component`
+- `Query` and `Action`
+- `Policy`, `Workflow`, `Theme`, and `Navigation`
+
+Do not treat a candidate kind as a public API until it has a dedicated reference page.
+
+## Not defined in version 0
+
+The translation contract does not define locale fallback, interpolation, plural handling, missing-key behavior, or override precedence.
+
+The platform design also leaves the expression language, complete MVP kind list, exact PostgreSQL table layout, and public schema/versioning policy open.

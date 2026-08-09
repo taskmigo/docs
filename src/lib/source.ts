@@ -5,7 +5,7 @@ import { defineDocs } from 'fumadocs-mdx/macro';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 
 const docs = defineDocs({
-  dir: 'content/v0',
+  dir: 'content/versions',
   docs: {
     schema: pageSchema,
     postprocess: {

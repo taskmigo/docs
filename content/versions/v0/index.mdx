@@ -1,0 +1,29 @@
+---
+title: Getting Started
+description: Build a self-hosted low-code application from declarative resources.
+---
+
+# Taskmigo
+
+Taskmigo is an open-source, self-hosted low-code application platform. A site is described by YAML resources that define its UI, behavior, and data model.
+
+YAML is the canonical source. Users author resources through the Taskmigo UI and API; Git is not part of the authoring or version-control model.
+
+## Start here
+
+<Cards>
+  <Card title="Architecture" href="/versions/v0/architecture" description="Learn the product boundary, Site, App, and resource graph." />
+  <Card title="Resource model" href="/versions/v0/resources" description="Learn manifest identity, revisions, versions, and includes." />
+  <Card title="Runtime lifecycle" href="/versions/v0/runtime" description="Learn validation, dependency recovery, and snapshots." />
+  <Card title="Manifests" href="/versions/v0/manifests" description="Browse overview and references for defined manifest kinds." />
+</Cards>
+
+## What is defined today
+
+| Area | Status |
+| --- | --- |
+| Resource identity, revisions, dependency resolution, validation, and runtime snapshots | Core design |
+| `v0/translation` | Defined manifest kind |
+| Site, App, Page, Entity, Query, Action, Policy, Theme, and Workflow schemas | Planned; not public contracts yet |
+
+Read [Product status](/docs/status) before implementing a planned kind or feature.
