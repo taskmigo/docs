@@ -1,35 +1,75 @@
 ---
 title: v0/application
-description: Define application metadata and an entry route.
+description: Define application metadata, its base path, and page routes.
 ---
+
+A `v0/application` defines the shared URL prefix for an application and maps included pages to paths below that prefix.
 
 ```yaml
 kind: v0/application
 name: home
 
+includes:
+  - v0/page/index
+
 spec:
   icon: https://example.com/images/home.png
   label: '{{ Trans "applications.home.label" }}'
   description: '{{ Trans "applications.home.description" }}'
-  route: home-app
+  path: /home
+
+  routes:
+    - page: v0/page/index
+      path: /
 ```
+
+The example exposes `v0/page/index` at `<host>/home/`.
 
 ## Fields
 
-| Field              | Rule                                                         |
-| ------------------ | ------------------------------------------------------------ |
-| `kind`             | Must be `v0/application`.                                    |
-| `spec.icon`        | Required absolute image URL with a scheme and host.          |
-| `spec.label`       | Required `Trans` expression for the application name.        |
-| `spec.description` | Required `Trans` expression for the application description. |
-| `spec.route`       | Required non-empty entry route.                              |
+| Field                     | Rule                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `kind`                  | Must be `v0/application`.                                                           |
+| `includes`              | Required list of unique `v0/page` references used by the application.               |
+| `spec.icon`             | Required absolute image URL with a scheme and host.                                   |
+| `spec.label`            | Required `Trans` expression for the application name.                               |
+| `spec.description`      | Required `Trans` expression for the application description.                        |
+| `spec.path`             | Required application path beginning with `/`.                                       |
+| `spec.routes`           | Required non-empty list mapping included pages to application-relative paths.          |
+| `spec.routes[].page`    | Required `v0/page` reference that also appears in `includes`.                      |
+| `spec.routes[].path`    | Required path beginning with `/`, relative to `spec.path` within the application.  |
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
+## Paths and routes
+
+`spec.path` establishes the application's path below the host. Each `spec.routes[].path` is resolved below that application path.
+
+| Application path | Page path    | Result             |
+| ---------------- | ------------ | ------------------ |
+| `/home`        | `/`        | `<host>/home/`   |
+| `/home`        | `/settings` | `<host>/home/settings` |
+
+A page path of `/` designates the index page for the application path. Application paths and page paths must begin with `/`; they are paths, not absolute URLs.
+
+## Includes
+
+Only an application may include a page, and an application's `includes` entries may target only `v0/page`. Including a page makes it available to the application; it does not expose the page until a matching entry appears in `spec.routes`.
+
+Every routed page must be included. Page resources are not discovered by name.
+
 ## Imports
 
-An application cannot currently import any resource. See the exhaustive [Import ability matrix](/versions/v0/resources#import-ability).
+An application cannot use `imports`. `includes` is the application-to-page composition relationship; see [Resource model](/versions/v0/resources#imports-and-includes).
 
 ## Validation
 
-Beyond [common resource validation](/versions/v0/resources), an application is invalid when a required field is missing, `imports` contains an entry, `spec.icon` is not an absolute URL, translated metadata is not a valid `Trans` expression, or `spec.route` is empty.
+Beyond [common resource validation](/versions/v0/resources), an application is invalid when:
+
+- A required field is missing.
+- `imports` contains an entry.
+- `includes` is missing, empty, contains a duplicate identity, or targets a kind other than `v0/page`.
+- `spec.icon` is not an absolute URL.
+- Translated metadata is not a valid `Trans` expression.
+- `spec.path` or a page path does not begin with `/`.
+- `spec.routes` is empty, repeats a path, or references a page absent from `includes`.
