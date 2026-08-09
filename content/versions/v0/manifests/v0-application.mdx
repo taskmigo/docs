@@ -3,7 +3,7 @@ title: v0/application
 description: Define an application, its metadata, dependencies, and entry route.
 ---
 
-A `v0/application` manifest defines an application that can be included in a Taskmigo site. Its common fields follow the [Resource model](/versions/v0/resources).
+A `v0/application` manifest defines an application that can be imported by a Taskmigo site. Its common fields follow the [Resource model](/versions/v0/resources).
 
 ```yaml
 kind: v0/application
@@ -41,7 +41,7 @@ They do not accept locale maps embedded directly in the application manifest. Se
 for the expression syntax, arguments, catalog structure, and lookup behavior.
 
 Translation catalogs are available automatically. Do not add
-`kind: v0/translation` entries to `includes`; only declare resource dependencies
+`v0/translation/<name>` entries to `imports`; only declare resource dependencies
 that the application must resolve explicitly.
 
 ## Icon URL
