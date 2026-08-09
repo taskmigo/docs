@@ -1,9 +1,10 @@
 ---
-title: v0/translation
+title: Translation
 description: Define locale catalogs and render translated messages.
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
+import { TypeTable } from "fumadocs-ui/components/type-table";
 
 <Cards>
   <Card
@@ -47,11 +48,23 @@ description: '{{ Trans "applications.home.welcome" .User.Name }}'
 
 ## Create a catalog
 
-| Field          | Required | Rule                                                                                               |
-| -------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `kind`         | Yes      | Must be `v0/translation`.                                                                          |
-| `spec.locale`  | Yes      | Normalized [BCP 47](https://www.rfc-editor.org/info/bcp47/) locale such as `en`, `vi`, or `pt-BR`. |
-| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                           |
+<TypeTable
+  type={{
+    kind: { type: '"v0/translation"', required: true, description: "The manifest kind." },
+    "spec.locale": {
+      type: "BCP 47 language tag",
+      required: true,
+      description: "A normalized locale such as `en`, `vi`, or `pt-BR`.",
+    },
+    "spec.content": {
+      type: "Record<string, unknown>",
+      required: true,
+      description: "The catalog content. Every key must be a non-empty string.",
+    },
+  }}
+/>
+
+`spec.locale` uses a [BCP 47](https://www.rfc-editor.org/info/bcp47/) language tag.
 
 `spec.locale` selects the catalog; `name` identifies the contribution. All translation resources with the same normalized locale merge into one effective catalog.
 

@@ -1,25 +1,36 @@
 ---
-title: Manifests
-description: Open the reference for each defined manifest kind.
+title: Overview
+description: Choose the manifest that matches what you want to define.
 ---
 
-Choose the resource you want to define. Each reference includes a complete example, its `spec`
-fields, and the conditions that make the manifest invalid. Shared identity, version, import, and
-revision rules live in the [Resource model](/versions/v0/resources).
+Manifests describe the resources that make up a Taskmigo system. Start with the outcome you want,
+then open the matching reference for a complete example, its `spec` fields, and validation rules.
+
+| I want to…                                       | Use this manifest                                    |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| Compose applications and set shared branding     | [Site](/versions/v0/manifests/v0-site)               |
+| Group pages under a path and assign their routes | [Application](/versions/v0/manifests/v0-application) |
+| Build an interface from registered components    | [Page](/versions/v0/manifests/v0-page)               |
+| Add translated messages for a locale             | [Translation](/versions/v0/manifests/v0-translation) |
+
+## Manifest types
 
 <Cards>
-  <Card href="/versions/v0/manifests/v0-site" title="v0/site">
+  <Card href="/versions/v0/manifests/v0-site" title="Site">
     Start the resource graph, expose applications, and define shared branding.
   </Card>
-  <Card href="/versions/v0/manifests/v0-application" title="v0/application">
+  <Card href="/versions/v0/manifests/v0-application" title="Application">
     Group pages under one application path and assign their routes.
   </Card>
-  <Card href="/versions/v0/manifests/v0-page" title="v0/page">
+  <Card href="/versions/v0/manifests/v0-page" title="Page">
     Build a user interface from registered components.
   </Card>
-  <Card href="/versions/v0/manifests/v0-translation" title="v0/translation">
+  <Card href="/versions/v0/manifests/v0-translation" title="Translation">
     Add translated messages to a locale catalog.
   </Card>
 </Cards>
 
-See [Product status](/versions/v0/status) for planned kinds and open decisions.
+Shared identity, version, import, and revision rules live in the
+[Resource model](/versions/v0/resources).
+
+See [Product status](/versions/v0/status) for planned manifest types and open decisions.
