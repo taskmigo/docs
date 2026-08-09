@@ -28,7 +28,7 @@ the snapshot current in one atomic switch.
     icon={<RefreshCw />}
     title="Dependency recovery RFC"
     href="#dependency-recovery-rfc"
-    description="Preview the proposed recovery order for future multi-level graphs."
+    description="Preview unresolved recovery behavior for multi-level graphs."
   />
   <Card
     icon={<ShieldCheck />}
@@ -47,26 +47,27 @@ Create, update, delete, and package import all enter the same lifecycle.
 
 ### Find the affected graph
 
-Taskmigo starts with the changed resource and follows reverse dependencies to
-the Site. Resources outside its reachable graph are not revalidated.
+Taskmigo starts with the changed resource and follows reverse `imports` and
+`includes` references to the Site. Resources outside its reachable graph are
+not revalidated.
 
 Translation catalogs are tracked by effective locale rather than explicit
-import edges. Changing a translation resource also marks the Site graph when it
-uses that locale catalog.
+reference edges. Changing a translation resource also marks the Site graph when
+it uses that locale catalog.
 
   </Step>
   <Step>
 
 ### Resolve a candidate graph
 
-The `v0/site` manifest is resolved from its existing declarations. Explicit
-imports select a revision per graph edge; translation catalogs are attached for
-the effective locale.
+The `v0/site` manifest is resolved from its existing declarations. Site
+imports and Application includes select a revision per graph edge; translation
+catalogs are attached for the effective locale.
 
 Separate branches may select different versions of the same `(kind, name)`.
 Both revisions can coexist in the candidate graph and, if valid, its snapshot.
-See [Resource model](/versions/v0/resources#imports) for import and version
-selection rules.
+See [Resource model](/versions/v0/resources#imports-and-includes) for reference
+and version selection rules.
 
   </Step>
   <Step>
@@ -77,7 +78,7 @@ Activation requires all of the following to succeed:
 
 - YAML parsing and common manifest metadata
 - kind-specific schema validation
-- import hierarchy, dependency resolution, and graph checks
+- import and include hierarchy, dependency resolution, and graph checks
 - security constraints
 
 Taskmigo validates the complete reachable graph before changing runtime state.
@@ -128,26 +129,25 @@ with the affected revisions and leaves runtime state unchanged.
 ## Dependency recovery RFC
 
 <Callout title="RFC: proposed behavior, not the current contract" type="warn">
-  The current import graph only supports `Site → Application`, so it does not yet require
-  multi-level dependency recovery. This section records the intended behavior for future kinds and
-  import edges. Details may change before the proposal becomes part of the defined contract.
+  The resource graph now supports `Site → Application → Page`, but dependency recovery order
+  after a Page becomes invalid or valid again is not yet a defined runtime contract. This section
+  records the intended behavior. Details may change before the proposal becomes defined.
 </Callout>
 
-The proposal revalidates resources in dependency order. Consider a future graph
-where `A` imports `B`, and `B` imports `C`:
+The proposal revalidates resources in dependency order. For the current graph, consider an Application that includes a Page:
 
 <Tabs items={['Dependency breaks', 'Dependency recovers']}>
   <Tab>
 
-1. `C` becomes missing or invalid.
-2. Candidate validation fails for `B`, then `A`.
+1. The Page becomes missing or invalid.
+2. Candidate validation fails for the Application, then the Site.
 3. The candidate follows the invalid outcome above.
 
   </Tab>
   <Tab>
 
-1. `C` becomes valid again.
-2. Taskmigo validates `C`, then `B`, then `A`.
+1. The Page becomes valid again.
+2. Taskmigo validates the Page, then the Application, then the Site.
 3. The valid graph continues to snapshot build and activation.
 
   </Tab>
@@ -161,7 +161,7 @@ active.
 ## Package boundary
 
 <Callout title="A package is activated as one unit" type="success">
-  Import validates the complete package, including the one-Site invariant and import hierarchy,
+  Import validates the complete package, including the one-Site invariant and reference hierarchy,
   before resolving dependencies inside the target Taskmigo schema. A failed import must not leave a
   partially active runtime state.
 </Callout>
