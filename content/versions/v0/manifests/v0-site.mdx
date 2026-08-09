@@ -5,6 +5,11 @@ description: Compose applications and define shared site branding.
 
 A `v0/site` is the composition root. It imports applications, selects which ones to expose, and defines shared brand assets.
 
+<Callout title="One Site per system" type="warn">
+  A valid Taskmigo system contains exactly one Site manifest. Another Site is
+  invalid even when its name, resource version, or schema prefix differs.
+</Callout>
+
 ```yaml
 kind: v0/site
 name: root
@@ -41,4 +46,4 @@ Each name in `spec.applications` must have a matching `v0/application/<name>` im
 
 ## Validation
 
-Beyond [common resource validation](/versions/v0/resources), a site is invalid when branding or a required brand field is missing, an application name is duplicated, or an exposed application has no matching import.
+Beyond [common resource validation](/versions/v0/resources), a site is invalid when another Site exists in the system, branding or a required brand field is missing, an application name is duplicated, or an exposed application has no matching import.
