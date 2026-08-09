@@ -43,12 +43,12 @@ The example exposes `v0/page/index` at `<host>/home/`.
       description: "An absolute image URL with a scheme and host.",
     },
     "spec.label": {
-      type: "TransExpression",
+      type: "Expression<string>",
       required: true,
       description: "The translated application name.",
     },
     "spec.description": {
-      type: "TransExpression",
+      type: "Expression<string>",
       required: true,
       description: "The translated application description.",
     },
@@ -77,9 +77,10 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
-`spec.label` and `spec.description` accept `Trans` or `TransN` expressions. Other Application
-fields are literal values. See [Expressions](/versions/v0/expressions#expression-support-by-manifest-kind)
-for YAML quoting and scope rules.
+`spec.label` and `spec.description` accept the full Go template Expression syntax and must render a
+string. Other Application fields are literal values. See
+[Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind) for YAML quoting,
+functions, and context rules.
 
 ## Paths and routes
 
@@ -105,6 +106,7 @@ Beyond [common resource validation](/versions/v0/resources), an application is i
 - A required field is missing.
 - `imports` is missing, empty, contains a duplicate identity, or targets a kind other than `v0/page`.
 - `spec.icon` is not an absolute URL.
-- Translated metadata is not a valid `Trans` expression.
+- An Expression in translated metadata has invalid template syntax, cannot be evaluated, or does not
+  render a string.
 - `spec.path` or a page path does not begin with `/`.
 - `spec.routes` is empty, repeats a path, or references a page absent from `imports`.

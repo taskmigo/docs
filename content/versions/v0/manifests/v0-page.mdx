@@ -35,12 +35,12 @@ spec:
     kind: { type: '"v0/page"', required: true, description: "The manifest kind." },
     "spec.meta": { type: "object", required: true, description: "Page metadata." },
     "spec.meta.title": {
-      type: "string | TransExpression",
+      type: "string | Expression<string>",
       required: true,
       description: "The page title.",
     },
     "spec.meta.description": {
-      type: "string | TransExpression",
+      type: "string | Expression<string>",
       required: true,
       description: "The page description.",
     },
@@ -93,11 +93,12 @@ components such as `Stack` and `Typography` do not require imports.
 
 ## Expressions
 
-`spec.meta.title` and `spec.meta.description` accept literal strings, `Trans`, or `TransN`.
-Component node values accept expressions only when the selected component's field contract allows
-them. A Page has no Component prop scope, so `{{ props.title }}` is invalid directly in a Page.
+`spec.meta.title` and `spec.meta.description` accept literal strings or any valid Go template
+Expression that renders a string. Component node values accept Expressions only when the selected
+component's field contract allows them. A Page has no Component prop context, so an otherwise valid
+`{{ props.title }}` action cannot be evaluated directly in a Page.
 
-See [Expressions](/versions/v0/expressions#expression-support-by-manifest-kind) for syntax, scope,
+See [Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind) for syntax, scope,
 and the kind-by-kind support matrix.
 
 ## Validation

@@ -65,9 +65,9 @@ spec:
   }}
 />
 
-Prop names are case-sensitive. A `default` value must match its declared `type`. Template
-expressions may read only declared props and use the form `{{ props.title }}`. See
-[Expressions](/versions/v0/expressions#read-component-props) for the YAML syntax and scope.
+Prop names are case-sensitive. A `default` value must match its declared `type`. Values in
+`spec.template` may use the full Go template Expression syntax and access declared props through
+`props.<name>`. See [Expressions](/versions/v0/expressions#component-props) for syntax and context.
 
 ## Use the Component in a Page
 

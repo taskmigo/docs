@@ -1,12 +1,14 @@
 ---
 title: Expressions
-description: Use dynamic values safely in Taskmigo YAML manifests.
+description: Use Go template syntax with the data available in each Taskmigo context.
 ---
 
-An expression tells Taskmigo to calculate a field instead of using the YAML text literally. Use an
-expression only in a field whose manifest or component contract explicitly accepts it.
+An Expression is a YAML string that Taskmigo evaluates as a Go
+[`text/template`](https://pkg.go.dev/text/template) template. Any field whose contract accepts an
+Expression accepts the complete template syntax. The field determines the expected result type;
+the manifest context determines which data is available while the template runs.
 
-## Start with one expression
+## Start with one Expression
 
 This Application label reads a message from the active translation catalog:
 
@@ -15,49 +17,67 @@ spec:
   label: '{{ Trans "applications.home.label" }}'
 ```
 
-The outer single quotes belong to YAML. The content between `{{` and `}}` is the Taskmigo
-expression. Quoting the complete value keeps YAML from interpreting the braces as YAML syntax.
+The outer single quotes belong to YAML. The action between `{{` and `}}` belongs to the template.
+Quote the complete YAML value so braces, colons, and other template characters are not interpreted
+as YAML syntax.
 
-<Callout title="An expression replaces the complete value" type="info">
-  Use a documented expression as the entire YAML scalar. Combining literal text and an expression,
-  such as `title: 'Welcome {{ props.name }}'`, is not defined. Put the complete message in a
-  translation or pass the complete value as a prop instead.
+An Expression may also combine text and actions:
+
+```yaml
+children: "Welcome, {{ props.name }}!"
+```
+
+## Use Go template syntax
+
+Taskmigo does not define a smaller expression grammar. Inside an Expression, use Go template
+actions, arguments, pipelines, variables, whitespace trimming, and control structures.
+
+| Need                              | Syntax example                                                   |
+| --------------------------------- | ---------------------------------------------------------------- |
+| Print a value                     | `{{ props.title }}`                                              |
+| Combine text and a value          | `Hello, {{ props.name }}!`                                       |
+| Pass a pipeline result            | `{{ props.title \| printf "%s" }}`                               |
+| Compare values                    | `{{ if eq props.active true }}Active{{ else }}Inactive{{ end }}` |
+| Set and reuse a template variable | `{{ $title := props.title }}{{ $title }}`                        |
+| Change the current context        | `{{ with props.title }}{{ . }}{{ end }}`                         |
+| Iterate a value                   | `{{ range props.items }}{{ . }}{{ end }}`                        |
+
+The examples show syntax, not permission to use every referenced name in every context. A template
+must both parse successfully and use only functions and context values available where it runs.
+Names and paths are case-sensitive.
+
+<Callout title="Syntax and context are separate" type="info">
+  `{{ props.title }}` is valid Go template syntax. It still fails when evaluated outside a context
+  that exposes `props`, or when that context has no `title` prop.
 </Callout>
 
-## Available expressions
+## Global functions
 
-| Expression                           | Outcome                                            | Available context                    |
-| ------------------------------------ | -------------------------------------------------- | ------------------------------------ |
-| `{{ Trans "key" ...values }}`        | Reads and formats one translated message.          | Fields that accept `TransExpression` |
-| `{{ TransN "key" count ...values }}` | Selects and formats a locale-aware plural message. | Fields that accept `TransExpression` |
-| `{{ props.<name> }}`                 | Reads one typed prop supplied by a Page.           | `v0/component` `spec.template` only  |
-
-Expression names and paths are case-sensitive. `Trans`, `TransN`, and `props.title` cannot be
-written as `trans`, `transN`, or `props.Title` unless that exact prop name was declared.
-
-### Translate text with `Trans`
+Taskmigo exposes its template functions anywhere a field accepts an Expression. `Trans` reads and
+formats a translated message; `TransN` selects a locale-aware plural message. Go template built-in
+functions and operators such as `and`, `or`, `not`, `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `len`,
+`index`, `slice`, and `printf` use their standard `text/template` behavior.
 
 ```yaml
 description: '{{ Trans "applications.home.description" }}'
 ```
 
-The quoted key is a dotted path in the effective locale catalog. Additional values fill the
-message's formatting placeholders from left to right.
-
-### Translate a quantity with `TransN`
-
 ```yaml
 description: '{{ TransN "cart.items" 3 }}'
 ```
 
-The numeric argument selects a CLDR plural category and also fills the first compatible
-placeholder. See [Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for
-catalog structure, placeholder rules, fallbacks, and errors.
+See [Translation](/versions/v0/manifests/v0-translation) for catalog structure, placeholders,
+plural selection, fallbacks, and errors.
 
-### Read Component props
+## Context values
 
-A reusable Component declares the values it accepts in `spec.props`. Its template can read each
-value by its declared name:
+Context values are not global functions. Taskmigo exposes them only while evaluating the relevant
+manifest area.
+
+### Component props
+
+A reusable Component declares its context under `spec.props`. Expressions within `spec.template`
+can access those values through `props.<name>`:
 
 ```yaml
 kind: v0/component
@@ -73,44 +93,47 @@ spec:
     component: Typography
     props:
       variant: h1
-    children: "{{ props.title }}"
+    children: "Title: {{ props.title }}"
 ```
 
-`props.title` is available because `spec.props.title` declares it. It is not a global variable and
-is not available in a Page, Application, Site, or Translation manifest.
+`props.title` exists because the same Component declares `spec.props.title`. `props` is unavailable
+in a Page, Application, Site, or Translation manifest. A prop path that was not declared is invalid
+when the template is evaluated.
 
-## Expression support by manifest kind
+## Support and context by manifest kind
 
-Start from the kind, then check the exact field. A kind supporting one expression does not make
-expressions valid in all of its fields.
+First check whether the exact field accepts an Expression. If it does, the full template syntax is
+available; only its context values vary.
 
-| Kind             | Fields that accept expressions                                                                                        | Available expressions                                              |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Common fields    | None                                                                                                                  | None                                                               |
-| `v0/site`        | None                                                                                                                  | None                                                               |
-| `v0/application` | `spec.label`, `spec.description`                                                                                      | `Trans`, `TransN`                                                  |
-| `v0/page`        | `spec.meta.title`, `spec.meta.description`; component values only when their component contract accepts an expression | `Trans`, `TransN`                                                  |
-| `v0/component`   | Values inside `spec.template` only when the target component field accepts the resolved type                          | `props`; `Trans` or `TransN` where a translated string is accepted |
-| `v0/translation` | None; `spec.content` defines the values that translation expressions read                                             | None                                                               |
+| Kind             | Fields that accept Expressions                                                                                 | Additional context values      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Common fields    | None                                                                                                           | None                           |
+| `v0/site`        | None                                                                                                           | None                           |
+| `v0/application` | `spec.label`, `spec.description`                                                                               | None                           |
+| `v0/page`        | `spec.meta.title`, `spec.meta.description`; component values when the component contract accepts an Expression | None                           |
+| `v0/component`   | Values inside `spec.template` when the target component field accepts the resolved type                        | Declared `props.<name>` values |
+| `v0/translation` | None; `spec.content` provides catalog data consumed by `Trans` and `TransN`                                    | None                           |
 
-For example, [Typography children](/versions/v0/ui-components/typography) accept a string or a
-translation expression. A Component may therefore place `{{ props.title }}` there when `title` is
-declared as a string. A boolean prop cannot be placed there because its resolved type is not a
-string.
+For example, [Typography children](/versions/v0/ui-components/typography) accept a string
+Expression. A Component can use text, pipelines, conditions, or declared props there as long as the
+rendered result is a string accepted by `Typography.children`.
 
-<Callout title="No expression in common identity fields" type="warn">
-  `kind`, `name`, `version`, `imports`, and resource references are literal YAML values. Expressions
-  cannot generate resource identities, dependencies, routes, field names, or component names.
+<Callout title="Identity and structure remain literal" type="warn">
+  `kind`, `name`, `version`, `imports`, field names, resource references, routes, and component
+  names do not accept Expressions unless their contract explicitly says otherwise. Template syntax
+  cannot generate manifest structure.
 </Callout>
 
 ## Validation checklist
 
-Before saving a manifest that contains an expression, check that:
+Before saving a manifest that contains an Expression, check that:
 
-1. The complete expression is quoted as one YAML scalar.
-2. The field's contract accepts that expression and its resolved value type.
-3. Every `props.<name>` path matches a declaration in the same Component's `spec.props`.
-4. Every translation key and placeholder value follows the [Translation contract](/versions/v0/manifests/v0-translation).
+1. The exact field accepts an Expression.
+2. The complete YAML scalar is quoted when template characters could be interpreted by YAML.
+3. The template follows Go `text/template` syntax and every action is closed.
+4. Every referenced function or context value is available in that field's evaluation context.
+5. The rendered value matches the type required by the field or component contract.
 
-Nested expressions, expression operators, string interpolation, conditional expressions, and
-access to undeclared runtime objects are not defined. See [Product status](/versions/v0/status#known-limitations-and-open-decisions).
+Parsing validates syntax. Evaluation can still fail because a function or context value is
+unavailable, a path is missing, a function receives invalid arguments, or the rendered value has
+the wrong type.
