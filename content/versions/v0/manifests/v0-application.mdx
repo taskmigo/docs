@@ -16,13 +16,13 @@ spec:
 
 ## Fields
 
-| Field | Rule |
-| --- | --- |
-| `kind` | Must be `v0/application`. |
-| `spec.icon` | Required absolute image URL with a scheme and host. |
-| `spec.label` | Required `Trans` expression for the application name. |
+| Field              | Rule                                                         |
+| ------------------ | ------------------------------------------------------------ |
+| `kind`             | Must be `v0/application`.                                    |
+| `spec.icon`        | Required absolute image URL with a scheme and host.          |
+| `spec.label`       | Required `Trans` expression for the application name.        |
 | `spec.description` | Required `Trans` expression for the application description. |
-| `spec.route` | Required non-empty entry route. |
+| `spec.route`       | Required non-empty entry route.                              |
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 

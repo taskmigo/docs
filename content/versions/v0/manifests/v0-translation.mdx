@@ -3,11 +3,19 @@ title: v0/translation
 description: Define locale catalogs and render translated messages.
 ---
 
-import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Step, Steps } from "fumadocs-ui/components/steps";
 
 <Cards>
-  <Card href="#create-a-catalog" title="Create a catalog" description="Define messages for one locale." />
-  <Card href="#translate-a-message" title="Use Trans" description="Render a message and fill placeholders." />
+  <Card
+    href="#create-a-catalog"
+    title="Create a catalog"
+    description="Define messages for one locale."
+  />
+  <Card
+    href="#translate-a-message"
+    title="Use Trans"
+    description="Render a message and fill placeholders."
+  />
   <Card href="#translate-a-quantity" title="Use TransN" description="Select a CLDR plural form." />
 </Cards>
 
@@ -32,17 +40,17 @@ description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
 <Callout title="Catalogs do not participate in imports" type="info">
-  A `v0/translation` manifest cannot declare `imports`, and no manifest may import
-  it. Taskmigo assembles the effective catalog for the active locale.
+  A `v0/translation` manifest cannot declare `imports`, and no manifest may import it. Taskmigo
+  assembles the effective catalog for the active locale.
 </Callout>
 
 ## Create a catalog
 
-| Field | Required | Rule |
-| --- | --- | --- |
-| `kind` | Yes | Must be `v0/translation`. |
-| `spec.locale` | Yes | Normalized [BCP 47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) locale such as `en`, `vi`, or `pt-BR`. |
-| `spec.content` | Yes | Object whose keys are non-empty strings. |
+| Field          | Required | Rule                                                                                                     |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `kind`         | Yes      | Must be `v0/translation`.                                                                                |
+| `spec.locale`  | Yes      | Normalized [BCP 47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) locale such as `en`, `vi`, or `pt-BR`. |
+| `spec.content` | Yes      | Object whose keys are non-empty strings.                                                                 |
 
 `spec.locale` selects the catalog; `name` identifies the contribution. All translation resources with the same normalized locale merge into one effective catalog.
 
@@ -76,7 +84,8 @@ orders:
 ```
 
 <Callout title="Pass every placeholder value" type="warn">
-  Missing values stop rendering with a runtime error. Values must also be compatible with their formatting verbs.
+  Missing values stop rendering with a runtime error. Values must also be compatible with their
+  formatting verbs.
 </Callout>
 
 Placeholder order belongs to each translated message and may differ by locale.
@@ -116,30 +125,30 @@ Category names do not imply numeric ranges: CLDR evaluates the original count fo
 <Steps>
   <Step>
 
-  ### Resolve the locale
+### Resolve the locale
 
-  Select the active catalog or the configured global fallback catalog.
-
-  </Step>
-  <Step>
-
-  ### Select a category
-
-  Evaluate the original numeric count with the locale's CLDR rules.
+Select the active catalog or the configured global fallback catalog.
 
   </Step>
   <Step>
 
-  ### Select a form
+### Select a category
 
-  Use the selected category when present; otherwise use `other`.
+Evaluate the original numeric count with the locale's CLDR rules.
 
   </Step>
   <Step>
 
-  ### Fill placeholders
+### Select a form
 
-  Apply the count first, followed by additional values from left to right.
+Use the selected category when present; otherwise use `other`.
+
+  </Step>
+  <Step>
+
+### Fill placeholders
+
+Apply the count first, followed by additional values from left to right.
 
   </Step>
 </Steps>
@@ -161,26 +170,26 @@ spec:
 
 ### Merge rules
 
-| Situation | Result |
-| --- | --- |
-| Different object paths | Merge recursively. |
-| A path exists in one resource | Copy it into the effective catalog. |
-| Arrays or non-object values | Keep them as final values; arrays are not concatenated. |
-| Two resources define the same path | Reject the catalog, even when values match. |
-| An object and non-object share a path | Reject the catalog. |
+| Situation                             | Result                                                  |
+| ------------------------------------- | ------------------------------------------------------- |
+| Different object paths                | Merge recursively.                                      |
+| A path exists in one resource         | Copy it into the effective catalog.                     |
+| Arrays or non-object values           | Keep them as final values; arrays are not concatenated. |
+| Two resources define the same path    | Reject the catalog, even when values match.             |
+| An object and non-object share a path | Reject the catalog.                                     |
 
 Merge results never depend on load order. Errors identify the locale, path, and both source manifests.
 
 ## Errors and fallbacks
 
-| Condition | Result |
-| --- | --- |
-| `TransN` receives a non-numeric count | `[invalid_plural_count:key]` |
-| The selected category is missing | Use `other`. |
-| The selected category and `other` are missing | `[untranslated_form:key]` |
-| The active locale is unavailable | Use the configured global fallback locale. |
-| A message receives too few values | Stop rendering with a runtime error. |
-| A value is incompatible with its formatting verb | `[translation_format_error:key]` |
+| Condition                                        | Result                                     |
+| ------------------------------------------------ | ------------------------------------------ |
+| `TransN` receives a non-numeric count            | `[invalid_plural_count:key]`               |
+| The selected category is missing                 | Use `other`.                               |
+| The selected category and `other` are missing    | `[untranslated_form:key]`                  |
+| The active locale is unavailable                 | Use the configured global fallback locale. |
+| A message receives too few values                | Stop rendering with a runtime error.       |
+| A value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
 Missing-key behavior is not defined in version 0.
 
