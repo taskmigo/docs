@@ -62,7 +62,7 @@ imports:
   - v0/application/admin
 ```
 
-Version 0 accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
+Taskmigo accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
 ### Uniqueness scope
 
@@ -79,23 +79,18 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
 
 ### Import ability
 
-Version 0 has one explicit import edge: a Site may import an Application.
-This is the complete matrix; every other explicit import is invalid.
+Only one import edge is currently allowed: a Site may import an Application.
+This matrix is exhaustive; every other import target is invalid.
 
 | Importer         |  `v0/site`  | `v0/application` |  `v0/translation`  |
 | ---------------- | :---------: | :--------------: | :----------------: |
 | `v0/site`        |      —      |     Allowed      |    Not allowed     |
 | `v0/application` | Not allowed |   Not allowed    |    Not allowed     |
-| `v0/translation` | Not allowed |   Not allowed    | No `imports` field |
-
-```mermaid
-flowchart TD
-  Site["v0/site"] -->|imports| Application["v0/application"]
-  Translation["v0/translation"] -. "locale catalog; not an import" .-> Runtime["Site snapshot"]
-```
+| `v0/translation` | Not allowed |   Not allowed    |    Not allowed     |
 
 <Callout title="Translation catalogs are never import targets" type="warn">
-  No manifest may import `v0/translation`. Taskmigo attaches the effective locale catalog
+  No manifest may import `v0/translation`. A translation manifest may include the common
+  `imports` field only as an empty list. Taskmigo attaches the effective locale catalog
   automatically when it builds a Site snapshot.
 </Callout>
 
@@ -132,7 +127,7 @@ Record the selected revision so later changes cannot alter the active snapshot.
   </Step>
 </Steps>
 
-Malformed references, hierarchy violations, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, invalid selected revisions, and Site cardinality violations fail resolution.
+Malformed references, disallowed kind pairs, missing resources, duplicate imports, unsatisfied constraints, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title="Latest is resolved at build time" type="info">
   An unconstrained import follows the latest revision when a new snapshot is built. Existing
