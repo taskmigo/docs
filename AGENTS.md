@@ -61,6 +61,11 @@ Before adding a visual component, ask what question it answers:
 
 ## Verification and publishing workflow
 
+Before installing dependencies or running verification in a new environment,
+read [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md). Apply any matching environment
+workaround first so known setup failures do not interrupt or invalidate the
+verification run.
+
 Complete this sequence from the repository root before publishing:
 
 1. Run every verification gate in this exact order:
