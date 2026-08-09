@@ -77,7 +77,7 @@ Create, update, delete, and package import all enter the same lifecycle.
 
   - YAML parsing and common manifest metadata
   - kind-specific schema validation
-  - dependency resolution and graph checks
+  - import hierarchy, dependency resolution, and graph checks
   - security constraints
 
   Taskmigo validates the complete reachable graph before changing runtime state.
@@ -155,9 +155,9 @@ the candidate fails while the last valid snapshot remains active.
 ## Package boundary
 
 <Callout title="A package is activated as one unit" type="success">
-  Import validates the complete package, including the one-Site invariant, and
-  resolves its dependencies inside the target Taskmigo schema before creating
-  revisions. A failed import must not leave a partially active runtime state.
+  Import validates the complete package, including the one-Site invariant and
+  import hierarchy, before resolving dependencies inside the target Taskmigo
+  schema. A failed import must not leave a partially active runtime state.
 </Callout>
 
 Export produces a portable package of canonical YAML. Importing that package

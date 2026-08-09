@@ -31,7 +31,10 @@ label: '{{ Trans "applications.home.label" }}'
 description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
-Consumers do not import translation resources. Taskmigo assembles the effective catalog for the active locale.
+<Callout title="Catalogs do not participate in imports" type="info">
+  A `v0/translation` manifest cannot declare `imports`, and no manifest may import
+  it. Taskmigo assembles the effective catalog for the active locale.
+</Callout>
 
 ## Create a catalog
 
@@ -190,5 +193,6 @@ Beyond [common resource validation](/versions/v0/resources), a translation manif
 - A content key is empty.
 - A value cannot be represented by the manifest format.
 - Multiple resources create a merge conflict.
+- An `imports` field is present.
 
 Saving, updating, or deleting a translation resource revalidates snapshots that use its locale catalog.

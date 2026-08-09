@@ -18,22 +18,19 @@ The graph starts at the system's only logical Site resource. Every regular runti
 ```text
 Site
 ├── Application: crm
-│   ├── Page: dashboard
-│   └── Entity: customer
-└── Shared resources
-    ├── Theme
-    └── Policy
+│   └── Lower-ranked kinds (when defined)
+└── Application: helpdesk
 ```
 
 The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
 Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
 
-Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
+Import edges only descend the [kind hierarchy](/versions/v0/resources#kind-hierarchy). Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. Each [Application manifest](/versions/v0/manifests/v0-application) declares its own dependencies; resources are never discovered by name.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) may only import lower-ranked kinds; resources are never discovered by name.
 
 ## Runtime boundary
 

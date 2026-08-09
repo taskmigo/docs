@@ -10,12 +10,12 @@ These rules apply to every manifest. Kind reference pages document only their ad
 ## Common shape
 
 ```yaml
-kind: v0/page
-name: users
+kind: v0/site
+name: root
 version: 1.0.0 # optional
 
 imports:
-  - v0/entity/user@^1.2.0
+  - v0/application/home@^1.2.0
 
 spec:
   # kind-specific configuration
@@ -26,7 +26,7 @@ spec:
 | `kind` | Required schema identifier in its complete versioned form, such as `v0/application`. |
 | `name` | Required resource name matching `[a-zA-Z0-9_-]+`. |
 | `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision. |
-| `imports` | Optional dependency references. Each `(kind, name)` may appear once per manifest. |
+| `imports` | Optional dependency references when the selected kind allows them. Each `(kind, name)` may appear once per manifest. |
 | `spec` | Required kind-specific configuration. |
 
 ## Identity and revisions
@@ -77,6 +77,21 @@ imports:
 
 The rule is not graph-wide. Different manifests may resolve the same identity to different versions, and both revisions may coexist in one snapshot.
 
+### Kind hierarchy
+
+An import must point to a strictly lower kind. Same-kind and upward imports are invalid.
+
+| Importing kind | Permitted import targets in v0 |
+| --- | --- |
+| `v0/site` | `v0/application` |
+| `v0/application` | Lower-ranked kinds when their contracts are defined. It cannot import `v0/site`, another `v0/application`, or `v0/translation`. |
+| `v0/translation` | None. This kind does not permit an `imports` field. |
+
+<Callout title="Translation catalogs are never import targets" type="warn">
+  No manifest may import `v0/translation`. Taskmigo attaches the effective locale
+  catalog automatically when it builds a Site snapshot.
+</Callout>
+
 ### Resolution
 
 <Steps>
@@ -110,7 +125,7 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
   </Step>
 </Steps>
 
-Malformed references, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, invalid selected revisions, and Site cardinality violations fail resolution.
+Malformed references, hierarchy violations, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title="Latest is resolved at build time" type="info">
   An unconstrained import follows the latest revision when a new snapshot is built. Existing snapshots remain unchanged.

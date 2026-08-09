@@ -1,6 +1,6 @@
 ---
 title: v0/application
-description: Define application metadata, dependencies, and an entry route.
+description: Define application metadata and an entry route.
 ---
 
 ```yaml
@@ -26,6 +26,10 @@ spec:
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
+## Imports
+
+An application may import only lower-ranked kinds as their contracts become defined. It cannot import `v0/site`, another `v0/application`, or `v0/translation`. No lower-ranked import target is defined in v0 yet. See [Kind hierarchy](/versions/v0/resources#kind-hierarchy).
+
 ## Validation
 
-Beyond [common resource validation](/versions/v0/resources), an application is invalid when a required field is missing, `spec.icon` is not an absolute URL, translated metadata is not a valid `Trans` expression, or `spec.route` is empty.
+Beyond [common resource validation](/versions/v0/resources), an application is invalid when a required field is missing, an import violates the kind hierarchy, `spec.icon` is not an absolute URL, translated metadata is not a valid `Trans` expression, or `spec.route` is empty.
