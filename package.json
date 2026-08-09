@@ -8,7 +8,8 @@
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
     "lint:check": "oxlint",
-    "format": "oxfmt .",
+    "lint:fix": "oxlint --fix",
+    "format:fix": "oxfmt .",
     "format:check": "oxfmt . --check"
   },
   "dependencies": {

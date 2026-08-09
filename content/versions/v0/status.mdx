@@ -7,13 +7,17 @@ description: Separate defined contracts from planned work and known limitations.
 
 <Cards>
   <Card href="/versions/v0/resources" title="Resource model">
-    Identity, revisions, versions, import rules, validation, snapshots, and the one-Site invariant.
+    Identity, revisions, versions, reference rules, validation, snapshots, and the one-Site
+    invariant.
   </Card>
   <Card href="/versions/v0/manifests/v0-site" title="v0/site">
     The system-wide composition root for applications and shared branding.
   </Card>
   <Card href="/versions/v0/manifests/v0-application" title="v0/application">
-    Application metadata and entry routes.
+    Application metadata, base paths, and page routes.
+  </Card>
+  <Card href="/versions/v0/manifests/v0-page" title="v0/page">
+    Page metadata and declarative component trees.
   </Card>
   <Card href="/versions/v0/manifests/v0-translation" title="v0/translation">
     Locale catalogs, placeholders, and CLDR pluralization.
@@ -23,7 +27,7 @@ description: Separate defined contracts from planned work and known limitations.
 ## Planned manifest kinds
 
 - `v0/entity`
-- `v0/page` and `v0/component`
+- `v0/component`
 - `v0/query` and `v0/action`
 - `v0/policy`, `v0/workflow`, `v0/theme`, and `v0/navigation`
 
@@ -32,7 +36,7 @@ Planned kinds are not public contracts until they have dedicated reference pages
 ## Known limitations and open decisions
 
 - Multi-tenancy is not available: one deployment manages one Site graph in one configured PostgreSQL schema.
-- Multi-level dependency recovery is an [RFC](/versions/v0/runtime#dependency-recovery-rfc), not a defined runtime contract.
+- The Page component contract currently defines only [`Stack`](/versions/v0/ui-components/stack) and [`Typography`](/versions/v0/ui-components/typography), with their minimum props.
 - Missing-translation-key behavior is not defined.
 - Translation override precedence is not defined.
 - The expression language beyond `Trans` and `TransN` is not defined.

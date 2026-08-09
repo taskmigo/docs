@@ -13,24 +13,31 @@ Taskmigo currently has no tenant registry, database routing, or `tenant_id`.
 
 ## Resource graph
 
-The graph starts at the system's only logical Site resource. Every regular runtime resource must be reachable through an `imports` edge.
+The graph starts at the system's only logical Site resource. Every regular runtime resource must be reachable through an allowed `imports` edge.
 
-```text
-Site
-├── Application: crm
-└── Application: helpdesk
+```mermaid
+flowchart TD
+  site["Site"] -->|imports| crm["Application: crm"]
+  site -->|imports| helpdesk["Application: helpdesk"]
+  crm -->|imports| crmIndex["Page: index"]
+  crm -->|imports| accounts["Page: accounts"]
+  helpdesk -->|imports| helpdeskIndex["Page: index"]
 ```
+
+A Site imports Applications. Only an Application may import Pages. Resources are never discovered by name, so a resource outside this graph cannot become part of the running Site.
 
 The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
-Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
+Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for reference syntax and resolution.
 
-The [Import ability matrix](/versions/v0/resources#import-ability) defines every allowed kind pair. Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
+The [Reference ability matrix](/versions/v0/resources#reference-ability) defines every allowed kind pair. Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) cannot currently import resources; resources are never discovered by name.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path.
 
 ## Runtime boundary
 
 A valid graph compiles into an immutable Site snapshot. Each request reads one snapshot. Invalid changes retain diagnostics while the current snapshot continues serving traffic.
+
+Continue with the [Runtime lifecycle](/versions/v0/runtime) to see how a resource change becomes an active snapshot.

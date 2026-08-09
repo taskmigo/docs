@@ -1,0 +1,54 @@
+---
+title: Typography
+description: Render string content with a semantic text variant.
+---
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+Use `Typography` to render a text string with a heading, paragraph, or inline text variant.
+Component names are case-sensitive, so `typography` is invalid.
+
+```yaml
+component: Typography
+props:
+  variant: h1
+children: Hello World
+```
+
+## Fields
+
+<TypeTable
+  type={{
+    component: {
+      type: '"Typography"',
+      required: true,
+      description: "The case-sensitive registered component name.",
+    },
+    "props.variant": {
+      type: '"h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "span" | "p"',
+      required: true,
+      description: "The text variant.",
+    },
+    children: {
+      type: "string",
+      required: true,
+      description: "Text content. A `Trans` expression is also a string.",
+    },
+  }}
+/>
+
+`Typography.children` cannot contain nested component nodes.
+
+| Content purpose | Allowed variants  |
+| --------------- | ----------------- |
+| Heading         | `h1` through `h6` |
+| Paragraph       | `p`               |
+| Inline text     | `span`            |
+
+## Validation
+
+A `Typography` node is invalid when:
+
+- `component` does not exactly match `Typography`.
+- `props.variant` is outside `h1`–`h6`, `span`, and `p`.
+- `children` is not a string.

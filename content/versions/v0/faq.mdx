@@ -22,15 +22,30 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   revisions](/versions/v0/resources#identity-and-revisions).
 </Accordion>
 
-<Accordion title="Can one manifest import the same resource more than once?" id="duplicate-imports">
-  No. Imports are unique by `(kind, name)` within a manifest, even when their version constraints
-  differ. Separate graph branches may resolve that identity to different versions. See [Uniqueness
+<Accordion
+  title="Can one manifest reference the same resource more than once?"
+  id="duplicate-references"
+>
+  No. Imports are unique by `(kind, name)` within a manifest, even when version constraints differ.
+  Separate graph branches may resolve that identity to different versions. See [Uniqueness
   scope](/versions/v0/resources#uniqueness-scope).
 </Accordion>
 
-<Accordion title="What does an import without a version select?" id="unversioned-import">
+<Accordion title="What does a reference without a version select?" id="unversioned-reference">
   It selects the latest revision when a candidate snapshot is built. Existing snapshots remain
-  unchanged. See [Import resolution](/versions/v0/resources#resolution).
+  unchanged. See [Reference resolution](/versions/v0/resources#resolution).
+</Accordion>
+
+<Accordion title="Which resources may a manifest import?" id="import-relationships">
+  A Site may import Applications, while only an Application may import Pages. The [Reference ability
+  matrix](/versions/v0/resources#reference-ability) shows the complete set of allowed and rejected
+  relationships.
+</Accordion>
+
+<Accordion title="Where is a Page route defined?" id="page-route">
+  An Application owns Page routing. Its `spec.path` defines the application path and each
+  `spec.routes[].path` defines a path below it. A Page path of `/` is the index page for the
+  application path. See [Paths and routes](/versions/v0/manifests/v0-application#paths-and-routes).
 </Accordion>
 
 <Accordion title="Do consumers import translation resources?" id="translation-imports">
@@ -41,13 +56,8 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
 <Accordion title="Can a translation manifest declare imports?" id="translation-imports-field">
   Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the
-  common resource shape; any entry makes the translation manifest invalid. See [Import
-  ability](/versions/v0/resources#import-ability).
-</Accordion>
-
-<Accordion title="Which kinds can import each other?" id="kind-hierarchy">
-  The [Import ability matrix](/versions/v0/resources#import-ability) is exhaustive. Currently,
-  `v0/site` may import `v0/application`; every other kind pair is rejected.
+  common resource shape; any entry makes the translation manifest invalid. See [Reference
+  ability](/versions/v0/resources#reference-ability).
 </Accordion>
 
 <Accordion title="What happens when a resource change is invalid?" id="invalid-change">
@@ -58,6 +68,13 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 <Accordion title="Is there a manual publish or activation step?" id="manual-activation">
   No. A complete valid candidate is compiled and activated atomically. See [Runtime
   lifecycle](/versions/v0/runtime).
+</Accordion>
+
+<Accordion title="Can dependency recovery attempts conflict?" id="dependency-recovery-queue">
+  No. Taskmigo queues dependency recovery and processes one candidate at a time. Each candidate must
+  finish validation and activation, or fail, before the next candidate starts. The current snapshot
+  remains active while recovery is queued or when a candidate fails. See [Dependency
+  recovery](/versions/v0/runtime#dependency-recovery).
 </Accordion>
 
 <Accordion title="Can a package import partially activate?" id="package-atomicity">

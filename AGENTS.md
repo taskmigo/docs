@@ -12,11 +12,44 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
-- Be concise and task-oriented. Prefer one canonical explanation with links over repeated content.
+- Write for product users completing a task and developers implementing or integrating the contract. Structure the reading path as outcome, smallest useful example, contract, failure states, and next step.
 - The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/...`.
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
-- Use Mermaid only when it makes a workflow or relationship materially easier to understand; do not repeat a table or simple prose as a diagram.
+- Prefer concrete outcomes and examples over abstract descriptions. Define unavoidable terms on first use and do not assume that product users know React, graph, database, or runtime terminology.
+- Keep each rule in one canonical location and link to it elsewhere. Remove filler, repeated rules, and general knowledge that does not help readers use or implement Taskmigo.
+- Use Mermaid instead of ASCII diagrams. Keep diagrams small, label edges and outcomes clearly, and explain the practical takeaway in nearby prose. Do not repeat a table or simple prose as a diagram.
+- Use emoji only as a compact, accessible scanning aid in a legend, status, or small matrix. Pair each emoji with a text label or legend; never rely on color or emoji alone to communicate a rule.
+
+## MDX and content components
+
+Use components only when they improve navigation, comparison, sequence, or emphasis. Keep required contract information in the primary reading path.
+
+- **Accordion and Accordions:** FAQs, optional details, or long secondary explanations.
+- **Banner:** Reserve for a high-priority, site-wide announcement configured at the page or layout level. Use a Callout for an important note inside an article.
+- **Code blocks:** Use fenced Markdown code blocks for static code, commands, configuration, and manifests. Add a language such as `yaml`, `bash`, or `tsx`. Use the dynamic code-block component only when the rendered example must change at runtime.
+- **Files, Folder, and File:** Directory layouts or multi-file architecture; use a list for a short flat set of files.
+- **GitHub Info:** Live repository information that materially helps a repository or installation page; otherwise use a source link.
+- **Image Zoom:** Use for screenshots, diagrams, or mockups whose details are difficult to inspect at inline size. Always provide meaningful alternative text.
+- **Inline TOC:** Long overview or index pages with many peer sections.
+- **Steps:** Procedures and lifecycle sequences where order is meaningful.
+- **Tabs:** Equivalent alternatives such as package managers or platforms; never split one sequential procedure across tabs.
+- **Type Table:** Use for props and fields on every UI component reference page. It is the canonical compact settings reference; keep validation rules in prose when the table would be ambiguous.
+- **Cards:** Landing-page navigation or a small set of useful next steps.
+- **Callouts:** Notes, tips, warnings, and safety-critical constraints; keep the primary contract in normal prose.
+
+Before adding a visual component, ask what question it answers:
+
+| Reader question                          | Preferred format |
+| ---------------------------------------- | ---------------- |
+| “What values map to what outcomes?”      | Table            |
+| “What do I do first, next, and last?”    | Steps            |
+| “How do these resources relate?”         | Mermaid          |
+| “Which equivalent option applies to me?” | Tabs             |
+| “Where should I go next?”                | Cards            |
+| “What must I not miss?”                  | Callout          |
+
+`Auto Type Table` and `Graph View` are not available in the repository's current `fumadocs-ui` version. Do not use or document them as available components unless the dependency and site integration are added first. Import non-global components from their existing `fumadocs-ui/components/*` entry points and follow examples already present in this repository. Components provided by the default MDX mapping, such as `Callout`, `Card`, and `Cards`, do not need local imports.
 
 ## Change checklist
 
@@ -26,15 +59,23 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Update the nearest `meta.json` when adding, removing, or reordering pages.
 - Do not hand-edit generated output. Preserve unrelated changes and keep the diff scoped to the request.
 
-Run the relevant checks from the repository root:
+## Verification and publishing workflow
+
+Complete this sequence from the repository root before publishing:
+
+1. Run every verification gate in this exact order:
 
 ```bash
-npm run format
-npm run format:check
 npm run lint:check
+npm run format:check
 npm run types:check
 npm run build
-git diff --check
 ```
 
-If a check cannot run, report it accurately instead of claiming it passed.
+2. Fix every failure and restart at `npm run lint:check` after any change. `npm run lint:fix` can fix some lint issues, but review its changes and manually fix diagnostics that remain. Use `npm run format:fix` for formatting failures; fix type-check and build failures manually.
+3. Commit only after all four gates pass.
+4. Push the verified commit to GitHub.
+
+Keep commit history concise. By default, make at most one commit and one push per completed round of work. Finish the requested changes and verification before committing; do not create incremental commits for individual files, formatting fixes, or failed verification attempts. Create multiple commits only when the user explicitly requests them or when independently reviewable changes must remain separate, and explain the split before committing.
+
+If a required check cannot run or cannot pass, stop before commit and push, then report the blocker accurately instead of claiming the check passed.
