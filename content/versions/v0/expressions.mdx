@@ -1,12 +1,11 @@
 ---
 title: Expressions
-description: Use Go template syntax with the data available in each Taskmigo context.
+description: Use Taskmigo Expression syntax with the data available in each context.
 ---
 
-An Expression is a YAML string that Taskmigo evaluates as a Go
-[`text/template`](https://pkg.go.dev/text/template) template. Any field whose contract accepts an
-Expression accepts the complete template syntax. The field determines the expected result type;
-the manifest context determines which data is available while the template runs.
+An Expression is a YAML string that Taskmigo evaluates dynamically. Any field whose contract
+accepts an Expression accepts the complete Taskmigo Expression syntax. The field determines the
+expected result type; the manifest context determines which data is available during evaluation.
 
 ## Start with one Expression
 
@@ -17,8 +16,8 @@ spec:
   label: '{{ Trans "applications.home.label" }}'
 ```
 
-The outer single quotes belong to YAML. The action between `{{` and `}}` belongs to the template.
-Quote the complete YAML value so braces, colons, and other template characters are not interpreted
+The outer single quotes belong to YAML. The action between `{{` and `}}` belongs to the Expression.
+Quote the complete YAML value so braces, colons, and other Expression characters are not interpreted
 as YAML syntax.
 
 An Expression may also combine text and actions:
@@ -27,36 +26,36 @@ An Expression may also combine text and actions:
 children: "Welcome, {{ props.name }}!"
 ```
 
-## Use Go template syntax
+## Use Expression syntax
 
-Taskmigo does not define a smaller expression grammar. Inside an Expression, use Go template
-actions, arguments, pipelines, variables, whitespace trimming, and control structures.
+Inside an Expression, you can use actions, arguments, pipelines, variables, whitespace trimming,
+and control structures.
 
-| Need                              | Syntax example                                                   |
-| --------------------------------- | ---------------------------------------------------------------- |
-| Print a value                     | `{{ props.title }}`                                              |
-| Combine text and a value          | `Hello, {{ props.name }}!`                                       |
-| Pass a pipeline result            | `{{ props.title \| printf "%s" }}`                               |
-| Compare values                    | `{{ if eq props.active true }}Active{{ else }}Inactive{{ end }}` |
-| Set and reuse a template variable | `{{ $title := props.title }}{{ $title }}`                        |
-| Change the current context        | `{{ with props.title }}{{ . }}{{ end }}`                         |
-| Iterate a value                   | `{{ range props.items }}{{ . }}{{ end }}`                        |
+| Need                           | Syntax example                                                   |
+| ------------------------------ | ---------------------------------------------------------------- |
+| Print a value                  | `{{ props.title }}`                                              |
+| Combine text and a value       | `Hello, {{ props.name }}!`                                       |
+| Pass a pipeline result         | `{{ props.title \| printf "%s" }}`                               |
+| Compare values                 | `{{ if eq props.active true }}Active{{ else }}Inactive{{ end }}` |
+| Set and reuse a local variable | `{{ $title := props.title }}{{ $title }}`                        |
+| Change the current context     | `{{ with props.title }}{{ . }}{{ end }}`                         |
+| Iterate a value                | `{{ range props.items }}{{ . }}{{ end }}`                        |
 
-The examples show syntax, not permission to use every referenced name in every context. A template
+The examples show syntax, not permission to use every referenced name in every context. An Expression
 must both parse successfully and use only functions and context values available where it runs.
 Names and paths are case-sensitive.
 
 <Callout title="Syntax and context are separate" type="info">
-  `{{ props.title }}` is valid Go template syntax. It still fails when evaluated outside a context
+  `{{ props.title }}` is valid Expression syntax. It still fails when evaluated outside a context
   that exposes `props`, or when that context has no `title` prop.
 </Callout>
 
 ## Global functions
 
-Taskmigo exposes its template functions anywhere a field accepts an Expression. `Trans` reads and
-formats a translated message; `TransN` selects a locale-aware plural message. Go template built-in
-functions and operators such as `and`, `or`, `not`, `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `len`,
-`index`, `slice`, and `printf` use their standard `text/template` behavior.
+Taskmigo exposes its Expression functions anywhere a field accepts an Expression. `Trans` reads and
+formats a translated message; `TransN` selects a locale-aware plural message. Built-in functions
+and operators include `and`, `or`, `not`, `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `len`, `index`,
+`slice`, and `printf`.
 
 ```yaml
 description: '{{ Trans "applications.home.description" }}'
@@ -130,7 +129,7 @@ Before saving a manifest that contains an Expression, check that:
 
 1. The exact field accepts an Expression.
 2. The complete YAML scalar is quoted when template characters could be interpreted by YAML.
-3. The template follows Go `text/template` syntax and every action is closed.
+3. The Expression follows Taskmigo syntax and every action is closed.
 4. Every referenced function or context value is available in that field's evaluation context.
 5. The rendered value matches the type required by the field or component contract.
 
