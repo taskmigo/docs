@@ -43,14 +43,15 @@ The example exposes `v0/page/index` at `<host>/home/`.
       description: "An absolute image URL with a scheme and host.",
     },
     "spec.label": {
-      type: "Expression<string>",
+      type: "string",
       required: true,
-      description: "The translated application name.",
+      description: "The translated application name. Supports Expression; the result must be a string.",
     },
     "spec.description": {
-      type: "Expression<string>",
+      type: "string",
       required: true,
-      description: "The translated application description.",
+      description:
+        "The translated application description. Supports Expression; the result must be a string.",
     },
     "spec.path": {
       type: "AbsolutePath",
@@ -77,9 +78,8 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
-`spec.label` and `spec.description` accept the full Taskmigo Expression syntax and must render a
-string. Other Application fields are literal values. See
-[Expressions](/versions/v0/expressions) for YAML quoting, functions, and context rules.
+Expression support is declared in each field's Type Table note. Other Application fields are literal.
+See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
 
 ## Paths and routes
 
