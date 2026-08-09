@@ -12,20 +12,18 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
 kind: v0/page
 name: index
 
+imports:
+  - v0/component/header
+
 spec:
   meta:
     title: '{{ Trans "pages.index.meta.title" }}'
     description: '{{ Trans "pages.index.meta.description" }}'
 
   body:
-    - component: Stack
+    - component: v0/component/header
       props:
-        data-component-id: container
-      children:
-        - component: Typography
-          props:
-            variant: h1
-          children: Hello World
+        title: Hello World
 ```
 
 ## Fields
@@ -71,11 +69,30 @@ defines [Stack](/versions/v0/ui-components/stack) for grouping content and
 [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and
 props may be added in future contract revisions.
 
+A Page may also import a reusable [`v0/component`](/versions/v0/manifests/v0-component). Use its full
+resource reference as the node's `component` value and pass values declared by the Component through
+`props`:
+
+```yaml
+imports:
+  - v0/component/header
+
+spec:
+  body:
+    - component: v0/component/header
+      props:
+        title: Hello World
+```
+
+Every reusable Component used in `spec.body` must appear in the Page's `imports`. Built-in
+components such as `Stack` and `Typography` do not require imports.
+
 ## Validation
 
 Beyond [common resource validation](/versions/v0/resources), a page is invalid when:
 
-- `imports` contains an entry.
+- `imports` targets a kind other than `v0/component` or repeats the same Component identity.
 - A required metadata or body field is missing.
 - `spec.body` is not a list.
 - A component name uses incorrect casing, is not registered, or its node does not satisfy that component's contract.
+- A reusable Component is used without being imported, or its `props` do not satisfy the Component's typed inputs.

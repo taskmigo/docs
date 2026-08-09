@@ -37,9 +37,15 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="Which resources may a manifest import?" id="import-relationships">
-  A Site may import Applications, while only an Application may import Pages. The [Reference ability
-  matrix](/versions/v0/resources#reference-ability) shows the complete set of allowed and rejected
-  relationships.
+  A Site may import Applications, an Application may import Pages, and a Page may import reusable
+  Components. The [Reference ability matrix](/versions/v0/resources#reference-ability) shows the
+  complete set of allowed and rejected relationships.
+</Accordion>
+
+<Accordion title="How do I reuse one Component across Pages?" id="reuse-component">
+  Define a `v0/component` with typed inputs and a template. Each Page imports the Component, uses
+  its full resource reference as the node's `component` value, and supplies input values through
+  `props`. See [v0/component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
 </Accordion>
 
 <Accordion title="Where is a Page route defined?" id="page-route">
