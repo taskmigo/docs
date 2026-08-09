@@ -1,28 +1,17 @@
 ---
 title: Runtime lifecycle
-description: Validation, dependency recovery, and atomic Site snapshots.
+description: Follow validation, dependency recovery, and snapshot activation.
 ---
 
-# Runtime lifecycle
+## Validate
 
-Taskmigo validates resources as a dependency graph, not as isolated files.
+A revision becomes valid only after YAML parsing, common metadata, kind-specific schema, dependency resolution, graph, and security checks succeed.
 
-## Validation
+Failed revisions retain structured diagnostics with the manifest path and, when available, source location. Diagnostics must not expose credentials, connection strings, or data from schemas Taskmigo does not own.
 
-A revision is valid only when YAML parsing, common metadata, kind-specific schema checks, dependency resolution, graph checks, and security constraints all succeed.
+## Recover dependencies
 
-Import uniqueness is checked per manifest. Version selection remains local to
-each graph edge, so separate branches may resolve the same resource identity to
-different versions.
-
-Invalid revisions keep structured diagnostics. A diagnostic identifies the error, its manifest path, and—when available—the source location. Diagnostics must never expose credentials, connection strings, or data from schemas that Taskmigo does not own.
-
-## Dependency recovery
-
-After create, update, delete, or import, Taskmigo revalidates the changed resource and all reverse dependents.
-
-Translation resources do not need explicit reverse-dependency edges. A change to
-a translation resource revalidates Site snapshots that use its locale catalog.
+Creating, updating, deleting, or importing a resource revalidates it and its reverse dependents.
 
 ```text
 A imports B imports C
@@ -33,26 +22,26 @@ C becomes invalid
 
 Fix C
 → validate C, B, then A
-→ rebuild the graph when all are valid
+→ rebuild when the graph is valid
 ```
 
-A dependency error never invalidates unrelated branches. Fixing a root cause does not rewrite dependent manifests; it re-resolves them using their existing declarations.
+Unrelated branches remain valid. Recovery re-resolves existing declarations; it does not rewrite dependent manifests.
 
-Deleting a resource invalidates resources that resolve to it. The previous Site snapshot remains active until a complete valid graph produces a replacement.
+A translation change revalidates snapshots that use its locale catalog without requiring explicit translation import edges.
 
-## Site snapshots
+## Activate a snapshot
 
-A Site snapshot is an immutable, resolved view of the complete reachable graph. It includes every selected resource revision and the normalized runtime model. When separate dependency branches select different versions of the same `(kind, name)`, both revisions may be present in the snapshot.
+A Site snapshot contains the resolved revisions and normalized runtime model for the reachable graph. Separate branches may contribute different versions of the same resource identity.
 
 ```text
-Change or import
-→ validate changed graph
-→ valid: build a new snapshot and switch it atomically
+Change or package import
+→ validate the affected graph
+→ valid: build and atomically activate a snapshot
 → invalid: store diagnostics and keep the current snapshot
 ```
 
-There is no manual activation state. When a complete graph is valid, Taskmigo atomically updates the current snapshot in PostgreSQL. New requests use the new snapshot; requests already in progress may finish on the previous one.
+There is no manual activation state. New requests use the replacement snapshot; in-flight requests may finish on the previous one.
 
-## Import and export
+## Import and export packages
 
-Import and export use portable YAML packages. Export preserves canonical YAML. Import validates the complete package before creating revisions, resolves dependencies inside the target Taskmigo schema, and must not leave a partially active runtime state.
+Export preserves canonical YAML. Import validates the complete portable package before creating revisions and cannot leave a partially active runtime state.
