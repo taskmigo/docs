@@ -1,0 +1,23 @@
+---
+title: Context variables
+description: Reference the runtime and current manifest values available in Expressions.
+---
+
+Context variables provide values for the active runtime and the manifest currently being evaluated.
+Use them only in fields that accept an Expression.
+
+## Global variables
+
+| Variable | Type | Description |
+| -------- | ---- | ----------- |
+| `.Runtime.Hostname` | string | The hostname at evaluation time. |
+| `.This.kind` | string | The current manifest kind. |
+| `.This.name` | string | The current manifest name. |
+| `.This.version` | string | The current manifest version. |
+| `.This.revision` | string | The current manifest revision. |
+
+## Component props
+
+A reusable Component also exposes its declared `spec.props` values through `props.<name>` while
+evaluating its `spec.template`. See [Expressions](/versions/v0/expressions#component-props) for an
+example and the manifest-specific availability rules.
