@@ -158,6 +158,12 @@ spec:
 The presence of a category in a catalog does not define when it is selected.
 Selection always comes from the CLDR rule for the active locale.
 
+<Callout title="Preserve the original numeric value" type="info">
+  CLDR rules can distinguish integers from decimals. Implementations must preserve
+  the numeric operands needed by CLDR and must not truncate a value such as `1.5`
+  to `1` before category selection.
+</Callout>
+
 ### Defensive behavior
 
 | Condition | Result |
