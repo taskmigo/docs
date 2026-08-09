@@ -3,38 +3,38 @@ title: Runtime lifecycle
 description: Follow a resource change from validation to atomic Site snapshot activation.
 ---
 
-import { Card, Cards } from "fumadocs-ui/components/card";
-import { Step, Steps } from "fumadocs-ui/components/steps";
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-import { GitBranch, RefreshCw, ShieldCheck } from "lucide-react";
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { GitBranch, RefreshCw, ShieldCheck } from 'lucide-react';
 
 Taskmigo never activates a manifest directly. It resolves and validates a
 candidate Site graph, compiles that graph into an immutable snapshot, then makes
 the snapshot current in one atomic switch.
 
-<Callout title="The current Site stays available" type="info">
-  Building or rejecting a candidate does not disturb the current snapshot. A replacement becomes
-  visible only after the complete candidate graph is valid.
+<Callout title='The current Site stays available' type='info'>
+  Building or rejecting a candidate does not disturb the current snapshot. A replacement becomes visible only after the
+  complete candidate graph is valid.
 </Callout>
 
 <Cards>
   <Card
     icon={<GitBranch />}
-    title="Validation scope"
-    href="#from-change-to-active-snapshot"
-    description="See how one change expands to a candidate Site graph."
+    title='Validation scope'
+    href='#from-change-to-active-snapshot'
+    description='See how one change expands to a candidate Site graph.'
   />
   <Card
     icon={<RefreshCw />}
-    title="Dependency recovery"
-    href="#dependency-recovery"
-    description="Understand queued recovery and conflict-free activation."
+    title='Dependency recovery'
+    href='#dependency-recovery'
+    description='Understand queued recovery and conflict-free activation.'
   />
   <Card
     icon={<ShieldCheck />}
-    title="Snapshot handoff"
-    href="#validation-outcome"
-    description="Compare the activation and rejection paths."
+    title='Snapshot handoff'
+    href='#validation-outcome'
+    description='Compare the activation and rejection paths.'
   />
 </Cards>
 
@@ -118,9 +118,9 @@ separate publish step or manual activation state.
 Validation stops before snapshot build. Taskmigo stores structured diagnostics
 with the affected revisions and leaves runtime state unchanged.
 
-<Callout title="Diagnostics are safe to display" type="info">
-  A diagnostic identifies the error, manifest path, and source location when available. It must not
-  expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+<Callout title='Diagnostics are safe to display' type='info'>
+  A diagnostic identifies the error, manifest path, and source location when available. It must not expose credentials,
+  connection strings, or data from schemas that Taskmigo does not own.
 </Callout>
 
   </Tab>
@@ -133,10 +133,10 @@ rebuilds each affected Site candidate graph. Recovery uses the same complete-gra
 validation and atomic activation path as any other resource change; there is no
 manual recovery or publish step.
 
-<Callout title="Recovery work is queued" type="info">
-  Taskmigo processes one recovery candidate at a time. A queued candidate must finish validation and
-  activation, or fail, before the next candidate starts. This prevents concurrent recovery attempts
-  from publishing conflicting resource snapshots.
+<Callout title='Recovery work is queued' type='info'>
+  Taskmigo processes one recovery candidate at a time. A queued candidate must finish validation and activation, or
+  fail, before the next candidate starts. This prevents concurrent recovery attempts from publishing conflicting
+  resource snapshots.
 </Callout>
 
 ### Recovery lifecycle
@@ -228,10 +228,9 @@ queue implementation, or repair invalid manifests.
 
 ## Package boundary
 
-<Callout title="A package is activated as one unit" type="success">
-  Import validates the complete package, including the one-Site invariant and reference hierarchy,
-  before resolving dependencies inside the target Taskmigo schema. A failed import must not leave a
-  partially active runtime state.
+<Callout title='A package is activated as one unit' type='success'>
+  Import validates the complete package, including the one-Site invariant and reference hierarchy, before resolving
+  dependencies inside the target Taskmigo schema. A failed import must not leave a partially active runtime state.
 </Callout>
 
 Export produces a portable package of canonical YAML. Importing that package

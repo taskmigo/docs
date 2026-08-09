@@ -3,12 +3,12 @@
   "root": true,
   "pages": [
     "index",
-    "architecture",
-    "resources",
-    "expressions",
-    "runtime",
     "manifests",
     "ui-components",
+    "expressions",
+    "resources",
+    "architecture",
+    "runtime",
     "faq",
     "status"
   ]

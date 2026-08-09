@@ -3,13 +3,13 @@ title: Site
 description: Compose applications and define shared site branding.
 ---
 
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
 A `v0/site` is the composition root. It imports applications, selects which ones to expose, and defines shared brand assets.
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
-
-<Callout title="One Site per system" type="warn">
-  A valid Taskmigo system contains exactly one logical Site resource. It may have multiple
-  revisions, but a different name or schema prefix cannot create another Site.
+<Callout title='One Site per system' type='warn'>
+  A valid Taskmigo system contains exactly one logical Site resource. It may have multiple revisions, but a different
+  name or schema prefix cannot create another Site.
 </Callout>
 
 Its `imports` entries may target only `v0/application`. Translation catalogs are attached automatically and must not be imported.
@@ -37,15 +37,31 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/site"', required: true, description: "The manifest kind." },
-    "spec.brand": { type: "object", required: true, description: "Shared branding configuration." },
-    "spec.brand.label": { type: "string", required: true, description: "The site label." },
-    "spec.brand.logo": { type: "string", required: true, description: "The logo path." },
-    "spec.brand.favicon": { type: "string", required: true, description: "The favicon path." },
-    "spec.applications": {
-      type: "string[]",
+    kind: { type: '"v0/site"', required: true, description: 'Selects the Site contract.' },
+    'spec.brand': {
+      type: 'object',
       required: true,
-      description: "The ordered names of exposed applications.",
+      description: 'Brand values shared by every exposed application.',
+    },
+    'spec.brand.label': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
+      required: true,
+      description: 'Name shown in shared site branding.',
+    },
+    'spec.brand.logo': {
+      type: 'string',
+      required: true,
+      description: 'Primary brand image.',
+    },
+    'spec.brand.favicon': {
+      type: 'string',
+      required: true,
+      description: 'Icon shown in browser tabs.',
+    },
+    'spec.applications': {
+      type: 'string[]',
+      required: true,
+      description: 'Applications to expose, in display order.',
     },
   }}
 />
@@ -54,9 +70,8 @@ spec:
 
 Each name in `spec.applications` must have a matching `v0/application/<name>` import. List order controls display order; importing an application alone does not expose it.
 
-Site fields use literal YAML values. Expressions are not accepted in Site branding, application
-names, imports, or common resource fields. See
-[Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind).
+`spec.brand.label` supports Expressions. Other branding fields, application names, imports, and
+common resource fields use literal YAML values. See [Expressions](/versions/v0/expressions).
 
 ## Validation
 

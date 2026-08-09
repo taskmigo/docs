@@ -3,38 +3,37 @@ title: Overview
 description: Choose the manifest that matches what you want to define.
 ---
 
-Manifests describe the resources that make up a Taskmigo system. Start with the outcome you want,
-then open the matching reference for a complete example, its `spec` fields, and validation rules.
-
-| I want to…                                       | Use this manifest                                    |
-| ------------------------------------------------ | ---------------------------------------------------- |
-| Compose applications and set shared branding     | [Site](/versions/v0/manifests/v0-site)               |
-| Group pages under a path and assign their routes | [Application](/versions/v0/manifests/v0-application) |
-| Build an interface from registered components    | [Page](/versions/v0/manifests/v0-page)               |
-| Reuse one typed component tree across Pages      | [Component](/versions/v0/manifests/v0-component)     |
-| Add translated messages for a locale             | [Translation](/versions/v0/manifests/v0-translation) |
-
-## Manifest types
+Manifests describe the resources that make up a Taskmigo system. Choose the outcome below to open
+its complete example, `spec` fields, and validation rules.
 
 <Cards>
-  <Card href="/versions/v0/manifests/v0-site" title="Site">
-    Start the resource graph, expose applications, and define shared branding.
+  <Card href='/versions/v0/manifests/v0-site' title='Compose applications'>
+    Use a Site to start the resource graph, expose applications, and define shared branding.
   </Card>
-  <Card href="/versions/v0/manifests/v0-application" title="Application">
-    Group pages under one application path and assign their routes.
+  <Card href='/versions/v0/manifests/v0-application' title='Route Pages'>
+    Use an Application to group Pages under one application path and assign their routes.
   </Card>
-  <Card href="/versions/v0/manifests/v0-page" title="Page">
-    Build a user interface from registered components.
+  <Card href='/versions/v0/manifests/v0-page' title='Build an interface'>
+    Use a Page to create a user interface from registered Components.
   </Card>
-  <Card href="/versions/v0/manifests/v0-component" title="Component">
-    Reuse one typed component tree across any number of Pages.
+  <Card href='/versions/v0/manifests/v0-component' title='Reuse interface'>
+    Use a Component to reuse one typed component tree across any number of Pages.
   </Card>
-  <Card href="/versions/v0/manifests/v0-translation" title="Translation">
-    Add translated messages to a locale catalog.
+  <Card href='/versions/v0/manifests/v0-translation' title='Translate content'>
+    Use a Translation resource to add messages to a locale catalog.
   </Card>
 </Cards>
 
-Shared identity, version, import, and revision rules live in the
-[Resource model](/versions/v0/resources).
+## Shared rules
 
-See [Product status](/versions/v0/status) for planned manifest types and open decisions.
+<Cards>
+  <Card href='/versions/v0/resources' title='Resource model'>
+    Check identity, revision, version, import, and reference rules shared by every manifest.
+  </Card>
+  <Card href='/versions/v0/expressions' title='Expressions'>
+    Check which fields accept dynamic values and which context values are available.
+  </Card>
+  <Card href='/versions/v0/status' title='Product status'>
+    Check planned manifest types and open decisions before relying on an undeclared contract.
+  </Card>
+</Cards>

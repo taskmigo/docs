@@ -3,7 +3,7 @@ title: Component
 description: Define a typed, reusable UI template for Pages.
 ---
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 A `v0/component` packages a component tree once so any Page can import and render it. Declare the
 values each Page may provide in `spec.props`, then read those values from `spec.template` through
@@ -22,6 +22,10 @@ spec:
       type: boolean
       required: false
       default: true
+    items:
+      type: array
+      required: false
+      default: []
 
   template:
     component: Stack
@@ -29,45 +33,50 @@ spec:
       - component: Typography
         props:
           variant: h1
-        children: "{{ props.title }}"
+        children: '{{ props.title }}'
 ```
 
 ## Fields
 
 <TypeTable
   type={{
-    kind: { type: '"v0/component"', required: true, description: "The manifest kind." },
-    "spec.props": {
-      type: "Record<string, PropDefinition>",
+    kind: {
+      type: '"v0/component"',
       required: true,
-      description: "The typed props accepted from an importing Page.",
+      description: 'Selects the reusable Component contract.',
     },
-    "spec.props.*.type": {
-      type: '"string" | "number" | "boolean"',
+    'spec.props': {
+      type: 'Record<string, PropDefinition>',
       required: true,
-      description: "The value type accepted for this prop.",
+      description: 'Contract that importing Pages use to supply values.',
     },
-    "spec.props.*.required": {
-      type: "boolean",
+    'spec.props.*.type': {
+      type: '"string" | "number" | "boolean" | "array"',
       required: true,
-      description: "Whether an importing Page must provide this prop.",
+      description: 'Checks values passed by an importing Page.',
     },
-    "spec.props.*.default": {
-      type: "string | number | boolean",
+    'spec.props.*.required': {
+      type: 'boolean',
+      required: true,
+      description: 'Controls whether an importing Page may omit this prop.',
+    },
+    'spec.props.*.default': {
+      type: 'string | number | boolean | Array<string | number | boolean>',
       required: false,
-      description: "The value used when the Page omits this prop.",
+      description: 'Fallback used when an importing Page omits this prop.',
     },
-    "spec.template": {
-      type: "ComponentNode",
+    'spec.template': {
+      type: 'ComponentNode',
       required: true,
-      description: "The root node rendered wherever the component is used.",
+      description: 'Component tree rendered for every use.',
     },
   }}
 />
 
-Prop names are case-sensitive. A `default` value must match its declared `type`. Values in
+Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may
+contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in
 `spec.template` may use the full Taskmigo Expression syntax and access declared props through
-`props.<name>`. See [Expressions](/versions/v0/expressions#component-props) for syntax and context.
+`props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
 
 ## Use the Component in a Page
 
@@ -101,8 +110,10 @@ renders the same template.
 Beyond [common resource validation](/versions/v0/resources), a Component is invalid when:
 
 - `spec.props` or `spec.template` is missing.
-- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`, or
-  `boolean`.
+- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`,
+  `boolean`, or `array`.
+- An `array` prop contains a nested array, an object, or a value other than a string, number, or
+  boolean.
 - A prop's `default` does not match its declared type.
 - The template reads a prop that is not declared in `spec.props`.
 - The template root or one of its descendants does not satisfy the referenced component contract.

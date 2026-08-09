@@ -6,7 +6,7 @@ description: Define page metadata and a declarative component tree.
 A `v0/page` builds one user interface from an ordered tree of registered components. It owns the
 page title, description, and content; an Application decides where users can open it.
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ```yaml
 kind: v0/page
@@ -32,22 +32,26 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/page"', required: true, description: "The manifest kind." },
-    "spec.meta": { type: "object", required: true, description: "Page metadata." },
-    "spec.meta.title": {
-      type: "string | Expression<string>",
+    kind: { type: '"v0/page"', required: true, description: 'Selects the Page contract.' },
+    'spec.meta': {
+      type: 'object',
       required: true,
-      description: "The page title.",
+      description: 'Information used to present this Page.',
     },
-    "spec.meta.description": {
-      type: "string | Expression<string>",
+    'spec.meta.title': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "The page description.",
+      description: 'Name used to identify this Page.',
     },
-    "spec.body": {
-      type: "ComponentNode[]",
+    'spec.meta.description': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "An ordered list of component nodes.",
+      description: 'Short summary of this Page.',
+    },
+    'spec.body': {
+      type: 'ComponentNode[]',
+      required: true,
+      description: 'Top-level component nodes rendered in source order.',
     },
   }}
 />
@@ -91,15 +95,8 @@ spec:
 Every reusable Component used in `spec.body` must appear in the Page's `imports`. Built-in
 components such as `Stack` and `Typography` do not require imports.
 
-## Expressions
-
-`spec.meta.title` and `spec.meta.description` accept literal strings or any valid Taskmigo
-Expression that renders a string. Component node values accept Expressions only when the selected
-component's field contract allows them. A Page has no Component prop context, so an otherwise valid
-`{{ props.title }}` action cannot be evaluated directly in a Page.
-
-See [Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind) for syntax, scope,
-and the kind-by-kind support matrix.
+Expression support is declared in each field or component Type Table note. See
+[Expressions](/versions/v0/expressions) for syntax, functions, and context values.
 
 ## Validation
 

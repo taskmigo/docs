@@ -1,138 +1,100 @@
 ---
 title: Expressions
-description: Use Taskmigo Expression syntax with the data available in each context.
+description: Put dynamic text or values into fields that accept an Expression.
 ---
 
-An Expression is a YAML string that Taskmigo evaluates dynamically. Any field whose contract
-accepts an Expression accepts the complete Taskmigo Expression syntax. The field determines the
-expected result type; the manifest context determines which data is available during evaluation.
+Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the
+manifest: translated text, the current manifest identity, or the runtime hostname.
 
-## Start with one Expression
+## Start here
 
-This Application label reads a message from the active translation catalog:
+Write an Expression between `{{` and `}}`. Quote the complete YAML value.
 
 ```yaml
 spec:
   label: '{{ Trans "applications.home.label" }}'
 ```
 
-The outer single quotes belong to YAML. The action between `{{` and `}}` belongs to the Expression.
-Quote the complete YAML value so braces, colons, and other Expression characters are not interpreted
-as YAML syntax.
+In this example:
 
-An Expression may also combine text and actions:
+- `'...'` is the YAML string.
+- `{{ ... }}` is the Expression.
+- `Trans` is a global function.
 
-```yaml
-children: "Welcome, {{ props.name }}!"
-```
+## Choose what you need
 
-## Use Expression syntax
+| I want to…                                         | Start with                                        |
+| -------------------------------------------------- | ------------------------------------------------- |
+| Show text from a translation catalog               | [Translate a message](#translate-a-message)       |
+| Change text for a count                            | [Translate a quantity](#translate-a-quantity)     |
+| Use the Site hostname or current manifest metadata | [Use context values](#use-context-values)         |
+| Format, compare, or transform a value              | [Use built-in functions](#use-built-in-functions) |
 
-Inside an Expression, you can use actions, arguments, pipelines, variables, whitespace trimming,
-and control structures.
+## Translate a message
 
-| Need                           | Syntax example                                                   |
-| ------------------------------ | ---------------------------------------------------------------- |
-| Print a value                  | `{{ props.title }}`                                              |
-| Combine text and a value       | `Hello, {{ props.name }}!`                                       |
-| Pass a pipeline result         | `{{ props.title \| printf "%s" }}`                               |
-| Compare values                 | `{{ if eq props.active true }}Active{{ else }}Inactive{{ end }}` |
-| Set and reuse a local variable | `{{ $title := props.title }}{{ $title }}`                        |
-| Change the current context     | `{{ with props.title }}{{ . }}{{ end }}`                         |
-| Iterate a value                | `{{ range props.items }}{{ . }}{{ end }}`                        |
-
-The examples show syntax, not permission to use every referenced name in every context. An Expression
-must both parse successfully and use only functions and context values available where it runs.
-Names and paths are case-sensitive.
-
-<Callout title="Syntax and context are separate" type="info">
-  `{{ props.title }}` is valid Expression syntax. It still fails when evaluated outside a context
-  that exposes `props`, or when that context has no `title` prop.
-</Callout>
-
-## Global functions
-
-Taskmigo exposes its Expression functions anywhere a field accepts an Expression. `Trans` reads and
-formats a translated message; `TransN` selects a locale-aware plural message. Built-in functions
-and operators include `and`, `or`, `not`, `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `len`, `index`,
-`slice`, and `printf`.
+Use `Trans` with a catalog key. Additional values fill the message placeholders.
 
 ```yaml
 description: '{{ Trans "applications.home.description" }}'
 ```
 
+For catalog structure, placeholders, fallbacks, and errors, see
+[Translation](/versions/v0/manifests/v0-translation#translate-a-message).
+
+## Translate a quantity
+
+Use `TransN` when the catalog message changes for a quantity.
+
 ```yaml
 description: '{{ TransN "cart.items" 3 }}'
 ```
 
-See [Translation](/versions/v0/manifests/v0-translation) for catalog structure, placeholders,
-plural selection, fallbacks, and errors.
+The second argument is the count. Taskmigo selects the locale's plural form. See
+[Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for the complete rule.
 
-## Context values
+## Use context values
 
-Context values are not global functions. Taskmigo exposes them only while evaluating the relevant
-manifest area.
+| Value               | Available in              | Returns                         |
+| ------------------- | ------------------------- | ------------------------------- |
+| `.Runtime.Hostname` | Any Expression            | Hostname at evaluation time     |
+| `.This.kind`        | Any Expression            | Current manifest kind           |
+| `.This.name`        | Any Expression            | Current manifest name           |
+| `.This.version`     | Any Expression            | Current manifest version        |
+| `.This.revision`    | Any Expression            | Current manifest revision       |
+| `props.<name>`      | Component `spec.template` | A prop passed to that Component |
 
-### Component props
+## Use built-in functions
 
-A reusable Component declares its context under `spec.props`. Expressions within `spec.template`
-can access those values through `props.<name>`:
+These global functions are available wherever a field's Type Table shows the Expression tag.
 
-```yaml
-kind: v0/component
-name: heading
+_Example values: the prop names below are illustrative. A Component can access only props declared
+in its own `spec.props`._
 
-spec:
-  props:
-    title:
-      type: string
-      required: true
+| Need                       | Functions                          | Example                                                  |
+| -------------------------- | ---------------------------------- | -------------------------------------------------------- |
+| Combine boolean conditions | `and`, `or`, `not`                 | `{{ if and props.enabled props.visible }}Shown{{ end }}` |
+| Compare values             | `eq`, `ne`, `lt`, `le`, `gt`, `ge` | `{{ if eq props.variant "primary" }}Primary{{ end }}`    |
+| Count a value              | `len`                              | `{{ len props.items }}`                                  |
+| Select a value             | `index`                            | `{{ index props.items 0 }}`                              |
+| Select a range             | `slice`                            | `{{ slice props.items 0 2 }}`                            |
+| Format a value             | `printf`                           | `{{ printf "Hello, %s" props.name }}`                    |
 
-  template:
-    component: Typography
-    props:
-      variant: h1
-    children: "Title: {{ props.title }}"
-```
+## More Expression syntax
 
-`props.title` exists because the same Component declares `spec.props.title`. `props` is unavailable
-in a Page, Application, Site, or Translation manifest. A prop path that was not declared is invalid
-when the template is evaluated.
+Expressions can also use pipelines, local variables, conditions, and iteration.
 
-## Support and context by manifest kind
+| Need                                 | Syntax example                                           |
+| ------------------------------------ | -------------------------------------------------------- |
+| Pass a result to another function    | `{{ props.title \| printf "%s" }}`                       |
+| Store and reuse a value              | `{{ $title := props.title }}{{ $title }}`                |
+| Render only when a condition matches | `{{ if props.active }}Active{{ else }}Inactive{{ end }}` |
+| Iterate a value                      | `{{ range props.items }}{{ . }}{{ end }}`                |
 
-First check whether the exact field accepts an Expression. If it does, the full template syntax is
-available; only its context values vary.
+Names and paths are case-sensitive.
 
-| Kind             | Fields that accept Expressions                                                                                 | Additional context values      |
-| ---------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Common fields    | None                                                                                                           | None                           |
-| `v0/site`        | None                                                                                                           | None                           |
-| `v0/application` | `spec.label`, `spec.description`                                                                               | None                           |
-| `v0/page`        | `spec.meta.title`, `spec.meta.description`; component values when the component contract accepts an Expression | None                           |
-| `v0/component`   | Values inside `spec.template` when the target component field accepts the resolved type                        | Declared `props.<name>` values |
-| `v0/translation` | None; `spec.content` provides catalog data consumed by `Trans` and `TransN`                                    | None                           |
+## Before you save
 
-For example, [Typography children](/versions/v0/ui-components/typography) accept a string
-Expression. A Component can use text, pipelines, conditions, or declared props there as long as the
-rendered result is a string accepted by `Typography.children`.
-
-<Callout title="Identity and structure remain literal" type="warn">
-  `kind`, `name`, `version`, `imports`, field names, resource references, routes, and component
-  names do not accept Expressions unless their contract explicitly says otherwise. Template syntax
-  cannot generate manifest structure.
-</Callout>
-
-## Validation checklist
-
-Before saving a manifest that contains an Expression, check that:
-
-1. The exact field accepts an Expression.
-2. The complete YAML scalar is quoted when template characters could be interpreted by YAML.
-3. The Expression follows Taskmigo syntax and every action is closed.
-4. Every referenced function or context value is available in that field's evaluation context.
-5. The rendered value matches the type required by the field or component contract.
-
-Parsing validates syntax. Evaluation can still fail because a function or context value is
-unavailable, a path is missing, a function receives invalid arguments, or the rendered value has
-the wrong type.
+1. Confirm that the field's Type Table shows the Expression tag.
+2. Quote the YAML value when it includes Expression syntax.
+3. Use only functions and context values available in that field.
+4. Ensure that the evaluated result matches the field's required type.

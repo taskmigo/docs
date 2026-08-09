@@ -11,38 +11,46 @@ Resources are authored through the Taskmigo UI or API. YAML remains canonical; G
 
 <Cards>
   <Card
-    title="Architecture"
-    href="/versions/v0/architecture"
-    description="Understand the deployment boundary and resource graph."
+    title='Start a Site'
+    href='/versions/v0/manifests/v0-site'
+    description='Create the entry point for your application and choose which Applications it exposes.'
+  />
+</Cards>
+
+A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages
+compose registered UI Components. Add Translation resources when a Page needs localized content.
+
+## Find an answer
+
+<Cards>
+  <Card
+    title='Choose a manifest'
+    href='/versions/v0/manifests'
+    description='Find the resource that defines a specific part of a Site.'
   />
   <Card
-    title="Resource model"
-    href="/versions/v0/resources"
-    description="Define identities, versions, revisions, imports, and Site cardinality."
+    title='Reference resources'
+    href='/versions/v0/resources'
+    description='Check identity, versions, imports, and allowed references.'
   />
   <Card
-    title="Expressions"
-    href="/versions/v0/expressions"
-    description="Use translations and typed Component props in YAML fields."
+    title='Write an Expression'
+    href='/versions/v0/expressions'
+    description='Use dynamic values where the field contract accepts them.'
   />
   <Card
-    title="Runtime lifecycle"
-    href="/versions/v0/runtime"
-    description="Follow validation, dependency recovery, and snapshot activation."
+    title='Understand runtime behavior'
+    href='/versions/v0/runtime'
+    description='Follow validation, recovery, and snapshot activation.'
   />
   <Card
-    title="Manifests"
-    href="/versions/v0/manifests"
-    description="Open the reference for each defined manifest kind."
+    title='Check support and limitations'
+    href='/versions/v0/status'
+    description='Separate defined contracts from planned work and open decisions.'
   />
   <Card
-    title="FAQ"
-    href="/versions/v0/faq"
-    description="Resolve common contract and runtime questions."
-  />
-  <Card
-    title="Product status"
-    href="/versions/v0/status"
-    description="Separate defined contracts from planned work."
+    title='Resolve a common question'
+    href='/versions/v0/faq'
+    description='Find concise answers with links to the canonical contract.'
   />
 </Cards>

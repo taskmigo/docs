@@ -5,7 +5,7 @@ description: Define application metadata, its base path, and page routes.
 
 A `v0/application` defines the shared URL prefix for an application and maps imported pages to paths below that prefix.
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ```yaml
 kind: v0/application
@@ -31,56 +31,58 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 <TypeTable
   type={{
-    kind: { type: '"v0/application"', required: true, description: "The manifest kind." },
+    kind: {
+      type: '"v0/application"',
+      required: true,
+      description: 'Selects the Application contract.',
+    },
     imports: {
-      type: "PageReference[]",
+      type: 'PageReference[]',
       required: true,
-      description: "Unique page references used by the application.",
+      description: 'Unique page references used by the application.',
     },
-    "spec.icon": {
-      type: "URL",
+    'spec.icon': {
+      type: 'URL',
       required: true,
-      description: "An absolute image URL with a scheme and host.",
+      description: 'An absolute image URL with a scheme and host.',
     },
-    "spec.label": {
-      type: "Expression<string>",
+    'spec.label': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "The translated application name.",
+      description: 'Name shown when presenting this application.',
     },
-    "spec.description": {
-      type: "Expression<string>",
+    'spec.description': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "The translated application description.",
+      description: 'Summary shown alongside the application name.',
     },
-    "spec.path": {
-      type: "AbsolutePath",
+    'spec.path': {
+      type: 'AbsolutePath',
       required: true,
-      description: "The application path beginning with `/`.",
+      description: 'URL prefix shared by every route in this application.',
     },
-    "spec.routes": {
-      type: "Route[]",
+    'spec.routes': {
+      type: 'Route[]',
       required: true,
-      description: "A non-empty list mapping imported pages to application-relative paths.",
+      description: 'Connects each imported Page to a URL below this application.',
     },
-    "spec.routes[].page": {
-      type: "PageReference",
+    'spec.routes[].page': {
+      type: 'PageReference',
       required: true,
-      description: "A page reference that also appears in `imports`.",
+      description: 'Imported Page exposed by this route.',
     },
-    "spec.routes[].path": {
-      type: "AbsolutePath",
+    'spec.routes[].path': {
+      type: 'AbsolutePath',
       required: true,
-      description: "A path beginning with `/`, relative to `spec.path`.",
+      description: 'Route suffix appended to the application path.',
     },
   }}
 />
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
-`spec.label` and `spec.description` accept the full Taskmigo Expression syntax and must render a
-string. Other Application fields are literal values. See
-[Expressions](/versions/v0/expressions#support-and-context-by-manifest-kind) for YAML quoting,
-functions, and context rules.
+Expression support is declared in each field's Type Table note. Other Application fields are literal.
+See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
 
 ## Paths and routes
 

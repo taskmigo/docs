@@ -17,6 +17,7 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
 - Prefer concrete outcomes and examples over abstract descriptions. Define unavoidable terms on first use and do not assume that product users know React, graph, database, or runtime terminology.
+- Label illustrative identifiers and data as examples when readers could otherwise mistake them for built-in fields, context values, or supported resources.
 - Keep each rule in one canonical location and link to it elsewhere. Remove filler, repeated rules, and general knowledge that does not help readers use or implement Taskmigo.
 - Use Mermaid instead of ASCII diagrams. Keep diagrams small, label edges and outcomes clearly, and explain the practical takeaway in nearby prose. Do not repeat a table or simple prose as a diagram.
 - Use emoji only as a compact, accessible scanning aid in a legend, status, or small matrix. Pair each emoji with a text label or legend; never rely on color or emoji alone to communicate a rule.
@@ -34,7 +35,7 @@ Use components only when they improve navigation, comparison, sequence, or empha
 - **Inline TOC:** Long overview or index pages with many peer sections.
 - **Steps:** Procedures and lifecycle sequences where order is meaningful.
 - **Tabs:** Equivalent alternatives such as package managers or platforms; never split one sequential procedure across tabs.
-- **Type Table:** Use for props and fields on every UI component reference page. It is the canonical compact settings reference; keep validation rules in prose when the table would be ambiguous.
+- **Type Table:** Use the `TypeTable` component for `Fields` sections and UI component prop references. Keep validation rules in prose when needed. The `type` column should describe only the data type; the `description` should explain purpose, behavior, or constraints without repeating the name or type. For Expression-capable fields, wrap the underlying type in `FieldType` with `supportsExpression={true}` (for example, `<FieldType supportsExpression={true}>string</FieldType>`). Do not spell the type as `Expression`, `Expression<T>`, or a union including `Expression`.
 - **Cards:** Landing-page navigation or a small set of useful next steps.
 - **Callouts:** Notes, tips, warnings, and safety-critical constraints; keep the primary contract in normal prose.
 
