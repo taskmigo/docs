@@ -7,7 +7,7 @@
     "dev": "next dev",
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
-    "lint": "oxlint",
+    "lint:check": "oxlint",
     "format": "oxfmt .",
     "format:check": "oxfmt . --check"
   },
