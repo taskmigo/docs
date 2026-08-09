@@ -37,8 +37,9 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="Which resources may a manifest import?" id="import-relationships">
-  A Site may import Applications, while only an Application may import Pages. Every other kind pair
-  is invalid. See [Imports](/versions/v0/resources#imports).
+  A Site may import Applications, while only an Application may import Pages. The [Reference ability
+  matrix](/versions/v0/resources#reference-ability) shows the complete set of allowed and rejected
+  relationships.
 </Accordion>
 
 <Accordion title="Where is a Page route defined?" id="page-route">
@@ -57,11 +58,6 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
   Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the
   common resource shape; any entry makes the translation manifest invalid. See [Reference
   ability](/versions/v0/resources#reference-ability).
-</Accordion>
-
-<Accordion title="Which kinds can reference each other?" id="kind-hierarchy">
-  The [Reference ability matrix](/versions/v0/resources#reference-ability) is exhaustive. A Site may
-  import an Application, and only an Application may import a Page.
 </Accordion>
 
 <Accordion title="What happens when a resource change is invalid?" id="invalid-change">

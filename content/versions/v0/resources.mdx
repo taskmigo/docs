@@ -80,14 +80,18 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
 
 ### Reference ability
 
-The following matrix is exhaustive. Every unlisted relationship is invalid.
+Use the matrix from left to right: choose the manifest that declares `imports`, then find the kind it references.
 
-| Importer         |  `v0/site`  | `v0/application` |  `v0/page`  | `v0/translation` |
-| ---------------- | :---------: | :--------------: | :---------: | :--------------: |
-| `v0/site`        |      —      |     Allowed      | Not allowed |   Not allowed    |
-| `v0/application` | Not allowed |   Not allowed    |   Allowed   |   Not allowed    |
-| `v0/page`        | Not allowed |   Not allowed    | Not allowed |   Not allowed    |
-| `v0/translation` | Not allowed |   Not allowed    | Not allowed |   Not allowed    |
+**Legend:** ✅ allowed · ❌ not allowed · — same kind
+
+| Importer         | `v0/site` | `v0/application` | `v0/page` | `v0/translation` |
+| ---------------- | :-------: | :--------------: | :-------: | :--------------: |
+| `v0/site`        |     —     |        ✅        |    ❌     |        ❌        |
+| `v0/application` |    ❌     |        —         |    ✅     |        ❌        |
+| `v0/page`        |    ❌     |        ❌        |     —     |        ❌        |
+| `v0/translation` |    ❌     |        ❌        |    ❌     |        —         |
+
+This matrix is exhaustive: every relationship marked ❌ is invalid.
 
 <Callout title="Translation catalogs are never reference targets" type="warn">
   No manifest may import `v0/translation`. A translation manifest may declare the common `imports`

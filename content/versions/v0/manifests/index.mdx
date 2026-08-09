@@ -3,20 +3,22 @@ title: Manifests
 description: Open the reference for each defined manifest kind.
 ---
 
-Common identity, version, import, and revision rules live in the [Resource model](/versions/v0/resources). Each reference below covers its kind-specific `spec` and validation.
+Choose the resource you want to define. Each reference includes a complete example, its `spec`
+fields, and the conditions that make the manifest invalid. Shared identity, version, import, and
+revision rules live in the [Resource model](/versions/v0/resources).
 
 <Cards>
   <Card href="/versions/v0/manifests/v0-site" title="v0/site">
-    Compose applications and define shared site branding.
+    Start the resource graph, expose applications, and define shared branding.
   </Card>
   <Card href="/versions/v0/manifests/v0-application" title="v0/application">
-    Define application metadata, its base path, and page routes.
+    Group pages under one application path and assign their routes.
   </Card>
   <Card href="/versions/v0/manifests/v0-page" title="v0/page">
-    Define page metadata and a declarative component tree.
+    Build a user interface from registered components.
   </Card>
   <Card href="/versions/v0/manifests/v0-translation" title="v0/translation">
-    Contribute messages to a locale catalog.
+    Add translated messages to a locale catalog.
   </Card>
 </Cards>
 

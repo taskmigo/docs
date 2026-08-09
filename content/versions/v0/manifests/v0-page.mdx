@@ -3,7 +3,8 @@ title: v0/page
 description: Define page metadata and a declarative component tree.
 ---
 
-A `v0/page` describes one user interface as metadata and an ordered tree of registered components. An application imports the page and assigns its route.
+A `v0/page` builds one user interface from an ordered tree of registered components. It owns the
+page title, description, and content; an Application decides where users can open it.
 
 ```yaml
 kind: v0/page
@@ -39,7 +40,8 @@ A page does not define a route. Route ownership belongs to the importing [v0/app
 
 ## Component nodes
 
-Every node has a registered component name, optional component-specific props, and content accepted by that component:
+Every node names a registered component and provides the props and children accepted by that
+component:
 
 ```yaml
 component: Stack
@@ -48,7 +50,10 @@ props:
 children: []
 ```
 
-Component names are case-sensitive. The initial contract defines [Stack](/versions/v0/ui-components/stack) and [Typography](/versions/v0/ui-components/typography). Additional components and props may be added in future contract revisions.
+Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract
+defines [Stack](/versions/v0/ui-components/stack) for grouping content and
+[Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and
+props may be added in future contract revisions.
 
 ## Validation
 

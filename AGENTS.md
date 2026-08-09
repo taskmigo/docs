@@ -12,11 +12,17 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
+- Write for two audiences: product users who need to complete a task and developers who need to implement or integrate the contract. Lead with the user-visible outcome, then provide the precise technical rules needed to achieve it.
 - Be concise and task-oriented. Prefer one canonical explanation with links over repeated content.
 - The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/...`.
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
-- Use Mermaid only when it makes a workflow or relationship materially easier to understand; do not repeat a table or simple prose as a diagram.
+- Design the reading path as a UX flow: orient the reader, show the smallest useful example, explain the contract, surface failure states, then link to the next relevant task.
+- Prefer concrete outcomes and examples over abstract descriptions. Define unavoidable terms on first use and do not assume that product users know React, graph, database, or runtime terminology.
+- Remove repeated common knowledge, duplicated rules, and filler. Keep one canonical explanation and link to it from other pages.
+- Use visual structure when it reduces cognitive load: tables for exact mappings, Steps for ordered procedures, Tabs for equivalent alternatives or outcomes, Cards for navigation, and Mermaid for non-trivial relationships or state transitions.
+- Use Mermaid instead of ASCII diagrams. Keep diagrams small, label edges and outcomes clearly, and explain the practical takeaway in nearby prose. Do not repeat a table or simple prose as a diagram.
+- Use emoji only as a compact, accessible scanning aid in a legend, status, or small matrix. Pair each emoji with a text label or legend; never rely on color or emoji alone to communicate a rule.
 
 ## MDX and content components
 
@@ -34,6 +40,19 @@ Use components to improve navigation, comparison, sequence, or emphasis. Do not 
 - **Type Table:** Use for compact, manually maintained field, prop, or option references. Keep normative validation rules in surrounding prose when a table alone would be ambiguous.
 - **Cards:** Use on landing pages or for a small set of clear next steps. Each card must lead to a useful destination; do not use cards as decorative containers.
 - **Callouts:** Use sparingly for notes, tips, warnings, and safety-critical constraints. Keep the primary contract in normal prose and choose the callout type that matches its severity.
+
+Before adding a visual component, ask what question it answers:
+
+| Reader question                          | Preferred format |
+| ---------------------------------------- | ---------------- |
+| “What values map to what outcomes?”      | Table            |
+| “What do I do first, next, and last?”    | Steps            |
+| “How do these resources relate?”         | Mermaid          |
+| “Which equivalent option applies to me?” | Tabs             |
+| “Where should I go next?”                | Cards            |
+| “What must I not miss?”                  | Callout          |
+
+If plain prose answers the question more clearly, use plain prose.
 
 `Auto Type Table` and `Graph View` are not available in the repository's current `fumadocs-ui` version. Do not use or document them as available components unless the dependency and site integration are added first. Import non-global components from their existing `fumadocs-ui/components/*` entry points and follow examples already present in this repository. Components provided by the default MDX mapping, such as `Callout`, `Card`, and `Cards`, do not need local imports.
 

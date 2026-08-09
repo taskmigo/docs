@@ -15,16 +15,16 @@ Taskmigo currently has no tenant registry, database routing, or `tenant_id`.
 
 The graph starts at the system's only logical Site resource. Every regular runtime resource must be reachable through an allowed `imports` edge.
 
-```text
-Site
-├── Application: crm
-│   ├── Page: index
-│   └── Page: accounts
-└── Application: helpdesk
-    └── Page: index
+```mermaid
+flowchart TD
+  site["Site"] -->|imports| crm["Application: crm"]
+  site -->|imports| helpdesk["Application: helpdesk"]
+  crm -->|imports| crmIndex["Page: index"]
+  crm -->|imports| accounts["Page: accounts"]
+  helpdesk -->|imports| helpdeskIndex["Page: index"]
 ```
 
-A Site imports Applications. Only an Application may import Pages. Resources are never discovered by name.
+A Site imports Applications. Only an Application may import Pages. Resources are never discovered by name, so a resource outside this graph cannot become part of the running Site.
 
 The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
@@ -39,3 +39,5 @@ The [Site manifest](/versions/v0/manifests/v0-site) imports applications and sel
 ## Runtime boundary
 
 A valid graph compiles into an immutable Site snapshot. Each request reads one snapshot. Invalid changes retain diagnostics while the current snapshot continues serving traffic.
+
+Continue with the [Runtime lifecycle](/versions/v0/runtime) to see how a resource change becomes an active snapshot.

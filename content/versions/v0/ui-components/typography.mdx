@@ -3,7 +3,8 @@ title: Typography
 description: Render string content with a semantic text variant.
 ---
 
-`Typography` renders string content with a semantic text variant. Component names are case-sensitive, so `typography` is invalid.
+Use `Typography` to render a text string with a heading, paragraph, or inline text variant.
+Component names are case-sensitive, so `typography` is invalid.
 
 ```yaml
 component: Typography
@@ -21,6 +22,12 @@ children: Hello World
 | `children`      | Required string. A `Trans` expression is also a string. |
 
 `Typography.children` cannot contain nested component nodes.
+
+| Content purpose | Allowed variants  |
+| --------------- | ----------------- |
+| Heading         | `h1` through `h6` |
+| Paragraph       | `p`               |
+| Inline text     | `span`            |
 
 ## Validation
 
