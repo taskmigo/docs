@@ -13,7 +13,7 @@ Version 0 has no tenant registry, database routing, or `tenant_id`.
 
 ## Resource graph
 
-The graph starts at the system's only Site manifest. Every regular runtime resource must be reachable through an `imports` edge.
+The graph starts at the system's only logical Site resource. Every regular runtime resource must be reachable through an `imports` edge.
 
 ```text
 Site
@@ -25,7 +25,7 @@ Site
     └── Policy
 ```
 
-The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist. See [Site cardinality](/versions/v0/resources#site-cardinality).
+The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
 Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
 
