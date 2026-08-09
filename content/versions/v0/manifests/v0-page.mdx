@@ -35,14 +35,14 @@ spec:
     kind: { type: '"v0/page"', required: true, description: "The manifest kind." },
     "spec.meta": { type: "object", required: true, description: "Page metadata." },
     "spec.meta.title": {
-      type: "string | Expression<string>",
+      type: "string",
       required: true,
-      description: "The page title.",
+      description: "The page title. Supports Expression; the result must be a string.",
     },
     "spec.meta.description": {
-      type: "string | Expression<string>",
+      type: "string",
       required: true,
-      description: "The page description.",
+      description: "The page description. Supports Expression; the result must be a string.",
     },
     "spec.body": {
       type: "ComponentNode[]",
@@ -91,14 +91,8 @@ spec:
 Every reusable Component used in `spec.body` must appear in the Page's `imports`. Built-in
 components such as `Stack` and `Typography` do not require imports.
 
-## Expressions
-
-`spec.meta.title` and `spec.meta.description` accept literal strings or any valid Taskmigo
-Expression that renders a string. Component node values accept Expressions only when the selected
-component's field contract allows them. A Page has no Component prop context, so an otherwise valid
-`{{ props.title }}` action cannot be evaluated directly in a Page.
-
-See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
+Expression support is declared in each field or component Type Table note. See
+[Expressions](/versions/v0/expressions) for syntax, functions, and context values.
 
 ## Validation
 
