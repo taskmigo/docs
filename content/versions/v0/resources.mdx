@@ -5,7 +5,9 @@ description: Common manifest rules, revisions, versions, and dependencies.
 
 # Resource model
 
-A resource is an independent YAML manifest. YAML remains canonical; normalized data, diagnostics, and runtime snapshots are derived from it.
+A resource is an independent YAML manifest. YAML is the source of truth; normalized data, diagnostics, and runtime snapshots are derived from it.
+
+Every manifest kind uses the rules on this page. A kind reference only documents the fields and validation specific to that kind.
 
 ## Common manifest shape
 
@@ -13,38 +15,68 @@ A resource is an independent YAML manifest. YAML remains canonical; normalized d
 kind: v0/page
 name: users
 version: 1.0.0 # optional
+
 includes:
   - kind: v0/entity
     name: user
     version: ^1.2.0 # optional
+
 spec:
   # kind-specific configuration
 ```
 
 | Field | Rule |
 | --- | --- |
-| `kind` | Required versioned resource type. Version 0 kinds use the complete `v0/...` form. |
-| `name` | Required. `(kind, name)` is unique within the Taskmigo schema. The same name may exist under a different kind. |
-| `version` | Optional immutable SemVer tag for this revision. |
-| `includes` | Optional explicit dependency list. |
-| `spec` | Required kind-specific configuration. |
+| `kind` | Required resource type, including its API version. Version 0 kinds use the complete `v0/...` form. |
+| `name` | Required resource name. Together, `kind` and `name` identify a resource. |
+| `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision. |
+| `includes` | Optional explicit list of resources on which this resource depends. |
+| `spec` | Required configuration defined by the selected `kind`. |
+
+## Resource identity
+
+Taskmigo identifies a resource by the pair `(kind, name)`, not by `name` alone. Names must therefore be unique within one kind, while two different kinds may use the same name.
+
+Kind names are always versioned. Use `v0/application`, `v0/page`, and similar complete values in both top-level `kind` fields and `includes[].kind`. Values such as `application`, `page`, or `Page` do not identify a versioned manifest contract and are invalid.
+
+The API version in `kind` is separate from the optional resource `version`:
+
+- `kind: v0/application` selects the version 0 application schema.
+- `version: 1.2.0` tags one immutable revision of a particular application resource.
 
 ## Revisions and version tags
 
-Every semantic change creates a new revision. A revision may be valid or invalid independently of other revisions of the same resource.
+A revision is one saved state of a resource. Every semantic change creates a new revision, and each revision is validated independently.
 
-A revision with a `version` tag is immutable. To change it, create a new revision with a new SemVer tag or without a tag. A version tag cannot be reused for different content.
+A revision with a `version` tag is immutable. To change its content, create another revision with a new SemVer tag or leave the new revision untagged. The same version tag cannot refer to different content.
 
-An untagged revision can be the latest revision and can be used by the runtime, but it cannot satisfy `includes.version`.
+An untagged revision may be the latest revision and may be selected by an include without a version constraint. It cannot satisfy `includes.version`, because a constraint can only be evaluated against tagged SemVer versions.
 
 ## Includes
 
-An include identifies another resource by `kind` and `name`. It can optionally set a SemVer constraint using an exact version, `^`, or `~`. The kind must include its API version, such as `v0/application` or `v0/page`; unversioned values such as `application` and `Page` are invalid.
+An include identifies a dependency by the exact pair `(kind, name)`:
 
-- Without `includes.version`, Taskmigo selects the latest revision of that exact resource.
-- With `includes.version`, Taskmigo selects the highest tagged version that satisfies the constraint.
-- Resolution is deterministic and stays in the same Taskmigo schema.
-- Missing references, duplicate includes, unsatisfied constraints, and cycles are invalid.
-- Taskmigo never falls back to an older revision or lower version when the selected revision is invalid.
+```yaml
+includes:
+  - kind: v0/application
+    name: home
+    version: ^1.2.0
+```
 
-The selected revision is recorded in the Site snapshot, so later revisions do not change an already active snapshot.
+The optional `version` is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
+
+Resolution works as follows:
+
+1. Taskmigo finds the resource with the exact included `kind` and `name`.
+2. Without `includes.version`, it selects that resource's latest revision.
+3. With `includes.version`, it selects the highest tagged version satisfying the constraint.
+4. The selected revision must be valid. Taskmigo does not silently fall back to an older revision or lower version.
+5. The selected revision is recorded in the Site snapshot, so later resource revisions do not alter an already active snapshot.
+
+Missing resources, duplicate includes, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
+
+## Good to know
+
+A version constraint controls which revision may be selected; it does not select the manifest schema. The `kind` value selects the schema, while `includes.version` selects a compatible revision of that kind.
+
+Omitting `includes.version` follows the latest revision when a new snapshot is built. It does not mutate snapshots that are already active.
