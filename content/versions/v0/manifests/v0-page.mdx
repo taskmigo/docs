@@ -92,19 +92,6 @@ spec:
         title: Hello World
 ```
 
-Every reusable Component used in `spec.body` must appear in the Page's `imports`. Built-in
-components such as `Stack` and `Typography` do not require imports.
-
-Expression support is declared in each field or component Type Table note. See
-[Expressions](/versions/v0/expressions) for syntax, functions, and context values.
-
-## Validation
-
-Beyond [common resource validation](/versions/v0/resources), a page is invalid when:
-
-- `imports` targets a kind other than `v0/component` or repeats the same Component identity.
-- A required metadata or body field is missing.
-- `spec.body` is not a list.
-- A component name uses incorrect casing, is not registered, or its node does not satisfy that component's contract.
-- A reusable Component is used without being imported, or its `props` do not satisfy the
-  Component's prop declarations.
+Page imports may target only reusable Components. Every reusable Component used in `spec.body` must
+appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
+Each node must satisfy the selected component's contract.

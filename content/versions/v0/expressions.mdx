@@ -23,12 +23,12 @@ In this example:
 
 ## Choose what you need
 
-| I want to…                                         | Start with                                        |
-| -------------------------------------------------- | ------------------------------------------------- |
-| Show text from a translation catalog               | [Translate a message](#translate-a-message)       |
-| Change text for a count                            | [Translate a quantity](#translate-a-quantity)     |
-| Use the Site hostname or current manifest metadata | [Use context values](#use-context-values)         |
-| Format, compare, or transform a value              | [Use built-in functions](#use-built-in-functions) |
+| I want to…                                            | Start with                                        |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| Show text from a translation catalog                  | [Translate a message](#translate-a-message)       |
+| Change text for a count                               | [Translate a quantity](#translate-a-quantity)     |
+| Use the runtime hostname or current manifest metadata | [Use context values](#use-context-values)         |
+| Format, compare, or transform a value                 | [Use built-in functions](#use-built-in-functions) |
 
 ## Translate a message
 
@@ -65,8 +65,6 @@ The second argument is the count. Taskmigo selects the locale's plural form. See
 
 ## Use built-in functions
 
-These global functions are available wherever a field's Type Table shows the Expression tag.
-
 _Example values: the prop names below are illustrative. A Component can access only props declared
 in its own `spec.props`._
 
@@ -94,7 +92,6 @@ Names and paths are case-sensitive.
 
 ## Before you save
 
-1. Confirm that the field's Type Table shows the Expression tag.
-2. Quote the YAML value when it includes Expression syntax.
-3. Use only functions and context values available in that field.
-4. Ensure that the evaluated result matches the field's required type.
+1. Quote the YAML value when it includes Expression syntax.
+2. Use only functions and context values available in that field.
+3. Ensure that the evaluated result matches the field's required type.
