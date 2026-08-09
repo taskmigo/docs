@@ -18,10 +18,8 @@ kind: v0/page
 name: users
 version: 1.0.0 # optional
 
-includes:
-  - kind: v0/entity
-    name: user
-    version: ^1.2.0 # optional
+imports:
+  - v0/entity/user@^1.2.0 # version constraint is optional
 
 spec:
   # kind-specific configuration
@@ -30,16 +28,16 @@ spec:
 | Field | Rule |
 | --- | --- |
 | `kind` | Required resource type, including its API version. Version 0 kinds use the complete `v0/...` form. |
-| `name` | Required resource name. Together, `kind` and `name` identify a resource. |
+| `name` | Required resource name containing only ASCII letters, digits, hyphens, and underscores (`[a-zA-Z0-9_-]+`). Together, `kind` and `name` identify a resource. |
 | `version` | Optional immutable [Semantic Version](https://semver.org/) tag for this revision. |
-| `includes` | Optional explicit list of resources on which this resource depends. |
+| `imports` | Optional explicit list of resource references on which this resource depends. Each item uses `<kind>/<name>` or `<kind>/<name>@<version>`. |
 | `spec` | Required configuration defined by the selected `kind`. |
 
 ## Resource identity
 
-Taskmigo identifies a resource by the pair `(kind, name)`, not by `name` alone. Names must therefore be unique within one kind, while two different kinds may use the same name.
+Taskmigo identifies a resource by the pair `(kind, name)`, not by `name` alone. Names must therefore be unique within one kind, while two different kinds may use the same name. A name must match `[a-zA-Z0-9_-]+`: it may contain uppercase letters, lowercase letters, digits, hyphens, and underscores, but no spaces or other characters.
 
-Kind names are always versioned. Use `v0/application`, `v0/page`, and similar complete values in both top-level `kind` fields and `includes[].kind`. Values such as `application`, `page`, or `Page` do not identify a versioned manifest contract and are invalid.
+Kind names are always versioned. Use `v0/application`, `v0/page`, and similar complete values in both top-level `kind` fields and the kind portion of an import. Values such as `application`, `page`, or `Page` do not identify a versioned manifest contract and are invalid.
 
 The API version in `kind` is separate from the optional resource `version`:
 
@@ -52,34 +50,35 @@ A revision is one saved state of a resource. Every semantic change creates a new
 
 A revision with a `version` tag is immutable. To change its content, create another revision with a new SemVer tag or leave the new revision untagged. The same version tag cannot refer to different content.
 
-An untagged revision may be the latest revision and may be selected by an include without a version constraint. It cannot satisfy `includes.version`, because a constraint can only be evaluated against tagged SemVer versions.
+An untagged revision may be the latest revision and may be selected by an import without a version constraint. It cannot satisfy an `@<version>` constraint, because a constraint can only be evaluated against tagged SemVer versions.
 
-## Includes
+## Imports
 
-An include identifies a dependency by the exact pair `(kind, name)`:
+An import is a string that identifies a dependency by the exact pair `(kind, name)`:
 
 ```yaml
-includes:
-  - kind: v0/application
-    name: home
-    version: ^1.2.0
+imports:
+  - v0/application/home@^1.2.0
+  - v0/application/admin
 ```
 
-The optional `version` is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
+The required shape is `<kind>/<name>`, optionally followed by `@<version>`. Because a kind contains its API version and resource type, Taskmigo treats the final path segment as the name. For example, `v0/application/home` identifies kind `v0/application` and name `home`.
+
+The optional `@<version>` suffix is a SemVer constraint. Version 0 supports exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
 <Steps>
   <Step>
 
   ### Find the dependency
 
-  Taskmigo finds the resource with the exact included `kind` and `name`.
+  Taskmigo parses the import and finds the resource with the exact referenced `kind` and `name`.
 
   </Step>
   <Step>
 
   ### Select a revision
 
-  Without `includes.version`, Taskmigo selects the latest revision. With a
+  Without an `@<version>` suffix, Taskmigo selects the latest revision. With a
   constraint, it selects the highest tagged version that satisfies it.
 
   </Step>
@@ -101,17 +100,17 @@ The optional `version` is a SemVer constraint. Version 0 supports exact versions
   </Step>
 </Steps>
 
-Missing resources, duplicate includes, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
+Malformed imports, missing resources, duplicate imports, unsatisfied constraints, dependency cycles, and invalid selected revisions make resolution fail. Resolution is deterministic and remains within the same Taskmigo schema.
 
 ## Good to know
 
 <Callout title="Schema version and resource version are independent" type="idea">
   A version constraint controls which revision may be selected; it does not select
   the manifest schema. The `kind` value selects the schema, while
-  `includes.version` selects a compatible revision of that kind.
+  the import's `@<version>` suffix selects a compatible revision of that kind.
 </Callout>
 
 <Callout title="Latest is resolved when a snapshot is built" type="info">
-  Omitting `includes.version` follows the latest revision when a new snapshot is
+  Omitting the `@<version>` suffix follows the latest revision when a new snapshot is
   built. It does not mutate snapshots that are already active.
 </Callout>
