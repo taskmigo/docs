@@ -130,11 +130,31 @@ orders:
 {{ Trans "orders.summary" .Order.Number .User.Name }}
 ```
 
-<Callout title="Match placeholders and values" type="info">
-  Placeholder order is part of the translated message. Translators may reorder
-  placeholders to match the grammar of a locale, so verify that each locale
-  receives compatible values and formatting verbs.
+<Callout title="Pass every placeholder value" type="warn">
+  Every placeholder in the resolved message must receive a compatible value.
+  If fewer values are passed than the message requires, rendering stops with a
+  runtime error. Taskmigo does not leave the placeholder unchanged, insert an
+  empty value, or silently fall back to another message.
 </Callout>
+
+For example, this message requires two values:
+
+```yaml
+# Catalog
+orders:
+  summary: Order %s belongs to %s.
+```
+
+Passing only the order number causes a runtime error because the second `%s`
+does not receive a value:
+
+```text
+{{ Trans "orders.summary" .Order.Number }}
+```
+
+Placeholder order is part of each translated message. Translators may reorder
+placeholders to match the grammar of a locale, so verify that each locale
+receives all required values with compatible formatting verbs.
 
 ## Translate a quantity
 
@@ -267,7 +287,8 @@ Merge results never depend on manifest load order. A merge error identifies the 
 | The selected plural category is missing | Use `other`. |
 | Both the selected category and `other` are missing | `[untranslated_form:key]` |
 | The active locale cannot be resolved | Use the configured global fallback locale. |
-| Placeholder formatting fails | `[translation_format_error:key]` |
+| `Trans` or `TransN` receives fewer values than the resolved message requires | Stop rendering with a runtime error. |
+| A provided value is incompatible with its formatting verb | `[translation_format_error:key]` |
 
 Version 0 does not yet define the result for a missing translation key. Configure a global fallback locale before using `TransN`.
 
