@@ -46,40 +46,71 @@ spec:
 
 ## Use translations
 
-A field documented as translated uses this expression:
+Taskmigo provides two template functions:
+
+| Function | Use it when |
+| --- | --- |
+| `Trans` | The translation does not depend on a quantity. |
+| `TransN` | A quantity determines which plural form is selected. |
+
+Both functions accept optional positional arguments. The translation runtime uses those values to interpolate placeholders in the resolved message.
+
+### Translate a message with `Trans`
+
+`Trans` resolves a key in the effective catalog for the active locale and interpolates any supplied placeholder values.
+
+```go
+func Trans(rawKey any, args ...any) string
+```
+
+| Parameter | Description |
+| --- | --- |
+| `rawKey` | Translation key. In manifests, write it as a quoted dotted path such as `"auth.welcome"`. |
+| `args` | Optional positional values used to interpolate the message's placeholders. Pass them in the order expected by the translated message. |
 
 ```text
-{{ Trans "key" ...args }}
+{{ Trans "auth.welcome" .User.Name }}
 ```
 
-- `key` is a quoted, dotted path into the effective catalog for the active locale.
-- `args` are optional values passed to the translation runtime.
-- `Trans` is case-sensitive, and the key must be quoted.
-
-Given this English catalog:
-
-```yaml
-kind: v0/translation
-name: english-applications
-
-spec:
-  locale: en
-  content:
-    applications:
-      home:
-        label: Home
-        description: Open the home application.
-```
-
-A translated field can reference its values by their complete paths:
+Here, `auth.welcome` selects the message and `.User.Name` supplies its first placeholder value. Use the function without extra arguments when the message has no placeholders:
 
 ```yaml
 spec:
   label: '{{ Trans "applications.home.label" }}'
-  description: '{{ Trans "applications.home.description" }}'
 ```
 
-At runtime, lookup follows three steps:
+Use additional arguments for messages with multiple placeholders:
+
+```text
+{{ Trans "orders.summary" .User.Name .Order.Number }}
+```
+
+### Translate a plural message with `TransN`
+
+`TransN` resolves a pluralized translation. The quantity is a dedicated argument and is not part of `args`.
+
+```go
+func TransN(rawKey any, rawN any, args ...any) string
+```
+
+| Parameter | Description |
+| --- | --- |
+| `rawKey` | Translation key containing the plural forms. |
+| `rawN` | Quantity used to select the plural form for the active locale. |
+| `args` | Optional positional values used to interpolate placeholders after the plural form is selected. |
+
+```text
+{{ TransN "items.count" .Cart.Count .User.Name }}
+```
+
+In this example, `.Cart.Count` selects the plural form and `.User.Name` supplies the first interpolation argument.
+
+<Callout title="Count comes before placeholder values" type="info">
+  The second argument to `TransN` is always the quantity. Placeholder values begin
+  with the third argument. Do not pass the count as an ordinary `args` value.
+</Callout>
+
+### Resolution flow
 
 <Steps>
   <Step>
@@ -94,21 +125,32 @@ At runtime, lookup follows three steps:
 
   ### Resolve the key
 
-  The quoted dotted key, such as `applications.home.label`, selects a value from
-  that catalog.
+  The quoted dotted key selects a message from that catalog.
 
   </Step>
   <Step>
 
-  ### Return the value
+  ### Select the plural form
 
-  Taskmigo returns the stored value to the translated field. Do not put a locale map
-  directly in that field.
+  For `TransN`, the runtime uses `rawN` and the active locale's pluralization
+  rules. `Trans` skips this step.
+
+  </Step>
+  <Step>
+
+  ### Interpolate placeholders
+
+  The runtime applies `args` in order to the placeholders in the resolved message,
+  then returns the resulting string.
 
   </Step>
 </Steps>
 
-Version 0 passes optional arguments to the translation runtime but does not define how that runtime interprets them.
+<Callout title="Translation functions are fault-tolerant" type="idea">
+  `Trans` and `TransN` recover from internal panics so a translation failure does
+  not crash template rendering. Treat recovery as a safety boundary, not as a
+  substitute for validating translation keys and arguments.
+</Callout>
 
 ## Extend a locale catalog
 
@@ -142,9 +184,7 @@ A merge error identifies the locale, conflicting path, and both source manifests
 
 In addition to the [common resource validation](/versions/v0/resources), a translation manifest is invalid when its locale is missing, empty, or not normalized; `spec.content` is not an object; a content key is empty; or a value cannot be represented by the manifest format.
 
-After resolving a locale catalog, a lookup returns the stored value at the requested path unchanged.
-
-Version 0 does not define locale fallback, plural handling, missing-key behavior, or override precedence.
+Version 0 does not define locale fallback, missing-key behavior, override precedence, or the returned fallback string after a recovered translation failure.
 
 ## Good to know
 
