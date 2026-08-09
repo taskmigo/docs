@@ -6,7 +6,7 @@ description: Follow a resource change from validation to atomic Site snapshot ac
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-import { GitBranch, ShieldCheck } from "lucide-react";
+import { GitBranch, RefreshCw, ShieldCheck } from "lucide-react";
 
 Taskmigo never activates a manifest directly. It resolves and validates a
 candidate Site graph, compiles that graph into an immutable snapshot, then makes
@@ -23,6 +23,12 @@ the snapshot current in one atomic switch.
     title="Validation scope"
     href="#from-change-to-active-snapshot"
     description="See how one change expands to a candidate Site graph."
+  />
+  <Card
+    icon={<RefreshCw />}
+    title="Dependency recovery RFC"
+    href="#dependency-recovery-rfc"
+    description="Preview the proposed recovery order for future multi-level graphs."
   />
   <Card
     icon={<ShieldCheck />}
@@ -118,6 +124,39 @@ with the affected revisions and leaves runtime state unchanged.
 
   </Tab>
 </Tabs>
+
+## Dependency recovery RFC
+
+<Callout title="RFC: proposed behavior, not the current contract" type="warn">
+  The current import graph only supports `Site → Application`, so it does not yet require
+  multi-level dependency recovery. This section records the intended behavior for future kinds and
+  import edges. Details may change before the proposal becomes part of the defined contract.
+</Callout>
+
+The proposal revalidates resources in dependency order. Consider a future graph
+where `A` imports `B`, and `B` imports `C`:
+
+<Tabs items={['Dependency breaks', 'Dependency recovers']}>
+  <Tab>
+
+1. `C` becomes missing or invalid.
+2. Candidate validation fails for `B`, then `A`.
+3. The candidate follows the invalid outcome above.
+
+  </Tab>
+  <Tab>
+
+1. `C` becomes valid again.
+2. Taskmigo validates `C`, then `B`, then `A`.
+3. The valid graph continues to snapshot build and activation.
+
+  </Tab>
+</Tabs>
+
+The proposed recovery process re-resolves existing declarations; it does not
+rewrite dependent manifests. Deleting a resource follows the same path as an
+invalid dependency: the candidate fails while the last valid snapshot remains
+active.
 
 ## Package boundary
 
