@@ -45,21 +45,21 @@ Create, update, delete, and package import all enter the same lifecycle.
 <Steps>
   <Step>
 
-  ### Find affected Sites
+  ### Find the affected graph
 
   Taskmigo starts with the changed resource and follows reverse dependencies to
-  every Site that can reach it. Unrelated graphs are not revalidated.
+  the Site. Resources outside its reachable graph are not revalidated.
 
   Translation catalogs are tracked by effective locale rather than explicit
-  import edges. Changing a translation resource also marks Sites that use its
-  locale catalog as affected.
+  import edges. Changing a translation resource also marks the Site graph when it
+  uses that locale catalog.
 
   </Step>
   <Step>
 
   ### Resolve a candidate graph
 
-  Each affected `v0/site` is resolved from its existing declarations. Explicit
+  The `v0/site` manifest is resolved from its existing declarations. Explicit
   imports select a revision per graph edge; translation catalogs are attached for
   the effective locale.
 
@@ -150,14 +150,14 @@ Taskmigo revalidates in dependency order. Consider a graph where `A` imports
 
 Recovery re-resolves the existing declarations; it does not rewrite dependent
 manifests. Deleting a resource follows the same path as an invalid dependency:
-affected candidates fail while the last valid snapshot remains active.
+the candidate fails while the last valid snapshot remains active.
 
 ## Package boundary
 
 <Callout title="A package is activated as one unit" type="success">
-  Import validates the complete package and resolves its dependencies inside the
-  target Taskmigo schema before creating revisions. A failed import must not leave
-  a partially active runtime state.
+  Import validates the complete package, including the one-Site invariant, and
+  resolves its dependencies inside the target Taskmigo schema before creating
+  revisions. A failed import must not leave a partially active runtime state.
 </Callout>
 
 Export produces a portable package of canonical YAML. Importing that package
