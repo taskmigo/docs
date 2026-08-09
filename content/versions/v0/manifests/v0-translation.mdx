@@ -32,6 +32,9 @@ label: '{{ Trans "applications.home.label" }}'
 description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
+_Example context: `.User`, `.Order`, and `.Cart` on this page are illustrative values, not global
+variables provided by Taskmigo._
+
 <Callout title='Catalogs do not participate in imports' type='info'>
   A translation manifest may declare `imports: []` for compatibility with the common resource shape, but it cannot
   import any resource. No manifest may import `v0/translation`. Taskmigo assembles the effective catalog for the active

@@ -22,6 +22,10 @@ spec:
       type: boolean
       required: false
       default: true
+    items:
+      type: array
+      required: false
+      default: []
 
   template:
     component: Stack
@@ -47,7 +51,7 @@ spec:
       description: 'Contract that importing Pages use to supply values.',
     },
     'spec.props.*.type': {
-      type: '"string" | "number" | "boolean"',
+      type: '"string" | "number" | "boolean" | "array"',
       required: true,
       description: 'Checks values passed by an importing Page.',
     },
@@ -57,7 +61,7 @@ spec:
       description: 'Controls whether an importing Page may omit this prop.',
     },
     'spec.props.*.default': {
-      type: 'string | number | boolean',
+      type: 'string | number | boolean | Array<string | number | boolean>',
       required: false,
       description: 'Fallback used when an importing Page omits this prop.',
     },
@@ -69,7 +73,8 @@ spec:
   }}
 />
 
-Prop names are case-sensitive. A `default` value must match its declared `type`. Values in
+Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may
+contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in
 `spec.template` may use the full Taskmigo Expression syntax and access declared props through
 `props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
 
@@ -105,8 +110,10 @@ renders the same template.
 Beyond [common resource validation](/versions/v0/resources), a Component is invalid when:
 
 - `spec.props` or `spec.template` is missing.
-- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`, or
-  `boolean`.
+- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`,
+  `boolean`, or `array`.
+- An `array` prop contains a nested array, an object, or a value other than a string, number, or
+  boolean.
 - A prop's `default` does not match its declared type.
 - The template reads a prop that is not declared in `spec.props`.
 - The template root or one of its descendants does not satisfy the referenced component contract.

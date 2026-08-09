@@ -67,6 +67,9 @@ The second argument is the count. Taskmigo selects the locale's plural form. See
 
 These global functions are available wherever a field's Type Table shows the Expression tag.
 
+_Example values: the prop names below are illustrative. A Component can access only props declared
+in its own `spec.props`._
+
 | Need                       | Functions                          | Example                                                  |
 | -------------------------- | ---------------------------------- | -------------------------------------------------------- |
 | Combine boolean conditions | `and`, `or`, `not`                 | `{{ if and props.enabled props.visible }}Shown{{ end }}` |

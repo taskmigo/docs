@@ -17,6 +17,7 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
 - Prefer concrete outcomes and examples over abstract descriptions. Define unavoidable terms on first use and do not assume that product users know React, graph, database, or runtime terminology.
+- Label illustrative identifiers and data as examples when readers could otherwise mistake them for built-in fields, context values, or supported resources.
 - Keep each rule in one canonical location and link to it elsewhere. Remove filler, repeated rules, and general knowledge that does not help readers use or implement Taskmigo.
 - Use Mermaid instead of ASCII diagrams. Keep diagrams small, label edges and outcomes clearly, and explain the practical takeaway in nearby prose. Do not repeat a table or simple prose as a diagram.
 - Use emoji only as a compact, accessible scanning aid in a legend, status, or small matrix. Pair each emoji with a text label or legend; never rely on color or emoji alone to communicate a rule.
