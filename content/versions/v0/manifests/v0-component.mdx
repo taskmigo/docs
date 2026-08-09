@@ -6,7 +6,7 @@ description: Define a typed, reusable UI template for Pages.
 import { TypeTable } from "fumadocs-ui/components/type-table";
 
 A `v0/component` packages a component tree once so any Page can import and render it. Declare the
-values each Page may provide in `spec.input`, then read those values from `spec.template` through
+values each Page may provide in `spec.props`, then read those values from `spec.template` through
 `{{ props.<name> }}`.
 
 ```yaml
@@ -14,7 +14,7 @@ kind: v0/component
 name: header
 
 spec:
-  input:
+  props:
     title:
       type: string
       required: true
@@ -37,22 +37,22 @@ spec:
 <TypeTable
   type={{
     kind: { type: '"v0/component"', required: true, description: "The manifest kind." },
-    "spec.input": {
-      type: "Record<string, InputDefinition>",
+    "spec.props": {
+      type: "Record<string, PropDefinition>",
       required: true,
       description: "The typed props accepted from an importing Page.",
     },
-    "spec.input.*.type": {
+    "spec.props.*.type": {
       type: '"string" | "number" | "boolean"',
       required: true,
       description: "The value type accepted for this prop.",
     },
-    "spec.input.*.required": {
+    "spec.props.*.required": {
       type: "boolean",
       required: true,
       description: "Whether an importing Page must provide this prop.",
     },
-    "spec.input.*.default": {
+    "spec.props.*.default": {
       type: "string | number | boolean",
       required: false,
       description: "The value used when the Page omits this prop.",
@@ -65,13 +65,14 @@ spec:
   }}
 />
 
-Input names are case-sensitive. A `default` value must match its declared `type`. Template
-expressions may read only declared inputs and use the form `{{ props.title }}`.
+Prop names are case-sensitive. A `default` value must match its declared `type`. Template
+expressions may read only declared props and use the form `{{ props.title }}`. See
+[Expressions](/versions/v0/expressions#read-component-props) for the YAML syntax and scope.
 
 ## Use the Component in a Page
 
 Import the Component by resource reference, then use the same reference as the node's `component`
-value. The node's `props` are validated against `spec.input`.
+value. The node's `props` are validated against `spec.props`.
 
 ```yaml
 kind: v0/page
@@ -99,11 +100,12 @@ renders the same template.
 
 Beyond [common resource validation](/versions/v0/resources), a Component is invalid when:
 
-- `spec.input` or `spec.template` is missing.
-- An input omits `type` or `required`, or uses a type other than `string`, `number`, or `boolean`.
-- An input's `default` does not match its declared type.
-- The template reads an input that is not declared in `spec.input`.
+- `spec.props` or `spec.template` is missing.
+- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`, or
+  `boolean`.
+- A prop's `default` does not match its declared type.
+- The template reads a prop that is not declared in `spec.props`.
 - The template root or one of its descendants does not satisfy the referenced component contract.
 
 An importing Page is invalid when it omits a required prop, supplies an undeclared prop, or provides
-a value that does not match the declared input type.
+a value that does not match the declared prop type.

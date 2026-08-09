@@ -43,9 +43,21 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 </Accordion>
 
 <Accordion title="How do I reuse one Component across Pages?" id="reuse-component">
-  Define a `v0/component` with typed inputs and a template. Each Page imports the Component, uses
-  its full resource reference as the node's `component` value, and supplies input values through
+  Define a `v0/component` with typed props and a template. Each Page imports the Component, uses its
+  full resource reference as the node's `component` value, and supplies input values through
   `props`. See [v0/component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
+</Accordion>
+
+<Accordion title="Must a Page use a reusable Component?" id="page-component-optional">
+  No. A Page may declare built-in components such as `Stack` and `Typography` directly. Import a
+  `v0/component` only when Pages should share a component tree. See [Page component
+  nodes](/versions/v0/manifests/v0-page#component-nodes).
+</Accordion>
+
+<Accordion title="Where can I use an expression?" id="expression-scope">
+  Only in fields whose manifest or component contract explicitly accepts it. The [Expression support
+  matrix](/versions/v0/expressions#expression-support-by-manifest-kind) lists the valid fields for
+  every defined kind and explains why `props` exists only inside a Component template.
 </Accordion>
 
 <Accordion title="Where is a Page route defined?" id="page-route">

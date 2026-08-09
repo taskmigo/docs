@@ -12,18 +12,20 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
 kind: v0/page
 name: index
 
-imports:
-  - v0/component/header
-
 spec:
   meta:
     title: '{{ Trans "pages.index.meta.title" }}'
     description: '{{ Trans "pages.index.meta.description" }}'
 
   body:
-    - component: v0/component/header
+    - component: Stack
       props:
-        title: Hello World
+        data-component-id: container
+      children:
+        - component: Typography
+          props:
+            variant: h1
+          children: Hello World
 ```
 
 ## Fields
@@ -69,7 +71,9 @@ defines [Stack](/versions/v0/ui-components/stack) for grouping content and
 [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and
 props may be added in future contract revisions.
 
-A Page may also import a reusable [`v0/component`](/versions/v0/manifests/v0-component). Use its full
+A Page can declare built-in components directly, as in the first example. Reuse is optional: import
+a [`v0/component`](/versions/v0/manifests/v0-component) only when multiple places should share the
+same component tree. Use its full
 resource reference as the node's `component` value and pass values declared by the Component through
 `props`:
 
@@ -87,6 +91,15 @@ spec:
 Every reusable Component used in `spec.body` must appear in the Page's `imports`. Built-in
 components such as `Stack` and `Typography` do not require imports.
 
+## Expressions
+
+`spec.meta.title` and `spec.meta.description` accept literal strings, `Trans`, or `TransN`.
+Component node values accept expressions only when the selected component's field contract allows
+them. A Page has no Component prop scope, so `{{ props.title }}` is invalid directly in a Page.
+
+See [Expressions](/versions/v0/expressions#expression-support-by-manifest-kind) for syntax, scope,
+and the kind-by-kind support matrix.
+
 ## Validation
 
 Beyond [common resource validation](/versions/v0/resources), a page is invalid when:
@@ -95,4 +108,5 @@ Beyond [common resource validation](/versions/v0/resources), a page is invalid w
 - A required metadata or body field is missing.
 - `spec.body` is not a list.
 - A component name uses incorrect casing, is not registered, or its node does not satisfy that component's contract.
-- A reusable Component is used without being imported, or its `props` do not satisfy the Component's typed inputs.
+- A reusable Component is used without being imported, or its `props` do not satisfy the
+  Component's prop declarations.

@@ -77,6 +77,10 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
+`spec.label` and `spec.description` accept `Trans` or `TransN` expressions. Other Application
+fields are literal values. See [Expressions](/versions/v0/expressions#expression-support-by-manifest-kind)
+for YAML quoting and scope rules.
+
 ## Paths and routes
 
 `spec.path` establishes the application's path below the host. Each `spec.routes[].path` is resolved below that application path.
