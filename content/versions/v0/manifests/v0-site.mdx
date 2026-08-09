@@ -1,12 +1,11 @@
 ---
-title: Site · v0/site
+title: Site
 description: Compose applications and define shared site branding.
 ---
 
 A `v0/site` is the composition root. It imports applications, selects which ones to expose, and defines shared brand assets.
 
-[Use the `v0/site` JSON schema](/schemas/v0/site.schema.json) for YAML autocomplete and inline
-validation. See [JSON Schema & autocomplete](/versions/v0/manifests/autocomplete) for editor setup.
+import { TypeTable } from "fumadocs-ui/components/type-table";
 
 <Callout title="One Site per system" type="warn">
   A valid Taskmigo system contains exactly one logical Site resource. It may have multiple
@@ -36,14 +35,20 @@ spec:
 
 ## Fields
 
-| Field                | Rule                                                |
-| -------------------- | --------------------------------------------------- |
-| `kind`               | Must be `v0/site`.                                  |
-| `spec.brand`         | Required branding configuration.                    |
-| `spec.brand.label`   | Required site label.                                |
-| `spec.brand.logo`    | Required logo path.                                 |
-| `spec.brand.favicon` | Required favicon path.                              |
-| `spec.applications`  | Required ordered list of exposed application names. |
+<TypeTable
+  type={{
+    kind: { type: '"v0/site"', required: true, description: "The manifest kind." },
+    "spec.brand": { type: "object", required: true, description: "Shared branding configuration." },
+    "spec.brand.label": { type: "string", required: true, description: "The site label." },
+    "spec.brand.logo": { type: "string", required: true, description: "The logo path." },
+    "spec.brand.favicon": { type: "string", required: true, description: "The favicon path." },
+    "spec.applications": {
+      type: "string[]",
+      required: true,
+      description: "The ordered names of exposed applications.",
+    },
+  }}
+/>
 
 ## Expose applications
 

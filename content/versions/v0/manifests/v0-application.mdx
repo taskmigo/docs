@@ -1,12 +1,11 @@
 ---
-title: Application · v0/application
+title: Application
 description: Define application metadata, its base path, and page routes.
 ---
 
 A `v0/application` defines the shared URL prefix for an application and maps imported pages to paths below that prefix.
 
-[Use the `v0/application` JSON schema](/schemas/v0/application.schema.json) for YAML autocomplete and
-inline validation. See [JSON Schema & autocomplete](/versions/v0/manifests/autocomplete) for editor setup.
+import { TypeTable } from "fumadocs-ui/components/type-table";
 
 ```yaml
 kind: v0/application
@@ -30,17 +29,51 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 ## Fields
 
-| Field                | Rule                                                                              |
-| -------------------- | --------------------------------------------------------------------------------- |
-| `kind`               | Must be `v0/application`.                                                         |
-| `imports`            | Required list of unique `v0/page` references used by the application.             |
-| `spec.icon`          | Required absolute image URL with a scheme and host.                               |
-| `spec.label`         | Required `Trans` expression for the application name.                             |
-| `spec.description`   | Required `Trans` expression for the application description.                      |
-| `spec.path`          | Required application path beginning with `/`.                                     |
-| `spec.routes`        | Required non-empty list mapping imported pages to application-relative paths.     |
-| `spec.routes[].page` | Required `v0/page` reference that also appears in `imports`.                      |
-| `spec.routes[].path` | Required path beginning with `/`, relative to `spec.path` within the application. |
+<TypeTable
+  type={{
+    kind: { type: '"v0/application"', required: true, description: "The manifest kind." },
+    imports: {
+      type: "PageReference[]",
+      required: true,
+      description: "Unique page references used by the application.",
+    },
+    "spec.icon": {
+      type: "URL",
+      required: true,
+      description: "An absolute image URL with a scheme and host.",
+    },
+    "spec.label": {
+      type: "TransExpression",
+      required: true,
+      description: "The translated application name.",
+    },
+    "spec.description": {
+      type: "TransExpression",
+      required: true,
+      description: "The translated application description.",
+    },
+    "spec.path": {
+      type: "AbsolutePath",
+      required: true,
+      description: "The application path beginning with `/`.",
+    },
+    "spec.routes": {
+      type: "Route[]",
+      required: true,
+      description: "A non-empty list mapping imported pages to application-relative paths.",
+    },
+    "spec.routes[].page": {
+      type: "PageReference",
+      required: true,
+      description: "A page reference that also appears in `imports`.",
+    },
+    "spec.routes[].path": {
+      type: "AbsolutePath",
+      required: true,
+      description: "A path beginning with `/`, relative to `spec.path`.",
+    },
+  }}
+/>
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
