@@ -67,4 +67,8 @@ In addition to the [common resource validation](/versions/v0/resources), a site 
 
 ## Good to know
 
-`includes` defines dependency availability, while `spec.applications` defines which applications the site exposes and in what order. Including an application alone does not expose it.
+<Callout title="Included does not mean exposed" type="idea">
+  `includes` makes a dependency available. `spec.applications` decides which
+  applications the site exposes and in what order. Including an application alone
+  does not expose it.
+</Callout>
