@@ -17,6 +17,9 @@ Invalid revisions keep structured diagnostics. A diagnostic identifies the error
 
 After create, update, delete, or import, Taskmigo revalidates the changed resource and all reverse dependents.
 
+Translation resources do not need explicit reverse-dependency edges. A change to
+a translation resource revalidates Site snapshots that use its locale catalog.
+
 ```text
 A includes B includes C
 
