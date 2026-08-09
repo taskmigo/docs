@@ -1,0 +1,66 @@
+---
+title: v0/application
+description: Define an application, its metadata, dependencies, and entry route.
+---
+
+A `v0/application` manifest defines an application that can be included in a Taskmigo site.
+
+```yaml
+kind: v0/application
+name: home
+
+includes:
+  - kind: v0/translation
+    name: english-applications
+    version: ^1.0.0
+  - kind: v0/translation
+    name: vietnamese-applications
+
+spec:
+  icon: https://example.com/images/home.png
+  label: '{{ Trans "applications.home.label" }}'
+  description: '{{ Trans "applications.home.description" }}'
+  route: home-app
+```
+
+## Fields
+
+| Field | Rule |
+| --- | --- |
+| `kind` | Must be `v0/application`. |
+| `name` | Identifies this application. It follows the shared name rules and must be unique under `(kind, name)`. |
+| `includes` | Optional list of resources required by the application. Every included `kind` must be fully versioned, such as `v0/translation`; unversioned values such as `translation` are invalid. |
+| `spec.icon` | Required absolute URL of the application image. Relative URLs are invalid. |
+| `spec.label` | Required translated application name using `{{ Trans "key" ...args }}`. |
+| `spec.description` | Required translated application description using `{{ Trans "key" ...args }}`. |
+| `spec.route` | Required entry route for the application. |
+
+## Translated metadata
+
+`spec.label` and `spec.description` reference entries contributed by `v0/translation` manifests. Use the `Trans` expression rather than embedding locale maps directly.
+
+```yaml
+spec:
+  label: '{{ Trans "applications.home.label" }}'
+  description: '{{ Trans "applications.home.description" }}'
+```
+
+See [`v0/translation`](/versions/v0/manifests/v0-translation#use-translations) for the complete syntax and catalog example.
+
+## Icon URL
+
+`spec.icon` must contain a full URL, including its scheme and host.
+
+```yaml
+# Valid
+icon: https://cdn.example.com/apps/home.png
+
+# Invalid
+icon: ./images/home.png
+```
+
+## Validation
+
+A `v0/application` manifest is invalid when a required field is missing, an included kind is not versioned with the `v0/` prefix, `spec.icon` is not an absolute URL, either translated metadata field does not use a valid `Trans` expression, or `spec.route` is empty.
+
+The shared resource validation rules, including include resolution, version constraints, and cycle detection, also apply.
