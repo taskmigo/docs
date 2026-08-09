@@ -9,13 +9,6 @@ A `v0/application` manifest defines an application that can be included in a Tas
 kind: v0/application
 name: home
 
-includes:
-  - kind: v0/translation
-    name: english-applications
-    version: ^1.0.0
-  - kind: v0/translation
-    name: vietnamese-applications
-
 spec:
   icon: https://example.com/images/home.png
   label: '{{ Trans "applications.home.label" }}'
@@ -43,7 +36,13 @@ spec:
   description: '{{ Trans "applications.home.description" }}'
 ```
 
-They do not accept locale maps embedded directly in the application manifest. See [Use translations](/versions/v0/manifests/v0-translation#use-translations) for the expression syntax, arguments, catalog structure, and lookup behavior.
+They do not accept locale maps embedded directly in the application manifest. See
+[Translate a message](/versions/v0/manifests/v0-translation#translate-a-message)
+for the expression syntax, arguments, catalog structure, and lookup behavior.
+
+Translation catalogs are available automatically. Do not add
+`kind: v0/translation` entries to `includes`; only declare resource dependencies
+that the application must resolve explicitly.
 
 ## Icon URL
 
