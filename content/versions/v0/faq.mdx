@@ -3,7 +3,7 @@ title: FAQ
 description: Resolve common questions about Taskmigo contracts and runtime behavior.
 ---
 
-import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 <Accordions type="single">
   <Accordion title="How many Site resources can a system contain?" id="one-site">
@@ -13,97 +13,83 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
     [Site cardinality](/versions/v0/resources#site-cardinality).
   </Accordion>
 
-<Accordion
-  title="Are the kind prefix and resource version the same?"
-  id="kind-prefix-vs-resource-version"
->
-  No. `kind: v0/application` selects the manifest schema. The optional top-level `version` tags an
-  immutable resource revision. See [Identity and
-  revisions](/versions/v0/resources#identity-and-revisions).
+<Accordion title='Are the kind prefix and resource version the same?' id='kind-prefix-vs-resource-version'>
+  No. `kind: v0/application` selects the manifest schema. The optional top-level `version` tags an immutable resource
+  revision. See [Identity and revisions](/versions/v0/resources#identity-and-revisions).
 </Accordion>
 
-<Accordion
-  title="Can one manifest reference the same resource more than once?"
-  id="duplicate-references"
->
-  No. Imports are unique by `(kind, name)` within a manifest, even when version constraints differ.
-  Separate graph branches may resolve that identity to different versions. See [Uniqueness
+<Accordion title='Can one manifest reference the same resource more than once?' id='duplicate-references'>
+  No. Imports are unique by `(kind, name)` within a manifest, even when version constraints differ. Separate graph
+  branches may resolve that identity to different versions. See [Uniqueness
   scope](/versions/v0/resources#uniqueness-scope).
 </Accordion>
 
-<Accordion title="What does a reference without a version select?" id="unversioned-reference">
-  It selects the latest revision when a candidate snapshot is built. Existing snapshots remain
-  unchanged. See [Reference resolution](/versions/v0/resources#resolution).
+<Accordion title='What does a reference without a version select?' id='unversioned-reference'>
+  It selects the latest revision when a candidate snapshot is built. Existing snapshots remain unchanged. See [Reference
+  resolution](/versions/v0/resources#resolution).
 </Accordion>
 
-<Accordion title="Which resources may a manifest import?" id="import-relationships">
-  A Site may import Applications, an Application may import Pages, and a Page may import reusable
-  Components. The [Reference ability matrix](/versions/v0/resources#reference-ability) shows the
-  complete set of allowed and rejected relationships.
+<Accordion title='Which resources may a manifest import?' id='import-relationships'>
+  A Site may import Applications, an Application may import Pages, and a Page may import reusable Components. The
+  [Reference ability matrix](/versions/v0/resources#reference-ability) shows the complete set of allowed and rejected
+  relationships.
 </Accordion>
 
-<Accordion title="How do I reuse one Component across Pages?" id="reuse-component">
-  Define a `v0/component` with typed props and a template. Each Page imports the Component, uses its
-  full resource reference as the node's `component` value, and supplies input values through
-  `props`. See [v0/component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
+<Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
+  Define a `v0/component` with typed props and a template. Each Page imports the Component, uses its full resource
+  reference as the node's `component` value, and supplies input values through `props`. See
+  [v0/component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
 </Accordion>
 
-<Accordion title="Must a Page use a reusable Component?" id="page-component-optional">
-  No. A Page may declare built-in components such as `Stack` and `Typography` directly. Import a
-  `v0/component` only when Pages should share a component tree. See [Page component
-  nodes](/versions/v0/manifests/v0-page#component-nodes).
+<Accordion title='Must a Page use a reusable Component?' id='page-component-optional'>
+  No. A Page may declare built-in components such as `Stack` and `Typography` directly. Import a `v0/component` only
+  when Pages should share a component tree. See [Page component nodes](/versions/v0/manifests/v0-page#component-nodes).
 </Accordion>
 
-<Accordion title="Where can I use an expression?" id="expression-scope">
-  Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type,
-  and the evaluated result must match that type. See [Expressions](/versions/v0/expressions) for
-  syntax, functions, and context values.
+<Accordion title='Where can I use an expression?' id='expression-scope'>
+  Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type, and the evaluated
+  result must match that type. See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
 </Accordion>
 
-<Accordion title="Where is a Page route defined?" id="page-route">
-  An Application owns Page routing. Its `spec.path` defines the application path and each
-  `spec.routes[].path` defines a path below it. A Page path of `/` is the index page for the
-  application path. See [Paths and routes](/versions/v0/manifests/v0-application#paths-and-routes).
+<Accordion title='Where is a Page route defined?' id='page-route'>
+  An Application owns Page routing. Its `spec.path` defines the application path and each `spec.routes[].path` defines a
+  path below it. A Page path of `/` is the index page for the application path. See [Paths and
+  routes](/versions/v0/manifests/v0-application#paths-and-routes).
 </Accordion>
 
-<Accordion title="Do consumers import translation resources?" id="translation-imports">
-  No. No manifest may import `v0/translation`. Taskmigo assembles the catalog for the active locale,
-  and consumers use `Trans` or `TransN`. See
-  [v0/translation](/versions/v0/manifests/v0-translation).
+<Accordion title='Do consumers import translation resources?' id='translation-imports'>
+  No. No manifest may import `v0/translation`. Taskmigo assembles the catalog for the active locale, and consumers use
+  `Trans` or `TransN`. See [v0/translation](/versions/v0/manifests/v0-translation).
 </Accordion>
 
-<Accordion title="Can a translation manifest declare imports?" id="translation-imports-field">
-  Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the
-  common resource shape; any entry makes the translation manifest invalid. See [Reference
-  ability](/versions/v0/resources#reference-ability).
+<Accordion title='Can a translation manifest declare imports?' id='translation-imports-field'>
+  Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the common resource shape;
+  any entry makes the translation manifest invalid. See [Reference ability](/versions/v0/resources#reference-ability).
 </Accordion>
 
-<Accordion title="What happens when a resource change is invalid?" id="invalid-change">
-  Candidate activation stops, diagnostics are stored, and the current Site snapshot continues
-  serving traffic. See [Validation outcome](/versions/v0/runtime#validation-outcome).
+<Accordion title='What happens when a resource change is invalid?' id='invalid-change'>
+  Candidate activation stops, diagnostics are stored, and the current Site snapshot continues serving traffic. See
+  [Validation outcome](/versions/v0/runtime#validation-outcome).
 </Accordion>
 
-<Accordion title="Is there a manual publish or activation step?" id="manual-activation">
-  No. A complete valid candidate is compiled and activated atomically. See [Runtime
-  lifecycle](/versions/v0/runtime).
+<Accordion title='Is there a manual publish or activation step?' id='manual-activation'>
+  No. A complete valid candidate is compiled and activated atomically. See [Runtime lifecycle](/versions/v0/runtime).
 </Accordion>
 
-<Accordion title="Can dependency recovery attempts conflict?" id="dependency-recovery-queue">
-  No. Taskmigo queues dependency recovery and processes one candidate at a time. Each candidate must
-  finish validation and activation, or fail, before the next candidate starts. The current snapshot
-  remains active while recovery is queued or when a candidate fails. See [Dependency
-  recovery](/versions/v0/runtime#dependency-recovery).
+<Accordion title='Can dependency recovery attempts conflict?' id='dependency-recovery-queue'>
+  No. Taskmigo queues dependency recovery and processes one candidate at a time. Each candidate must finish validation
+  and activation, or fail, before the next candidate starts. The current snapshot remains active while recovery is
+  queued or when a candidate fails. See [Dependency recovery](/versions/v0/runtime#dependency-recovery).
 </Accordion>
 
-<Accordion title="Can a package import partially activate?" id="package-atomicity">
-  No. The complete package is validated first, including the one-Site invariant. A failed import
-  does not change active runtime state. See [Package
-  boundary](/versions/v0/runtime#package-boundary).
+<Accordion title='Can a package import partially activate?' id='package-atomicity'>
+  No. The complete package is validated first, including the one-Site invariant. A failed import does not change active
+  runtime state. See [Package boundary](/versions/v0/runtime#package-boundary).
 </Accordion>
 
-<Accordion title="Which manifest kinds are currently defined?" id="defined-kinds">
-  The dedicated reference pages list the defined contracts. Candidate kinds remain planned until
-  they have a reference page. See [Product status](/versions/v0/status).
+<Accordion title='Which manifest kinds are currently defined?' id='defined-kinds'>
+  The dedicated reference pages list the defined contracts. Candidate kinds remain planned until they have a reference
+  page. See [Product status](/versions/v0/status).
 </Accordion>
 
   <Accordion title="Where can I find known limitations?" id="known-limitations">

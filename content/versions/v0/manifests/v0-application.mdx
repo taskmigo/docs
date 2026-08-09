@@ -5,7 +5,7 @@ description: Define application metadata, its base path, and page routes.
 
 A `v0/application` defines the shared URL prefix for an application and maps imported pages to paths below that prefix.
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ```yaml
 kind: v0/application
@@ -34,47 +34,47 @@ The example exposes `v0/page/index` at `<host>/home/`.
     kind: {
       type: '"v0/application"',
       required: true,
-      description: "Selects the Application contract.",
+      description: 'Selects the Application contract.',
     },
     imports: {
-      type: "PageReference[]",
+      type: 'PageReference[]',
       required: true,
-      description: "Unique page references used by the application.",
+      description: 'Unique page references used by the application.',
     },
-    "spec.icon": {
-      type: "URL",
+    'spec.icon': {
+      type: 'URL',
       required: true,
-      description: "An absolute image URL with a scheme and host.",
+      description: 'An absolute image URL with a scheme and host.',
     },
-    "spec.label": {
+    'spec.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "Name shown when presenting this application.",
+      description: 'Name shown when presenting this application.',
     },
-    "spec.description": {
+    'spec.description': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "Summary shown alongside the application name.",
+      description: 'Summary shown alongside the application name.',
     },
-    "spec.path": {
-      type: "AbsolutePath",
+    'spec.path': {
+      type: 'AbsolutePath',
       required: true,
-      description: "URL prefix shared by every route in this application.",
+      description: 'URL prefix shared by every route in this application.',
     },
-    "spec.routes": {
-      type: "Route[]",
+    'spec.routes': {
+      type: 'Route[]',
       required: true,
-      description: "Connects each imported Page to a URL below this application.",
+      description: 'Connects each imported Page to a URL below this application.',
     },
-    "spec.routes[].page": {
-      type: "PageReference",
+    'spec.routes[].page': {
+      type: 'PageReference',
       required: true,
-      description: "Imported Page exposed by this route.",
+      description: 'Imported Page exposed by this route.',
     },
-    "spec.routes[].path": {
-      type: "AbsolutePath",
+    'spec.routes[].path': {
+      type: 'AbsolutePath',
       required: true,
-      description: "Route suffix appended to the application path.",
+      description: 'Route suffix appended to the application path.',
     },
   }}
 />

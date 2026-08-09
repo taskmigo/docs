@@ -3,7 +3,7 @@ title: Typography
 description: Render string content with a semantic text variant.
 ---
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 Use `Typography` to render a text string with a heading, paragraph, or inline text variant.
 Component names are case-sensitive, so `typography` is invalid.
@@ -22,17 +22,17 @@ children: Hello World
     component: {
       type: '"Typography"',
       required: true,
-      description: "Selects the Typography renderer; casing must match exactly.",
+      description: 'Selects the Typography renderer; casing must match exactly.',
     },
-    "props.variant": {
+    'props.variant': {
       type: '"h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "span" | "p"',
       required: true,
-      description: "Selects the semantic HTML element used for the text.",
+      description: 'Selects the semantic HTML element used for the text.',
     },
     children: {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: "Text rendered by Typography.",
+      description: 'Text rendered by Typography.',
     },
   }}
 />

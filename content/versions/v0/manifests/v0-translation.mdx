@@ -3,21 +3,13 @@ title: Translation
 description: Define locale catalogs and render translated messages.
 ---
 
-import { Step, Steps } from "fumadocs-ui/components/steps";
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 <Cards>
-  <Card
-    href="#create-a-catalog"
-    title="Create a catalog"
-    description="Define messages for one locale."
-  />
-  <Card
-    href="#translate-a-message"
-    title="Use Trans"
-    description="Render a message and fill placeholders."
-  />
-  <Card href="#translate-a-quantity" title="Use TransN" description="Select a CLDR plural form." />
+  <Card href='#create-a-catalog' title='Create a catalog' description='Define messages for one locale.' />
+  <Card href='#translate-a-message' title='Use Trans' description='Render a message and fill placeholders.' />
+  <Card href='#translate-a-quantity' title='Use TransN' description='Select a CLDR plural form.' />
 </Cards>
 
 ## Quick start
@@ -40,10 +32,10 @@ label: '{{ Trans "applications.home.label" }}'
 description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
-<Callout title="Catalogs do not participate in imports" type="info">
-  A translation manifest may declare `imports: []` for compatibility with the common resource shape,
-  but it cannot import any resource. No manifest may import `v0/translation`. Taskmigo assembles the
-  effective catalog for the active locale.
+<Callout title='Catalogs do not participate in imports' type='info'>
+  A translation manifest may declare `imports: []` for compatibility with the common resource shape, but it cannot
+  import any resource. No manifest may import `v0/translation`. Taskmigo assembles the effective catalog for the active
+  locale.
 </Callout>
 
 `spec.content` defines literal catalog data; Taskmigo does not evaluate expressions inside the
@@ -57,17 +49,17 @@ catalog. Other manifests consume that data with `Trans` and `TransN`. Start with
     kind: {
       type: '"v0/translation"',
       required: true,
-      description: "Selects the translation catalog contract.",
+      description: 'Selects the translation catalog contract.',
     },
-    "spec.locale": {
-      type: "BCP 47 language tag",
+    'spec.locale': {
+      type: 'BCP 47 language tag',
       required: true,
-      description: "Locale served by this catalog, such as `en`, `vi`, or `pt-BR`.",
+      description: 'Locale served by this catalog, such as `en`, `vi`, or `pt-BR`.',
     },
-    "spec.content": {
-      type: "Record<string, unknown>",
+    'spec.content': {
+      type: 'Record<string, unknown>',
       required: true,
-      description: "Messages available through dotted lookup keys. Keys cannot be empty.",
+      description: 'Messages available through dotted lookup keys. Keys cannot be empty.',
     },
   }}
 />
@@ -105,9 +97,8 @@ orders:
 {{ Trans "orders.summary" .Order.Number .User.Name }}
 ```
 
-<Callout title="Pass every placeholder value" type="warn">
-  Missing values stop rendering with a runtime error. Values must also be compatible with their
-  formatting verbs.
+<Callout title='Pass every placeholder value' type='warn'>
+  Missing values stop rendering with a runtime error. Values must also be compatible with their formatting verbs.
 </Callout>
 
 Placeholder order belongs to each translated message and may differ by locale.

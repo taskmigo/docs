@@ -3,7 +3,7 @@ title: Component
 description: Define a typed, reusable UI template for Pages.
 ---
 
-import { TypeTable } from "fumadocs-ui/components/type-table";
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 A `v0/component` packages a component tree once so any Page can import and render it. Declare the
 values each Page may provide in `spec.props`, then read those values from `spec.template` through
@@ -29,7 +29,7 @@ spec:
       - component: Typography
         props:
           variant: h1
-        children: "{{ props.title }}"
+        children: '{{ props.title }}'
 ```
 
 ## Fields
@@ -39,32 +39,32 @@ spec:
     kind: {
       type: '"v0/component"',
       required: true,
-      description: "Selects the reusable Component contract.",
+      description: 'Selects the reusable Component contract.',
     },
-    "spec.props": {
-      type: "Record<string, PropDefinition>",
+    'spec.props': {
+      type: 'Record<string, PropDefinition>',
       required: true,
-      description: "Contract that importing Pages use to supply values.",
+      description: 'Contract that importing Pages use to supply values.',
     },
-    "spec.props.*.type": {
+    'spec.props.*.type': {
       type: '"string" | "number" | "boolean"',
       required: true,
-      description: "Checks values passed by an importing Page.",
+      description: 'Checks values passed by an importing Page.',
     },
-    "spec.props.*.required": {
-      type: "boolean",
+    'spec.props.*.required': {
+      type: 'boolean',
       required: true,
-      description: "Controls whether an importing Page may omit this prop.",
+      description: 'Controls whether an importing Page may omit this prop.',
     },
-    "spec.props.*.default": {
-      type: "string | number | boolean",
+    'spec.props.*.default': {
+      type: 'string | number | boolean',
       required: false,
-      description: "Fallback used when an importing Page omits this prop.",
+      description: 'Fallback used when an importing Page omits this prop.',
     },
-    "spec.template": {
-      type: "ComponentNode",
+    'spec.template': {
+      type: 'ComponentNode',
       required: true,
-      description: "Component tree rendered for every use.",
+      description: 'Component tree rendered for every use.',
     },
   }}
 />
