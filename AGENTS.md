@@ -34,7 +34,7 @@ Use components only when they improve navigation, comparison, sequence, or empha
 - **Inline TOC:** Long overview or index pages with many peer sections.
 - **Steps:** Procedures and lifecycle sequences where order is meaningful.
 - **Tabs:** Equivalent alternatives such as package managers or platforms; never split one sequential procedure across tabs.
-- **Type Table:** Compact, manually maintained field, prop, or option references. Put validation rules in prose when the table would be ambiguous.
+- **Type Table:** Use for props and fields on every UI component reference page. It is the canonical compact settings reference; keep validation rules in prose when the table would be ambiguous.
 - **Cards:** Landing-page navigation or a small set of useful next steps.
 - **Callouts:** Notes, tips, warnings, and safety-critical constraints; keep the primary contract in normal prose.
 

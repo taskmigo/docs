@@ -3,6 +3,8 @@ title: Stack
 description: Group React nodes in a Page component tree.
 ---
 
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
 Use `Stack` to group text and nested components while preserving their source order. Component
 names are case-sensitive, so `stack` is invalid.
 
@@ -23,11 +25,24 @@ children:
 
 ## Fields
 
-| Field       | Rule                                                             |
-| ----------- | ---------------------------------------------------------------- |
-| `component` | Must be `Stack`.                                                 |
-| `props`     | Optional object. Every field name must begin with `data-`.       |
-| `children`  | A ReactNode represented by content supported by the Page schema. |
+<TypeTable
+  type={{
+    component: {
+      type: '"Stack"',
+      required: true,
+      description: "The case-sensitive registered component name.",
+    },
+    props: {
+      type: "Record<`data-${string}`, unknown>",
+      description: "Component settings. Every field name must begin with `data-`.",
+    },
+    children: {
+      type: "ReactNode",
+      required: true,
+      description: "Content supported by the Page schema.",
+    },
+  }}
+/>
 
 For example, `children` can be a string, a component node, or an ordered list of component nodes
 and strings. A list preserves source order.
