@@ -10,12 +10,11 @@ A resource is an independent YAML manifest. YAML remains canonical; normalized d
 ## Common manifest shape
 
 ```yaml
-apiVersion: taskmigo.io/v1
-kind: Page
+kind: v0/page
 name: users
 version: 1.0.0 # optional
 includes:
-  - kind: Entity
+  - kind: v0/entity
     name: user
     version: ^1.2.0 # optional
 spec:
@@ -24,8 +23,7 @@ spec:
 
 | Field | Rule |
 | --- | --- |
-| `apiVersion` | Required. The MVP value is `taskmigo.io/v1`. |
-| `kind` | Required resource type. |
+| `kind` | Required versioned resource type. Version 0 kinds use the complete `v0/...` form. |
 | `name` | Required. `(kind, name)` is unique within the Taskmigo schema. The same name may exist under a different kind. |
 | `version` | Optional immutable SemVer tag for this revision. |
 | `includes` | Optional explicit dependency list. |
@@ -41,7 +39,7 @@ An untagged revision can be the latest revision and can be used by the runtime, 
 
 ## Includes
 
-An include identifies another resource by `kind` and `name`. It can optionally set a SemVer constraint using an exact version, `^`, or `~`.
+An include identifies another resource by `kind` and `name`. It can optionally set a SemVer constraint using an exact version, `^`, or `~`. The kind must include its API version, such as `v0/application` or `v0/page`; unversioned values such as `application` and `Page` are invalid.
 
 - Without `includes.version`, Taskmigo selects the latest revision of that exact resource.
 - With `includes.version`, Taskmigo selects the highest tagged version that satisfies the constraint.
