@@ -46,6 +46,12 @@ spec:
 
 The dotted key follows the nested path under `spec.content`. Placeholder values are passed after the key, in the same order as the placeholders in the message.
 
+<Callout title="Translation catalogs are automatic" type="info">
+  Resources that use `Trans` or `TransN` do not need to add
+  `kind: v0/translation` to `includes`. Taskmigo assembles the effective catalog
+  for the active locale automatically.
+</Callout>
+
 ## Create a catalog
 
 Each translation manifest has the common fields described by the [Resource model](/versions/v0/resources) and these translation-specific fields:
@@ -57,6 +63,10 @@ Each translation manifest has the common fields described by the [Resource model
 | `spec.content` | Yes | Object containing the values contributed to the locale catalog. Every key must be a non-empty string. |
 
 `spec.locale` selects the catalog; the manifest `name` only identifies this contribution. Taskmigo combines all translation manifests with the same normalized locale into one effective catalog.
+
+Translation resources are catalog contributions, not dependencies that consumers
+include individually. Saving, updating, or deleting a translation resource
+revalidates every runtime snapshot that uses its locale catalog.
 
 ### Translation keys
 
@@ -266,6 +276,9 @@ spec:
 ```
 
 This resource adds `errors.unauthorized` to the effective `en` catalog without changing the earlier application messages.
+
+Consumers receive this contribution automatically; their `includes` lists do not
+change when a locale catalog is split into more translation resources.
 
 ### Merge rules
 
