@@ -6,7 +6,7 @@ description: Follow a resource change from validation to atomic Site snapshot ac
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-import { GitBranch, RefreshCw, ShieldCheck } from "lucide-react";
+import { GitBranch, ShieldCheck } from "lucide-react";
 
 Taskmigo never activates a manifest directly. It resolves and validates a
 candidate Site graph, compiles that graph into an immutable snapshot, then makes
@@ -23,12 +23,6 @@ the snapshot current in one atomic switch.
     title="Validation scope"
     href="#from-change-to-active-snapshot"
     description="See how one change expands to a candidate Site graph."
-  />
-  <Card
-    icon={<RefreshCw />}
-    title="Recovery order"
-    href="#dependency-recovery"
-    description="Trace invalidation and recovery through reverse dependents."
   />
   <Card
     icon={<ShieldCheck />}
@@ -124,32 +118,6 @@ with the affected revisions and leaves runtime state unchanged.
 
   </Tab>
 </Tabs>
-
-## Dependency recovery
-
-Taskmigo revalidates in dependency order. Consider a graph where `A` imports
-`B`, and `B` imports `C`:
-
-<Tabs items={['Dependency breaks', 'Dependency recovers']}>
-  <Tab>
-
-1. `C` becomes missing or invalid.
-2. Candidate validation fails for `B`, then `A`.
-3. The candidate follows the invalid outcome above.
-
-  </Tab>
-  <Tab>
-
-1. `C` becomes valid again.
-2. Taskmigo validates `C`, then `B`, then `A`.
-3. The valid graph continues to snapshot build and activation.
-
-  </Tab>
-</Tabs>
-
-Recovery re-resolves the existing declarations; it does not rewrite dependent
-manifests. Deleting a resource follows the same path as an invalid dependency:
-the candidate fails while the last valid snapshot remains active.
 
 ## Package boundary
 
