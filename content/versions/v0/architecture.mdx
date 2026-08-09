@@ -9,7 +9,7 @@ A Taskmigo system manages one site graph in a user-managed PostgreSQL database.
 
 Taskmigo owns one configurable PostgreSQL schema, named `taskmigo` by default. It must not access or modify `public` or other user schemas.
 
-Version 0 has no tenant registry, database routing, or `tenant_id`.
+Taskmigo currently has no tenant registry, database routing, or `tenant_id`.
 
 ## Resource graph
 
@@ -18,7 +18,6 @@ The graph starts at the system's only logical Site resource. Every regular runti
 ```text
 Site
 ├── Application: crm
-│   └── Lower-ranked kinds (when defined)
 └── Application: helpdesk
 ```
 
@@ -26,11 +25,11 @@ The one-Site invariant is system-wide. Schema prefixes do not create separate co
 
 Version selection happens per edge, so separate branches may resolve the same `(kind, name)` to different revisions. See [Resource model](/versions/v0/resources#imports) for import syntax and resolution.
 
-Import edges only descend the [kind hierarchy](/versions/v0/resources#kind-hierarchy). Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
+The [Import ability matrix](/versions/v0/resources#import-ability) defines every allowed kind pair. Translation catalogs are selected by locale rather than imported by consumers. See [v0/translation](/versions/v0/manifests/v0-translation).
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) may only import lower-ranked kinds; resources are never discovered by name.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) cannot currently import resources; resources are never discovered by name.
 
 ## Runtime boundary
 
