@@ -7,35 +7,18 @@ Taskmigo is an open-source, self-hosted low-code application platform. YAML reso
 
 Resources are authored through the Taskmigo UI or API. YAML remains canonical; Git is not part of the authoring or version-control model.
 
-## Build what you need
+## Start here
 
 <Cards>
   <Card
-    title="Compose a Site"
+    title="Start a Site"
     href="/versions/v0/manifests/v0-site"
-    description="Choose the applications to expose and define shared branding."
-  />
-  <Card
-    title="Add an Application"
-    href="/versions/v0/manifests/v0-application"
-    description="Group Pages under a path and assign their routes."
-  />
-  <Card
-    title="Build a Page"
-    href="/versions/v0/manifests/v0-page"
-    description="Create an interface from registered UI Components."
-  />
-  <Card
-    title="Reuse a Component"
-    href="/versions/v0/manifests/v0-component"
-    description="Share one typed component tree across Pages."
-  />
-  <Card
-    title="Translate content"
-    href="/versions/v0/manifests/v0-translation"
-    description="Add messages, placeholders, and plural forms for a locale."
+    description="Create the entry point for your application and choose which Applications it exposes."
   />
 </Cards>
+
+A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages
+compose registered UI Components. Add Translation resources when a Page needs localized content.
 
 ## Find an answer
 
@@ -43,7 +26,7 @@ Resources are authored through the Taskmigo UI or API. YAML remains canonical; G
   <Card
     title="Choose a manifest"
     href="/versions/v0/manifests"
-    description="Match a task to the resource that defines it."
+    description="Find the resource that defines a specific part of a Site."
   />
   <Card
     title="Reference resources"
@@ -71,8 +54,3 @@ Resources are authored through the Taskmigo UI or API. YAML remains canonical; G
     description="Find concise answers with links to the canonical contract."
   />
 </Cards>
-
-<Callout title="Start from the outcome" type="info">
-  Open a manifest page when you know what you want to define. Open Resources, Expressions, or
-  Runtime lifecycle when you need rules that apply across manifest types.
-</Callout>
