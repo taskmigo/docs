@@ -37,12 +37,20 @@ spec:
     "spec.meta.title": {
       type: "string",
       required: true,
-      description: "The page title. Supports Expression; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> The page title. The result must be a string.
+        </>
+      ),
     },
     "spec.meta.description": {
       type: "string",
       required: true,
-      description: "The page description. Supports Expression; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> The page description. The result must be a string.
+        </>
+      ),
     },
     "spec.body": {
       type: "ComponentNode[]",

@@ -45,13 +45,20 @@ The example exposes `v0/page/index` at `<host>/home/`.
     "spec.label": {
       type: "string",
       required: true,
-      description: "The translated application name. Supports Expression; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> The translated application name. The result must be a string.
+        </>
+      ),
     },
     "spec.description": {
       type: "string",
       required: true,
-      description:
-        "The translated application description. Supports Expression; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> The translated application description. The result must be a string.
+        </>
+      ),
     },
     "spec.path": {
       type: "AbsolutePath",

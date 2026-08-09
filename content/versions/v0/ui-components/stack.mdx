@@ -39,8 +39,11 @@ children:
     children: {
       type: "ReactNode",
       required: true,
-      description:
-        "Content supported by the Page schema. Supports Expression for string children; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> String children may use an Expression; the result must be a string.
+        </>
+      ),
     },
   }}
 />

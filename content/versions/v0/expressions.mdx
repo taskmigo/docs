@@ -23,12 +23,12 @@ In this example:
 
 ## Choose what you need
 
-| I want to… | Start with |
-| --- | --- |
-| Show text from a translation catalog | [Translate a message](#translate-a-message) |
-| Change text for a count | [Translate a quantity](#translate-a-quantity) |
-| Use the Site hostname or current manifest metadata | [Use context values](#use-context-values) |
-| Format, compare, or transform a value | [Use built-in functions](#use-built-in-functions) |
+| I want to…                                         | Start with                                        |
+| -------------------------------------------------- | ------------------------------------------------- |
+| Show text from a translation catalog               | [Translate a message](#translate-a-message)       |
+| Change text for a count                            | [Translate a quantity](#translate-a-quantity)     |
+| Use the Site hostname or current manifest metadata | [Use context values](#use-context-values)         |
+| Format, compare, or transform a value              | [Use built-in functions](#use-built-in-functions) |
 
 ## Translate a message
 
@@ -54,44 +54,44 @@ The second argument is the count. Taskmigo selects the locale's plural form. See
 
 ## Use context values
 
-| Value | Available in | Returns |
-| --- | --- | --- |
-| `.Runtime.Hostname` | Any Expression | Hostname at evaluation time |
-| `.This.kind` | Any Expression | Current manifest kind |
-| `.This.name` | Any Expression | Current manifest name |
-| `.This.version` | Any Expression | Current manifest version |
-| `.This.revision` | Any Expression | Current manifest revision |
-| `props.<name>` | Component `spec.template` | A prop passed to that Component |
+| Value               | Available in              | Returns                         |
+| ------------------- | ------------------------- | ------------------------------- |
+| `.Runtime.Hostname` | Any Expression            | Hostname at evaluation time     |
+| `.This.kind`        | Any Expression            | Current manifest kind           |
+| `.This.name`        | Any Expression            | Current manifest name           |
+| `.This.version`     | Any Expression            | Current manifest version        |
+| `.This.revision`    | Any Expression            | Current manifest revision       |
+| `props.<name>`      | Component `spec.template` | A prop passed to that Component |
 
 ## Use built-in functions
 
-These global functions are available wherever a field's Type Table note says `Supports Expression`.
+These global functions are available wherever a field's Type Table shows the Expression tag.
 
-| Need | Functions | Example |
-| --- | --- | --- |
-| Combine boolean conditions | `and`, `or`, `not` | `{{ if and props.enabled props.visible }}Shown{{ end }}` |
-| Compare values | `eq`, `ne`, `lt`, `le`, `gt`, `ge` | `{{ if eq props.variant "primary" }}Primary{{ end }}` |
-| Count a value | `len` | `{{ len props.items }}` |
-| Select a value | `index` | `{{ index props.items 0 }}` |
-| Select a range | `slice` | `{{ slice props.items 0 2 }}` |
-| Format a value | `printf` | `{{ printf "Hello, %s" props.name }}` |
+| Need                       | Functions                          | Example                                                  |
+| -------------------------- | ---------------------------------- | -------------------------------------------------------- |
+| Combine boolean conditions | `and`, `or`, `not`                 | `{{ if and props.enabled props.visible }}Shown{{ end }}` |
+| Compare values             | `eq`, `ne`, `lt`, `le`, `gt`, `ge` | `{{ if eq props.variant "primary" }}Primary{{ end }}`    |
+| Count a value              | `len`                              | `{{ len props.items }}`                                  |
+| Select a value             | `index`                            | `{{ index props.items 0 }}`                              |
+| Select a range             | `slice`                            | `{{ slice props.items 0 2 }}`                            |
+| Format a value             | `printf`                           | `{{ printf "Hello, %s" props.name }}`                    |
 
 ## More Expression syntax
 
 Expressions can also use pipelines, local variables, conditions, and iteration.
 
-| Need | Syntax example |
-| --- | --- |
-| Pass a result to another function | `{{ props.title \| printf "%s" }}` |
-| Store and reuse a value | `{{ $title := props.title }}{{ $title }}` |
+| Need                                 | Syntax example                                           |
+| ------------------------------------ | -------------------------------------------------------- |
+| Pass a result to another function    | `{{ props.title \| printf "%s" }}`                       |
+| Store and reuse a value              | `{{ $title := props.title }}{{ $title }}`                |
 | Render only when a condition matches | `{{ if props.active }}Active{{ else }}Inactive{{ end }}` |
-| Iterate a value | `{{ range props.items }}{{ . }}{{ end }}` |
+| Iterate a value                      | `{{ range props.items }}{{ . }}{{ end }}`                |
 
 Names and paths are case-sensitive.
 
 ## Before you save
 
-1. Confirm that the field's Type Table note says `Supports Expression`.
+1. Confirm that the field's Type Table shows the Expression tag.
 2. Quote the YAML value when it includes Expression syntax.
 3. Use only functions and context values available in that field.
 4. Ensure that the evaluated result matches the field's required type.

@@ -32,7 +32,11 @@ children: Hello World
     children: {
       type: "string",
       required: true,
-      description: "Text content. Supports Expression; the result must be a string.",
+      description: (
+        <>
+          <ExpressionSupport /> Text content. The result must be a string.
+        </>
+      ),
     },
   }}
 />
