@@ -67,28 +67,14 @@ spec:
         title: Hello World
 ```
 
-Page imports may target Pages and reusable Components. Every reusable Component used in `spec.body` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports. Each node must satisfy the selected component's contract.
+Every reusable Component used in `spec.body` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports. Each node must satisfy the selected component's contract.
 
-## Workflow discovery (RFC)
-
-<Callout title='RFC integration' type='warn'>
-  The [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow) proposes an additional Page import relationship. It is not part of the supported Page contract yet.
-</Callout>
-
-Under the RFC, a Page imports every Workflow that users may discover or start from that Page:
+A Page may also import [`v0/workflow`](/versions/v0/manifests/v0-workflow) resources that users can discover and start from that Page:
 
 ```yaml
-kind: v0/page
-name: operations
-
 imports:
+  - v0/component/header
   - v0/workflow/employee-onboarding
-  - v0/workflow/access-review
-
-spec:
-  # Page UI
 ```
 
-The import is an authorization-independent discovery boundary: it makes the Workflow available to Page runtime UI, but it does not itself grant permission to execute it. The Page UI starts and observes executions through the same Workflow execution service used by API clients; there is no Page-only execution path.
-
-A Page does not embed Workflow steps in `spec.body`, and a Workflow does not embed a Page. Interactive Workflow steps reuse imported `v0/component` resources. See [Page integration](/versions/v0/manifests/v0-workflow#page-integration) for the proposed end-to-end contract.
+Importing a Workflow exposes it to Page runtime UI but does not itself grant permission to execute it. Pages do not embed Workflow steps in `spec.body`; interactive Workflow steps reuse Components imported by the Workflow itself. See [Reference ability](/versions/v0/resources#reference-ability) for the complete import matrix.
