@@ -3,70 +3,57 @@ title: Runtime lifecycle
 description: Follow a resource change from validation to atomic Site snapshot activation.
 ---
 
-import { Card, Cards } from 'fumadocs-ui/components/card';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { GitBranch, RefreshCw, ShieldCheck } from 'lucide-react';
 
-Taskmigo never activates a manifest directly. It resolves and validates a
-candidate Site graph, compiles that graph into an immutable snapshot, then makes
-the snapshot current in one atomic switch.
+Taskmigo never activates a manifest directly. Every change produces a candidate Site graph. Only a
+complete, valid candidate can become the current immutable snapshot.
 
-<Callout title='The current Site stays available' type='info'>
-  Building or rejecting a candidate does not disturb the current snapshot. A replacement becomes visible only after the
-  complete candidate graph is valid.
-</Callout>
+## Complete lifecycle
 
-<Cards>
-  <Card
-    icon={<GitBranch />}
-    title='Validation scope'
-    href='#from-change-to-active-snapshot'
-    description='See how one change expands to a candidate Site graph.'
-  />
-  <Card
-    icon={<RefreshCw />}
-    title='Dependency recovery'
-    href='#dependency-recovery'
-    description='Understand queued recovery and conflict-free activation.'
-  />
-  <Card
-    icon={<ShieldCheck />}
-    title='Snapshot handoff'
-    href='#validation-outcome'
-    description='Compare the activation and rejection paths.'
-  />
-</Cards>
+Create, update, delete, restore, and package import all enter this lifecycle. Dependency recovery
+rejoins the same flow after its queued work begins.
 
-## From change to active snapshot
+```mermaid
+flowchart TD
+  change["Resource change"] --> affected["Find affected Site graph"]
+  recovery["Dependency recovery"] --> queue["Wait in recovery queue"]
+  queue --> affected
+  affected --> resolve["Resolve complete candidate graph"]
+  resolve --> validate{"Candidate valid?"}
+  validate -->|Yes| build["Build immutable snapshot"]
+  build --> activate["Atomically activate snapshot"]
+  validate -->|No| diagnostics["Store diagnostics"]
+  diagnostics --> retain["Keep current snapshot"]
+  activate --> serve["Serve new requests"]
+```
 
-Create, update, delete, and package import all enter the same lifecycle.
+The active Site is never replaced by a partial or invalid candidate. A failed candidate ends at
+diagnostics; a valid candidate becomes visible only after the atomic activation step.
+
+## How a candidate moves through the lifecycle
 
 <Steps>
   <Step>
 
 ### Find the affected graph
 
-Taskmigo starts with the changed resource and follows reverse `imports`
-references to the Site. Resources outside its reachable graph are
-not revalidated.
+Taskmigo starts with the changed resource and follows reverse `imports` references to the Site.
+Resources outside the reachable graph are not revalidated.
 
-Translation catalogs are tracked by effective locale rather than explicit
-reference edges. Changing a translation resource also marks the Site graph when
-it uses that locale catalog.
+Translation catalogs are tracked by effective locale rather than explicit reference edges. Changing
+a translation resource also affects a Site graph that uses that locale.
 
   </Step>
   <Step>
 
-### Resolve a candidate graph
+### Resolve the complete candidate
 
-The `v0/site` manifest is resolved from its existing declarations. Site, Application, and Page
-imports select a revision per graph edge; translation
-catalogs are attached for the effective locale.
+Taskmigo resolves the `v0/site` from its current declarations and selects a revision for every import
+edge. It attaches the translation catalog for the effective locale.
 
-Separate branches may select different versions of the same `(kind, name)`.
-Both revisions can coexist in the candidate graph and, if valid, its snapshot.
-See [Resource model](/versions/v0/resources#imports) for reference
+Separate graph branches may select different versions of the same `(kind, name)`, and both revisions
+may coexist in one candidate. Resolution never rewrites manifests, substitutes a dependency, or
+falls back to an older revision. See [Resource model](/versions/v0/resources#imports) for reference
 and version selection rules.
 
   </Step>
@@ -74,165 +61,58 @@ and version selection rules.
 
 ### Validate the complete candidate
 
-Activation requires all of the following to succeed:
-
-- YAML parsing and common manifest metadata
-- kind-specific schema validation
-- import hierarchy, dependency resolution, and graph checks
-- security constraints
-
-Taskmigo validates the complete reachable graph before changing runtime state.
+Taskmigo checks YAML and common metadata, kind-specific schemas, dependency resolution, graph rules,
+and security constraints. Dependencies must be valid before their importers can be valid, but the
+internal validator call order is not part of the public API.
 
   </Step>
   <Step>
 
 ### Build an immutable snapshot
 
-A valid candidate is compiled into one Site snapshot containing every selected
-resource revision and the normalized runtime model. Later resource revisions
-cannot alter this snapshot.
+A valid candidate is compiled into one Site snapshot containing every selected resource revision and
+the normalized runtime model. Later resource changes cannot alter that snapshot.
 
   </Step>
   <Step>
 
-### Switch the current snapshot
+### Activate atomically
 
-Taskmigo stores the replacement and atomically makes it current in PostgreSQL.
-New requests read the replacement. Requests already in progress may finish on
-the snapshot they started with.
+Taskmigo stores the replacement and atomically makes it current in PostgreSQL. New requests read the
+replacement. Requests already in progress may finish on the snapshot they started with. There is no
+separate publish step or manual activation state.
 
   </Step>
 </Steps>
 
 ## Validation outcome
 
-<Tabs items={['Valid candidate', 'Invalid candidate']}>
-  <Tab>
+| Outcome              | Runtime result                                                          |
+| -------------------- | ----------------------------------------------------------------------- |
+| Candidate is valid   | Build and atomically activate a new snapshot.                           |
+| Candidate is invalid | Store structured diagnostics and continue serving the current snapshot. |
 
-The candidate proceeds through snapshot build and activation. There is no
-separate publish step or manual activation state.
-
-  </Tab>
-  <Tab>
-
-Validation stops before snapshot build. Taskmigo stores structured diagnostics
-with the affected revisions and leaves runtime state unchanged.
-
-<Callout title='Diagnostics are safe to display' type='info'>
-  A diagnostic identifies the error, manifest path, and source location when available. It must not expose credentials,
-  connection strings, or data from schemas that Taskmigo does not own.
-</Callout>
-
-  </Tab>
-</Tabs>
+Diagnostics identify the error, manifest path, and source location when available. They must not
+expose credentials, connection strings, or data from schemas that Taskmigo does not own.
 
 ## Dependency recovery
 
-When a missing or invalid dependency becomes valid again, Taskmigo automatically
-rebuilds each affected Site candidate graph. Recovery uses the same complete-graph
-validation and atomic activation path as any other resource change; there is no
-manual recovery or publish step.
+When a dependency becomes missing, invalid, or valid again, Taskmigo queues every affected Site graph
+for reevaluation. Recovery candidates run one at a time in queue order. A candidate must activate or
+fail before the next begins, which prevents conflicting snapshot activations.
 
-<Callout title='Recovery work is queued' type='info'>
-  Taskmigo processes one recovery candidate at a time. A queued candidate must finish validation and activation, or
-  fail, before the next candidate starts. This prevents concurrent recovery attempts from publishing conflicting
-  resource snapshots.
-</Callout>
+When its turn begins, recovery follows the same lifecycle shown above: re-resolve the complete graph,
+validate it, then either activate one new snapshot or retain the current snapshot with updated
+diagnostics. Queue order coordinates processing; it does not guarantee that every intermediate
+resource revision becomes active or that recovery completes within a maximum time.
 
-### Recovery lifecycle
-
-<Steps>
-  <Step>
-
-### Enqueue the affected graph
-
-A successful resource create, update, restore, or package import marks every
-Site graph that depends on the changed resource for reevaluation. Deleting or
-invalidating a dependency enters the same queue so the failure can be diagnosed
-without changing the active snapshot.
-
-  </Step>
-  <Step>
-
-### Wait for earlier recovery work
-
-Recovery candidates are processed serially in queue order. A candidate does not
-start while another recovery candidate is validating or activating.
-
-Queue order coordinates candidate processing; it is not a promise that every
-intermediate resource revision becomes active.
-
-  </Step>
-  <Step>
-
-### Re-resolve the complete graph
-
-When work begins, Taskmigo resolves the Site from its current declarations and
-available resource revisions. Recovery never rewrites manifests, substitutes a
-different dependency, or falls back to an older revision.
-
-  </Step>
-  <Step>
-
-### Validate dependencies before dependents
-
-Dependencies must be valid before their importers can be valid. For a
-`Page → Component` edge, Component validation therefore completes before the Page can validate;
-the Application and complete Site graph must then pass validation.
-This dependency constraint is stable, but the internal validator call order is
-not part of the public API.
-
-  </Step>
-  <Step>
-
-### Activate or retain
-
-If the complete candidate passes, Taskmigo builds and atomically activates its
-snapshot before the next recovery candidate starts. If validation fails, the
-current snapshot remains active and the diagnostics describe the failed candidate.
-
-  </Step>
-</Steps>
-
-### What users observe
-
-<Tabs items={['Dependency breaks', 'Dependency recovers', 'Another change arrives']}>
-  <Tab>
-
-1. A Page becomes missing or invalid.
-2. The affected graph is queued and candidate validation fails.
-3. The last valid snapshot continues serving requests.
-4. Diagnostics identify the unresolved or invalid dependency.
-
-  </Tab>
-  <Tab>
-
-1. The Page becomes valid again and queues the affected graph.
-2. Taskmigo waits for earlier conflicting work, then rebuilds the complete candidate.
-3. If every dependency and importer is valid, one new snapshot is activated atomically.
-4. If another error remains, the old snapshot stays active and diagnostics are updated.
-
-  </Tab>
-  <Tab>
-
-1. A related resource changes while recovery is queued or running.
-2. The related work cannot race the current recovery activation.
-3. Taskmigo processes the resulting candidate through the same queue and always validates the complete graph before activation.
-
-  </Tab>
-</Tabs>
-
-Recovery guarantees serialized queue processing, complete-graph validation, and
-atomic activation. It does not guarantee a maximum wait time, expose the internal
-queue implementation, or repair invalid manifests.
+Recovery does not repair invalid manifests or expose the internal queue implementation.
 
 ## Package boundary
 
-<Callout title='A package is activated as one unit' type='success'>
-  Import validates the complete package, including the one-Site invariant and reference hierarchy, before resolving
-  dependencies inside the target Taskmigo schema. A failed import must not leave a partially active runtime state.
-</Callout>
+Package import enters the lifecycle as one change. Taskmigo validates the complete package, including
+the one-Site invariant and reference hierarchy, before resolving dependencies inside its PostgreSQL
+schema. A failed import cannot leave a partially active runtime state.
 
-Export produces a portable package of canonical YAML. Importing that package
-still runs the lifecycle above; exported resolution results are not trusted as
-runtime state.
+Export produces portable canonical YAML. Importing it still runs the lifecycle above; exported
+resolution results are not trusted as runtime state.

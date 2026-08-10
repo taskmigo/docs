@@ -41,9 +41,8 @@ variables provided by Taskmigo._
   locale.
 </Callout>
 
-`spec.content` defines literal catalog data; Taskmigo does not evaluate expressions inside the
-catalog. Other manifests consume that data with `Trans` and `TransN`. Start with
-[Expressions](/versions/v0/expressions) for the common YAML syntax and the fields that accept them.
+Other manifests read catalog data with `Trans` and `TransN`. See [Expressions](/versions/v0/expressions)
+for the common syntax.
 
 ## Create a catalog
 
@@ -208,16 +207,5 @@ Merge results never depend on load order. Errors identify the locale, path, and 
 | A value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
 Missing-key behavior is not yet defined. See [Product status](/versions/v0/status#known-limitations-and-open-decisions).
-
-## Validation
-
-Beyond [common resource validation](/versions/v0/resources), a translation manifest is invalid when:
-
-- `spec.locale` is missing, empty, or not normalized.
-- `spec.content` is not an object.
-- A content key is empty.
-- A value cannot be represented by the manifest format.
-- Multiple resources create a merge conflict.
-- `imports` contains one or more entries.
 
 Saving, updating, or deleting a translation resource revalidates snapshots that use its locale catalog.

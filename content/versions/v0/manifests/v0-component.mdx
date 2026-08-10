@@ -9,6 +9,9 @@ A `v0/component` packages a component tree once so any Page can import and rende
 values each Page may provide in `spec.props`, then read those values from `spec.template` through
 `{{ props.<name> }}`.
 
+A Component may import other Components. Every reusable Component used in `spec.template` must
+appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
+
 ```yaml
 kind: v0/component
 name: header
@@ -78,6 +81,8 @@ contain strings, numbers, and booleans; nested arrays and objects are not suppor
 `spec.template` may use the full Taskmigo Expression syntax and access declared props through
 `props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
 
+Every node in `spec.template` must satisfy the selected component's contract.
+
 ## Use the Component in a Page
 
 Import the Component by resource reference, then use the same reference as the node's `component`
@@ -104,19 +109,6 @@ spec:
 
 Any number of Pages may import the same Component. Each Page supplies its own props while every use
 renders the same template.
-
-## Validation
-
-Beyond [common resource validation](/versions/v0/resources), a Component is invalid when:
-
-- `spec.props` or `spec.template` is missing.
-- A prop declaration omits `type` or `required`, or uses a type other than `string`, `number`,
-  `boolean`, or `array`.
-- An `array` prop contains a nested array, an object, or a value other than a string, number, or
-  boolean.
-- A prop's `default` does not match its declared type.
-- The template reads a prop that is not declared in `spec.props`.
-- The template root or one of its descendants does not satisfy the referenced component contract.
 
 An importing Page is invalid when it omits a required prop, supplies an undeclared prop, or provides
 a value that does not match the declared prop type.

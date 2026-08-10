@@ -81,9 +81,6 @@ The example exposes `v0/page/index` at `<host>/home/`.
 
 Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
 
-Expression support is declared in each field's Type Table note. Other Application fields are literal.
-See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
-
 ## Paths and routes
 
 `spec.path` establishes the application's path below the host. Each `spec.routes[].path` is resolved below that application path.
@@ -97,18 +94,11 @@ A page path of `/` designates the index page for the application path. Applicati
 
 ## Imports
 
-Only an application may import a page, and an application's `imports` entries may target only `v0/page`. Importing a page makes it available to the application; it does not expose the page until a matching entry appears in `spec.routes`.
+An application's `imports` entries may target only `v0/page`. Importing a page makes it available to the application;
+it does not expose the page until a matching entry appears in `spec.routes`.
 
 Every routed page must be imported. Page resources are not discovered by name. See [Resource model](/versions/v0/resources#imports).
 
 ## Validation
 
-Beyond [common resource validation](/versions/v0/resources), an application is invalid when:
-
-- A required field is missing.
-- `imports` is missing, empty, contains a duplicate identity, or targets a kind other than `v0/page`.
-- `spec.icon` is not an absolute URL.
-- An Expression in translated metadata has invalid template syntax, cannot be evaluated, or does not
-  render a string.
-- `spec.path` or a page path does not begin with `/`.
-- `spec.routes` is empty, repeats a path, or references a page absent from `imports`.
+`imports` and `spec.routes` cannot be empty. Each route path must be unique within the Application.

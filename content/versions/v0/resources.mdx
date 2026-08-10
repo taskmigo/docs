@@ -63,8 +63,7 @@ imports:
 
 Taskmigo accepts exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0`.
 
-`imports` declare dependency edges. A Site may import Applications, an Application may import Pages,
-and a Page may import reusable Components.
+`imports` declare dependency edges. The reference ability matrix below defines the allowed target kinds.
 
 ### Uniqueness scope
 
@@ -83,15 +82,15 @@ The rule is not graph-wide. Different manifests may resolve the same identity to
 
 Use the matrix from left to right: choose the manifest that declares `imports`, then find the kind it references.
 
-**Legend:** ✅ allowed · ❌ not allowed · — same kind
+**Legend:** ✅ allowed · ❌ not allowed
 
 | Importer         | `v0/site` | `v0/application` | `v0/page` | `v0/component` | `v0/translation` |
 | ---------------- | :-------: | :--------------: | :-------: | :------------: | :--------------: |
-| `v0/site`        |     —     |        ✅        |    ❌     |       ❌       |        ❌        |
-| `v0/application` |    ❌     |        —         |    ✅     |       ❌       |        ❌        |
-| `v0/page`        |    ❌     |        ❌        |     —     |       ✅       |        ❌        |
-| `v0/component`   |    ❌     |        ❌        |    ❌     |       —        |        ❌        |
-| `v0/translation` |    ❌     |        ❌        |    ❌     |       ❌       |        —         |
+| `v0/site`        |    ❌     |        ✅        |    ❌     |       ❌       |        ❌        |
+| `v0/application` |    ❌     |        ❌        |    ✅     |       ❌       |        ❌        |
+| `v0/page`        |    ❌     |        ❌        |    ✅     |       ✅       |        ❌        |
+| `v0/component`   |    ❌     |        ❌        |    ❌     |       ✅       |        ❌        |
+| `v0/translation` |    ❌     |        ❌        |    ❌     |       ❌       |        ❌        |
 
 This matrix is exhaustive: every relationship marked ❌ is invalid.
 

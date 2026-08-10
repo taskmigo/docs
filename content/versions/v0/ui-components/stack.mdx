@@ -5,8 +5,7 @@ description: Group React nodes in a Page component tree.
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
-Use `Stack` to group text and nested components while preserving their source order. Component
-names are case-sensitive, so `stack` is invalid.
+Use `Stack` to group text and nested components while preserving their source order.
 
 ```yaml
 component: Stack
@@ -44,13 +43,4 @@ children:
   }}
 />
 
-For example, `children` can be a string, a component node, or an ordered list of component nodes
-and strings. A list preserves source order.
-
-## Validation
-
-A `Stack` node is invalid when:
-
-- `component` does not exactly match `Stack`.
-- A `props` field does not begin with `data-`.
-- `children` cannot be represented as a ReactNode by the Page schema.
+`children` can be a string, a component node, or an ordered list of component nodes and strings.
