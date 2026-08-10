@@ -3,8 +3,7 @@ title: Expressions
 description: Put dynamic text or values into fields that accept an Expression.
 ---
 
-Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the
-manifest: translated text, the current manifest identity, or the runtime hostname.
+Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the manifest: translated text, the current manifest identity, or the runtime hostname.
 
 ## Start here
 
@@ -28,6 +27,7 @@ In this example:
 | Show text from a translation catalog                  | [Translate a message](#translate-a-message)       |
 | Change text for a count                               | [Translate a quantity](#translate-a-quantity)     |
 | Use the runtime hostname or current manifest metadata | [Use context values](#use-context-values)         |
+| Read Workflow execution data                          | [Workflow context](#workflow-context-rfc)         |
 | Format, compare, or transform a value                 | [Use built-in functions](#use-built-in-functions) |
 
 ## Translate a message
@@ -38,8 +38,7 @@ Use `Trans` with a catalog key. Additional values fill the message placeholders.
 description: '{{ Trans "applications.home.description" }}'
 ```
 
-For catalog structure, placeholders, fallbacks, and errors, see
-[Translation](/versions/v0/manifests/v0-translation#translate-a-message).
+For catalog structure, placeholders, fallbacks, and errors, see [Translation](/versions/v0/manifests/v0-translation#translate-a-message).
 
 ## Translate a quantity
 
@@ -49,8 +48,7 @@ Use `TransN` when the catalog message changes for a quantity.
 description: '{{ TransN "cart.items" 3 }}'
 ```
 
-The second argument is the count. Taskmigo selects the locale's plural form. See
-[Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for the complete rule.
+The second argument is the count. Taskmigo selects the locale's plural form. See [Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for the complete rule.
 
 ## Use context values
 
@@ -63,19 +61,36 @@ The second argument is the count. Taskmigo selects the locale's plural form. See
 | `.This.revision`    | Any Expression            | Current manifest revision       |
 | `props.<name>`      | Component `spec.template` | A prop passed to that Component |
 
+## Workflow context (RFC)
+
+<Callout title='RFC context' type='warn'>
+  These values are proposed by the [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow). They are not available in the defined Expression contract yet.
+</Callout>
+
+Workflow fields that accept Expressions use this same syntax and function set. The RFC adds context values; it does not introduce another expression language.
+
+| Value               | Available in Workflow RFC | Returns                                                    |
+| ------------------- | ------------------------- | ---------------------------------------------------------- |
+| `input.<name>`      | Workflow execution        | Input captured when the execution started                  |
+| `steps.<id>.output` | Workflow execution        | Persisted output of a completed or continued step          |
+| `steps.<id>.status` | Workflow execution        | Persisted runtime status of the referenced step             |
+| `step.input`        | Current step              | Input resolved for the step currently being evaluated      |
+| `step.output`       | Navigation evaluation     | Current step output used to choose the next navigation edge |
+
+Workflow Expressions read the execution's persisted state and the pinned Workflow revision. Resuming an execution must not substitute values or definitions from a newer Workflow revision or Site snapshot.
+
 ## Use built-in functions
 
-_Example values: the prop names below are illustrative. A Component can access only props declared
-in its own `spec.props`._
+_Example values: the prop names below are illustrative. A Component can access only props declared in its own `spec.props`._
 
-| Need                       | Functions                          | Example                                                  |
-| -------------------------- | ---------------------------------- | -------------------------------------------------------- |
-| Combine boolean conditions | `and`, `or`, `not`                 | `{{ if and props.enabled props.visible }}Shown{{ end }}` |
+| Need                       | Functions                           | Example                                                  |
+| -------------------------- | ----------------------------------- | -------------------------------------------------------- |
+| Combine boolean conditions | `and`, `or`, `not`                  | `{{ if and props.enabled props.visible }}Shown{{ end }}` |
 | Compare values             | `eq`, `ne`, `lt`, `le`, `gt`, `ge` | `{{ if eq props.variant "primary" }}Primary{{ end }}`    |
-| Count a value              | `len`                              | `{{ len props.items }}`                                  |
-| Select a value             | `index`                            | `{{ index props.items 0 }}`                              |
-| Select a range             | `slice`                            | `{{ slice props.items 0 2 }}`                            |
-| Format a value             | `printf`                           | `{{ printf "Hello, %s" props.name }}`                    |
+| Count a value              | `len`                               | `{{ len props.items }}`                                  |
+| Select a value             | `index`                             | `{{ index props.items 0 }}`                              |
+| Select a range             | `slice`                             | `{{ slice props.items 0 2 }}`                            |
+| Format a value             | `printf`                            | `{{ printf "Hello, %s" props.name }}`                    |
 
 ## More Expression syntax
 
