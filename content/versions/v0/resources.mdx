@@ -35,6 +35,8 @@ The pair `(kind, name)` identifies a resource. The optional `version` tags one o
 
 Every semantic change creates a revision that is validated independently. A tagged revision is immutable, and one version tag cannot refer to different content. An untagged revision may be selected only by a reference without a version constraint.
 
+The [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow#version-pinning) reuses this model unchanged. It does not add `spec.version`: an execution pins the exact selected Workflow revision and Site snapshot when it starts.
+
 ### Site cardinality
 
 A valid Taskmigo system contains exactly one logical Site resource. The Site may have multiple revisions under the revision rules above; those revisions do not create additional Sites.
@@ -92,12 +94,30 @@ Use the matrix from left to right: choose the manifest that declares `imports`, 
 | `v0/component`   |    ❌     |        ❌        |    ❌     |       ✅       |        ❌        |
 | `v0/translation` |    ❌     |        ❌        |    ❌     |       ❌       |        ❌        |
 
-This matrix is exhaustive: every relationship marked ❌ is invalid.
+This matrix is exhaustive for the **defined contracts**. RFC relationships are kept separate below so a proposal cannot be mistaken for supported behavior.
 
 <Callout title='Translation catalogs are never reference targets' type='warn'>
-  No manifest may import `v0/translation`. A translation manifest may declare the common `imports` field only as an
-  empty list. Taskmigo attaches the effective locale catalog automatically when it builds a Site snapshot.
+  No manifest may import `v0/translation`. A translation manifest may declare the common `imports` field only as an empty list. Taskmigo attaches the effective locale catalog automatically when it builds a Site snapshot.
 </Callout>
+
+### Workflow RFC extension
+
+<Callout title='RFC reference rules' type='warn'>
+  This matrix is part of the [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow). It is proposed design, not an extension of the currently supported matrix.
+</Callout>
+
+The RFC adds exactly two allowed relationships to the resource graph:
+
+**Legend:** 🧪 proposed · ❌ not proposed
+
+| Importer      | `v0/workflow` | `v0/component` |
+| ------------- | :-----------: | :------------: |
+| `v0/page`     |      🧪       |       —        |
+| `v0/workflow` |      ❌       |       🧪       |
+
+A Page imports Workflows that its runtime UI may discover and start. A Workflow imports Components used by its interactive UI steps. Workflow-to-Workflow imports are not proposed. All other Workflow import relationships remain disallowed unless this RFC is revised.
+
+The same common import syntax, uniqueness rules, SemVer constraints, resolution algorithm, and snapshot pinning apply to these proposed edges.
 
 ### Resolution
 
@@ -135,6 +155,5 @@ Record the selected revision so later changes cannot alter the active snapshot.
 Malformed references, disallowed kind pairs, missing resources, duplicate references, unsatisfied constraints, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title='Latest is resolved at build time' type='info'>
-  An unconstrained reference follows the latest revision when a new snapshot is built. Existing snapshots remain
-  unchanged.
+  An unconstrained reference follows the latest revision when a new snapshot is built. Existing snapshots remain unchanged. Under the Workflow RFC, an already-started execution also remains pinned to the snapshot and Workflow revision selected at its start.
 </Callout>
