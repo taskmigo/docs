@@ -17,8 +17,11 @@ Resources are authored through the Taskmigo UI or API. YAML remains canonical; G
   />
 </Cards>
 
-A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages
-compose registered UI Components. Add Translation resources when a Page needs localized content.
+A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages compose registered UI Components. Add Translation resources when a Page needs localized content.
+
+<Callout title='Workflow is currently an RFC' type='info'>
+  [`v0/workflow`](/versions/v0/manifests/v0-workflow) is documented end to end for design review, including resource relationships, Expressions, durable execution, conditional navigation, UI steps, and version pinning. It is not a supported manifest contract yet. See [Product status](/versions/v0/status).
+</Callout>
 
 ## Find an answer
 
@@ -26,31 +29,31 @@ compose registered UI Components. Add Translation resources when a Page needs lo
   <Card
     title='Choose a manifest'
     href='/versions/v0/manifests'
-    description='Find the resource that defines a specific part of a Site.'
+    description='Find the resource that defines a specific part of a Site, including RFC contracts.'
   />
   <Card
     title='Reference resources'
     href='/versions/v0/resources'
-    description='Check identity, versions, imports, and allowed references.'
+    description='Check identity, versions, imports, allowed references, and proposed Workflow edges.'
   />
   <Card
     title='Write an Expression'
     href='/versions/v0/expressions'
-    description='Use dynamic values where the field contract accepts them.'
+    description='Use dynamic values and inspect context-specific values, including the Workflow RFC context.'
   />
   <Card
     title='Understand runtime behavior'
     href='/versions/v0/runtime'
-    description='Follow validation, recovery, and snapshot activation.'
+    description='Follow snapshot activation and the proposed durable Workflow execution lifecycle.'
   />
   <Card
     title='Check support and limitations'
     href='/versions/v0/status'
-    description='Separate defined contracts from planned work and open decisions.'
+    description='Separate defined contracts from RFCs, planned work, and open decisions.'
   />
   <Card
     title='Resolve a common question'
     href='/versions/v0/faq'
-    description='Find concise answers with links to the canonical contract.'
+    description='Find concise answers with links to the canonical contract or RFC.'
   />
 </Cards>
