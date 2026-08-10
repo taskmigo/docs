@@ -23,7 +23,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
   </Accordion>
 
   <Accordion title='Which resources may a manifest import?' id='import-relationships'>
-    In the defined contract, a Site may import Applications, an Application may import Pages, a Page may import Pages or Components, and a Component may import Components. The [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow) additionally proposes Page → Workflow and Workflow → Component. See [Reference ability](/versions/v0/resources#reference-ability) and its separate [Workflow RFC extension](/versions/v0/resources#workflow-rfc-extension).
+    A Site may import Applications, an Application may import Pages, a Page may import Pages, Components, or Workflows, a Component may import Components, and a Workflow may import Components. See the complete [Reference ability matrix](/versions/v0/resources#reference-ability).
   </Accordion>
 
   <Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
@@ -35,7 +35,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
   </Accordion>
 
   <Accordion title='Where can I use an expression?' id='expression-scope'>
-    Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type, and the evaluated result must match that type. The Workflow RFC follows the same rule and proposes execution-specific context values such as `input`, `steps`, and `step`. See [Expressions](/versions/v0/expressions).
+    Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type, and the evaluated result must match that type. See [Expressions](/versions/v0/expressions) for syntax, functions, and context-specific values including Workflow execution data.
   </Accordion>
 
   <Accordion title='Where is a Page route defined?' id='page-route'>
@@ -55,23 +55,19 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
   </Accordion>
 
   <Accordion title='Is there a manual publish or activation step?' id='manual-activation'>
-    No for the defined resource lifecycle. A complete valid candidate is compiled and activated atomically. The Workflow RFC also does not add a separate publish state: new executions use the Workflow revision in the active Site snapshot. See [Runtime lifecycle](/versions/v0/runtime).
+    No. A complete valid candidate is compiled and activated atomically. New Workflow executions use the Workflow revision in the active Site snapshot. See [Runtime lifecycle](/versions/v0/runtime).
   </Accordion>
 
   <Accordion title='What happens to a running Workflow when its manifest changes?' id='workflow-version-pinning'>
-    Under the Workflow RFC, nothing changes for that execution. Starting it pins the exact Workflow revision, Site snapshot, and required imported dependencies. A newer active revision is used only by new executions. See [Version pinning](/versions/v0/manifests/v0-workflow#version-pinning).
+    Nothing changes for that execution. Starting it pins the exact Workflow revision, Site snapshot, and required imported dependencies. A newer active revision is used only by new executions. See [Version pinning](/versions/v0/manifests/v0-workflow#version-pinning).
   </Accordion>
 
   <Accordion title='How does a conditional Workflow step work?' id='workflow-conditional-navigation'>
-    The RFC keeps step execution and control flow separate. After an action or UI step produces persisted output, its `navigation` routes are evaluated in order; the first `when` that resolves to `true` wins, and a route without `when` is the fallback. See [Navigation DSL](/versions/v0/manifests/v0-workflow#navigation-dsl).
+    After an action or UI step produces persisted output, its `navigation` routes are evaluated in order. The first `when` that resolves to `true` wins, and a route without `when` is the fallback. See [Navigation DSL](/versions/v0/manifests/v0-workflow#navigation-dsl).
   </Accordion>
 
   <Accordion title='Can a Workflow wait for UI input?' id='workflow-ui-step'>
-    The RFC proposes interactive UI steps that render an imported Component, persist the execution as `WAITING`, and resume after submitted output is stored. Waiting does not keep an HTTP request or worker open. See [Interactive UI step](/versions/v0/manifests/v0-workflow#interactive-ui-step).
-  </Accordion>
-
-  <Accordion title='Is Workflow supported now?' id='workflow-rfc-status'>
-    No. `v0/workflow` is an RFC documented across the resource model, architecture, Expressions, Page integration, runtime lifecycle, and its manifest reference so the proposal can be reviewed as one coherent contract. See [Product status](/versions/v0/status#rfc).
+    Yes. An interactive UI step renders an imported Component, persists the execution as `WAITING`, and resumes after submitted output is stored. Waiting does not keep an HTTP request or worker open. See [Interactive UI step](/versions/v0/manifests/v0-workflow#interactive-ui-step).
   </Accordion>
 
   <Accordion title='Can dependency recovery attempts conflict?' id='dependency-recovery-queue'>
@@ -83,7 +79,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
   </Accordion>
 
   <Accordion title='Which manifest kinds are currently defined?' id='defined-kinds'>
-    The dedicated reference pages under [Defined](/versions/v0/status#defined) are supported contracts. `v0/workflow` is listed separately under RFC and must not be treated as defined behavior.
+    See [Product status](/versions/v0/status) for the canonical support state of each manifest contract.
   </Accordion>
 
   <Accordion title="Where can I find known limitations?" id="known-limitations">
