@@ -1,4 +1,12 @@
 {
   "title": "Manifests",
-  "pages": ["index", "v0-site", "v0-application", "v0-page", "v0-component", "v0-translation"]
+  "pages": [
+    "index",
+    "v0-site",
+    "v0-application",
+    "v0-page",
+    "v0-component",
+    "v0-translation",
+    "v0-workflow"
+  ]
 }
