@@ -33,9 +33,21 @@ spec:
   type={{
     kind: { type: '"v0/page"', required: true, description: 'Selects the Page contract.' },
     'spec.meta': { type: 'object', required: true, description: 'Information used to present this Page.' },
-    'spec.meta.title': { type: <FieldType supportsExpression={true}>string</FieldType>, required: true, description: 'Name used to identify this Page.' },
-    'spec.meta.description': { type: <FieldType supportsExpression={true}>string</FieldType>, required: true, description: 'Short summary of this Page.' },
-    'spec.body': { type: 'ComponentNode[]', required: true, description: 'Top-level component nodes rendered in source order.' },
+    'spec.meta.title': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
+      required: true,
+      description: 'Name used to identify this Page.',
+    },
+    'spec.meta.description': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
+      required: true,
+      description: 'Short summary of this Page.',
+    },
+    'spec.body': {
+      type: 'ComponentNode[]',
+      required: true,
+      description: 'Top-level component nodes rendered in source order.',
+    },
   }}
 />
 

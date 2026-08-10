@@ -73,9 +73,9 @@ Taskmigo stores the replacement and atomically makes it current in PostgreSQL. N
 
 ## Validation outcome
 
-| Outcome              | Runtime result                                                           |
-| -------------------- | ------------------------------------------------------------------------ |
-| Candidate is valid   | Build and atomically activate a new snapshot.                            |
+| Outcome              | Runtime result                                                          |
+| -------------------- | ----------------------------------------------------------------------- |
+| Candidate is valid   | Build and atomically activate a new snapshot.                           |
 | Candidate is invalid | Store structured diagnostics and continue serving the current snapshot. |
 
 Diagnostics identify the error, manifest path, and source location when available. They must not expose credentials, connection strings, or data from schemas that Taskmigo does not own.
@@ -104,12 +104,12 @@ Every meaningful transition is persisted before dependent work is scheduled. Wai
 
 A newer snapshot changes only future executions. Existing executions continue with their pinned Workflow definition and imported dependencies, including Components used by interactive steps.
 
-| Event | Existing Workflow execution | New Workflow execution |
-| --- | --- | --- |
-| A newer Workflow revision activates | Continues on its pinned revision | Uses the revision selected by the current snapshot |
-| An imported Component changes | Continues with the pinned dependency | Uses the dependency selected by the current snapshot |
-| A candidate snapshot is invalid | Continues unchanged | Starts from the still-current valid snapshot |
-| Service restarts | Resumes from persisted execution state | Starts normally after runtime recovery |
+| Event                               | Existing Workflow execution            | New Workflow execution                               |
+| ----------------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| A newer Workflow revision activates | Continues on its pinned revision       | Uses the revision selected by the current snapshot   |
+| An imported Component changes       | Continues with the pinned dependency   | Uses the dependency selected by the current snapshot |
+| A candidate snapshot is invalid     | Continues unchanged                    | Starts from the still-current valid snapshot         |
+| Service restarts                    | Resumes from persisted execution state | Starts normally after runtime recovery               |
 
 Execution states are `PENDING`, `RUNNING`, `WAITING`, `SUCCEEDED`, and `FAILED`. Retry attempts, timeouts, step outputs, and UI interaction state belong to execution history rather than Site snapshot revisions. See [Workflow](/versions/v0/manifests/v0-workflow#execution-model) for step-level behavior.
 

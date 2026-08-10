@@ -100,7 +100,8 @@ The 🧪 relationships are part of the [`v0/workflow`](/versions/v0/manifests/v0
 A Page imports Workflows that users can discover and start from that Page. A Workflow imports Components used by interactive UI steps. Workflow-to-Workflow imports are not allowed.
 
 <Callout title='Translation catalogs are never reference targets' type='warn'>
-  No manifest may import `v0/translation`. A translation manifest may declare the common `imports` field only as an empty list. Taskmigo attaches the effective locale catalog automatically when it builds a Site snapshot.
+  No manifest may import `v0/translation`. A translation manifest may declare the common `imports` field only as an
+  empty list. Taskmigo attaches the effective locale catalog automatically when it builds a Site snapshot.
 </Callout>
 
 ### Resolution
@@ -139,5 +140,7 @@ Record the selected revision so later changes cannot alter the active snapshot.
 Malformed references, disallowed kind pairs, missing resources, duplicate references, unsatisfied constraints, invalid selected revisions, and Site cardinality violations fail resolution.
 
 <Callout title='Latest is resolved at build time' type='info'>
-  An unconstrained reference follows the latest revision when a new snapshot is built. Existing snapshots remain unchanged. An already-started Workflow execution also remains pinned to the snapshot and revision selected at its start.
+  An unconstrained reference follows the latest revision when a new snapshot is built. Existing snapshots remain
+  unchanged. An already-started Workflow execution also remains pinned to the snapshot and revision selected at its
+  start.
 </Callout>

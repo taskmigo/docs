@@ -6,7 +6,8 @@ description: RFC for durable, version-pinned workflows with actions, interactive
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 <Callout title='RFC: not a supported manifest contract' type='warn'>
-  This page proposes the `v0/workflow` contract and runtime model. It is design input for implementation and may change before adoption. Do not rely on it as current Taskmigo behavior.
+  This page proposes the `v0/workflow` contract and runtime model. It is design input for implementation and may change
+  before adoption. Do not rely on it as current Taskmigo behavior.
 </Callout>
 
 A Workflow defines a durable execution graph. It starts through the execution API, runs built-in actions or waits for user interaction, moves between steps through an explicit navigation DSL, and keeps using the exact Workflow revision selected when the execution started.
@@ -89,11 +90,31 @@ spec:
   type={{
     kind: { type: '"v0/workflow"', required: true, description: 'Selects the proposed Workflow contract.' },
     'spec.meta': { type: 'object', required: true, description: 'Information used to present the Workflow to users.' },
-    'spec.meta.title': { type: <FieldType supportsExpression={true}>string</FieldType>, required: true, description: 'Display name of the Workflow.' },
-    'spec.meta.description': { type: <FieldType supportsExpression={true}>string</FieldType>, required: true, description: 'Short explanation of the Workflow outcome.' },
-    'spec.inputs': { type: 'map<string, InputDefinition>', required: false, description: 'Declares values accepted when an execution starts.' },
-    'spec.start': { type: 'string', required: true, description: 'Step identifier scheduled when a new execution starts.' },
-    'spec.steps': { type: 'map<string, StepDefinition>', required: true, description: 'Defines the execution graph by stable step identifier.' },
+    'spec.meta.title': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
+      required: true,
+      description: 'Display name of the Workflow.',
+    },
+    'spec.meta.description': {
+      type: <FieldType supportsExpression={true}>string</FieldType>,
+      required: true,
+      description: 'Short explanation of the Workflow outcome.',
+    },
+    'spec.inputs': {
+      type: 'map<string, InputDefinition>',
+      required: false,
+      description: 'Declares values accepted when an execution starts.',
+    },
+    'spec.start': {
+      type: 'string',
+      required: true,
+      description: 'Step identifier scheduled when a new execution starts.',
+    },
+    'spec.steps': {
+      type: 'map<string, StepDefinition>',
+      required: true,
+      description: 'Defines the execution graph by stable step identifier.',
+    },
   }}
 />
 
@@ -103,9 +124,17 @@ The initial proposal uses the same scalar types as Component props: `string`, `n
 
 <TypeTable
   type={{
-    type: { type: '"string" | "number" | "boolean"', required: true, description: 'Value type accepted at execution start.' },
+    type: {
+      type: '"string" | "number" | "boolean"',
+      required: true,
+      description: 'Value type accepted at execution start.',
+    },
     required: { type: 'boolean', required: true, description: 'Whether the caller must provide the input.' },
-    default: { type: 'string | number | boolean', required: false, description: 'Value used when an optional input is omitted.' },
+    default: {
+      type: 'string | number | boolean',
+      required: false,
+      description: 'Value used when an optional input is omitted.',
+    },
   }}
 />
 
@@ -172,15 +201,15 @@ rejected:
 
 Workflow fields that accept Expressions use the existing Taskmigo Expression syntax. The RFC adds Workflow-specific context values rather than defining another expression language.
 
-| Value | Meaning |
-| --- | --- |
-| `input.<name>` | Resolved Workflow input captured when the execution starts. |
-| `steps.<id>.output` | Persisted output of a completed or continued step. |
-| `steps.<id>.status` | Persisted runtime status of that step. |
-| `step.input` | Input of the step currently being evaluated. |
-| `step.output` | Current step output while evaluating navigation. |
-| `.This.*` | Existing manifest metadata context for the pinned Workflow revision. |
-| `.Runtime.*` | Existing runtime context available to Expressions. |
+| Value               | Meaning                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `input.<name>`      | Resolved Workflow input captured when the execution starts.          |
+| `steps.<id>.output` | Persisted output of a completed or continued step.                   |
+| `steps.<id>.status` | Persisted runtime status of that step.                               |
+| `step.input`        | Input of the step currently being evaluated.                         |
+| `step.output`       | Current step output while evaluating navigation.                     |
+| `.This.*`           | Existing manifest metadata context for the pinned Workflow revision. |
+| `.Runtime.*`        | Existing runtime context available to Expressions.                   |
 
 Expressions read persisted execution state. Resuming an execution must not re-read a newer Workflow manifest or substitute a newer Workflow revision.
 
