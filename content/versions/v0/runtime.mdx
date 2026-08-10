@@ -1,6 +1,6 @@
 ---
 title: Runtime lifecycle
-description: Follow a resource change from validation to atomic Site snapshot activation.
+description: Follow resource changes and Workflow executions through the runtime.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -22,7 +22,7 @@ flowchart TD
   build --> activate["Atomically activate snapshot"]
   validate -->|No| diagnostics["Store diagnostics"]
   diagnostics --> retain["Keep current snapshot"]
-  activate --> serve["Serve new requests"]
+  activate --> serve["Serve new requests and executions"]
 ```
 
 The active Site is never replaced by a partial or invalid candidate. A failed candidate ends at diagnostics; a valid candidate becomes visible only after the atomic activation step.
@@ -66,7 +66,7 @@ A valid candidate is compiled into one Site snapshot containing every selected r
 
 ### Activate atomically
 
-Taskmigo stores the replacement and atomically makes it current in PostgreSQL. New requests read the replacement. Requests already in progress may finish on the snapshot they started with. There is no separate publish step or manual activation state.
+Taskmigo stores the replacement and atomically makes it current in PostgreSQL. New requests and new Workflow executions use the replacement. Requests already in progress may finish on the snapshot they started with, and Workflow executions already started remain pinned to their original snapshot and Workflow revision. There is no separate publish step or manual activation state.
 
   </Step>
 </Steps>
@@ -79,6 +79,39 @@ Taskmigo stores the replacement and atomically makes it current in PostgreSQL. N
 | Candidate is invalid | Store structured diagnostics and continue serving the current snapshot. |
 
 Diagnostics identify the error, manifest path, and source location when available. They must not expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+
+## Workflow execution
+
+A Workflow execution is durable runtime state created from one active snapshot. It runs as a resumable state machine rather than one long-lived HTTP operation.
+
+```mermaid
+flowchart TD
+  snapshot["Active Site snapshot"] --> start["Start execution"]
+  start --> pin["Pin snapshot + Workflow revision"]
+  pin --> ready["Schedule start step"]
+  ready --> run["Run action / prepare UI / fail"]
+  run --> persist["Persist transition"]
+  persist --> state{"Execution state"}
+  state -->|Runnable| navigate["Evaluate navigation"]
+  navigate --> ready
+  state -->|Waiting| wait["WAITING for user input"]
+  wait --> submit["Persist submitted output"]
+  submit --> persist
+  state -->|Terminal| done["SUCCEEDED / FAILED"]
+```
+
+Every meaningful transition is persisted before dependent work is scheduled. Waiting for user input does not keep an HTTP request or worker open. Service restarts resume from persisted state.
+
+A newer snapshot changes only future executions. Existing executions continue with their pinned Workflow definition and imported dependencies, including Components used by interactive steps.
+
+| Event | Existing Workflow execution | New Workflow execution |
+| --- | --- | --- |
+| A newer Workflow revision activates | Continues on its pinned revision | Uses the revision selected by the current snapshot |
+| An imported Component changes | Continues with the pinned dependency | Uses the dependency selected by the current snapshot |
+| A candidate snapshot is invalid | Continues unchanged | Starts from the still-current valid snapshot |
+| Service restarts | Resumes from persisted execution state | Starts normally after runtime recovery |
+
+Execution states are `PENDING`, `RUNNING`, `WAITING`, `SUCCEEDED`, and `FAILED`. Retry attempts, timeouts, step outputs, and UI interaction state belong to execution history rather than Site snapshot revisions. See [Workflow](/versions/v0/manifests/v0-workflow#execution-model) for step-level behavior.
 
 ## Dependency recovery
 
@@ -93,42 +126,3 @@ Recovery does not repair invalid manifests or expose the internal queue implemen
 Package import enters the lifecycle as one change. Taskmigo validates the complete package, including the one-Site invariant and reference hierarchy, before resolving dependencies inside its PostgreSQL schema. A failed import cannot leave a partially active runtime state.
 
 Export produces portable canonical YAML. Importing it still runs the lifecycle above; exported resolution results are not trusted as runtime state.
-
-## Workflow execution lifecycle (RFC)
-
-<Callout title='RFC runtime' type='warn'>
-  This lifecycle is proposed by the [`v0/workflow` RFC](/versions/v0/manifests/v0-workflow). It extends the snapshot lifecycle above; it does not replace or change the currently defined activation contract.
-</Callout>
-
-A Workflow definition is compiled into a Site snapshot like any other reachable resource. An execution is different: it is durable state created from one already-active snapshot and must keep using that exact definition until it reaches a terminal state.
-
-```mermaid
-flowchart TD
-  activate["Active Site snapshot"] --> start["Start Workflow execution"]
-  start --> pin["Pin snapshot + Workflow revision"]
-  pin --> ready["Schedule start step"]
-  ready --> run["Run action / prepare UI / fail"]
-  run --> persist["Persist transition"]
-  persist --> state{"Execution state"}
-  state -->|Runnable| navigate["Evaluate navigation"]
-  navigate --> ready
-  state -->|Waiting| wait["WAITING for user input"]
-  wait --> submit["Persist submitted output"]
-  submit --> persist
-  state -->|Terminal| done["SUCCEEDED / FAILED"]
-
-  newer["New Site snapshot activates"] -. "does not mutate" .-> pin
-```
-
-Every meaningful transition is persisted before dependent work is scheduled. Waiting for user input does not hold an HTTP request or worker open, and a service restart resumes from persisted state.
-
-Snapshot activation and Workflow execution therefore have separate effects:
-
-| Event | Existing Workflow execution | New Workflow execution |
-| --- | --- | --- |
-| A newer Workflow revision activates | Continues on its pinned revision | Uses the revision selected by the current snapshot |
-| An imported Component changes | Continues with the pinned dependency | Uses the dependency selected by the current snapshot |
-| A candidate snapshot is invalid | Continues unchanged | Starts from the still-current valid snapshot |
-| Service restarts | Resumes from persisted execution state | Starts normally after runtime recovery |
-
-The RFC execution states are `PENDING`, `RUNNING`, `WAITING`, `SUCCEEDED`, and `FAILED`. Cancellation and manual pause are outside its initial scope. Retry attempts, timeouts, step outputs, and UI interaction state are execution history; they are not Site snapshot revisions.
