@@ -9,7 +9,12 @@ export async function Mermaid({ chart }: { chart: string }) {
       transparent: true,
     });
 
-    return <div dangerouslySetInnerHTML={{ __html: svg }} />;
+    return (
+      <div
+        className='my-6 w-full min-w-0 overflow-x-auto [&>svg]:block [&>svg]:h-auto [&>svg]:max-w-full'
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    );
   } catch {
     throw new Error(`Failed to render Mermaid chart:\n\n${chart}`);
   }

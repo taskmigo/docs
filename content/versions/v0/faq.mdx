@@ -7,10 +7,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 <Accordions type="single">
   <Accordion title="How many Site resources can a system contain?" id="one-site">
-    Exactly one logical Site. It may have multiple revisions, but a different
-    name or schema prefix does not create another slot. `v0/site` and a future
-    `v1/site` cannot coexist as separate Site resources. See
-    [Site cardinality](/versions/v0/resources#site-cardinality).
+    Exactly one logical Site. It may have multiple revisions, but a different name or schema prefix does not create another slot. `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
   </Accordion>
 
 <Accordion title='Are the kind prefix and resource version the same?' id='kind-prefix-vs-resource-version'>
@@ -30,9 +27,9 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 </Accordion>
 
 <Accordion title='Which resources may a manifest import?' id='import-relationships'>
-  A Site may import Applications, an Application may import Pages, a Page may import Pages or Components, and a
-  Component may import Components. The [Reference ability matrix](/versions/v0/resources#reference-ability) shows the
-  complete set of allowed and rejected relationships.
+  A Site may import Applications, an Application may import Pages, a Page may import Pages, Components, or Workflows, a
+  Component may import Components, and a Workflow may import Components. See the complete [Reference ability
+  matrix](/versions/v0/resources#reference-ability).
 </Accordion>
 
 <Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
@@ -48,7 +45,8 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
 <Accordion title='Where can I use an expression?' id='expression-scope'>
   Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type, and the evaluated
-  result must match that type. See [Expressions](/versions/v0/expressions) for syntax, functions, and context values.
+  result must match that type. See [Expressions](/versions/v0/expressions) for syntax, functions, and context-specific
+  values including Workflow execution data.
 </Accordion>
 
 <Accordion title='Where is a Page route defined?' id='page-route'>
@@ -73,7 +71,26 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 </Accordion>
 
 <Accordion title='Is there a manual publish or activation step?' id='manual-activation'>
-  No. A complete valid candidate is compiled and activated atomically. See [Runtime lifecycle](/versions/v0/runtime).
+  No. A complete valid candidate is compiled and activated atomically. New Workflow executions use the Workflow revision
+  in the active Site snapshot. See [Runtime lifecycle](/versions/v0/runtime).
+</Accordion>
+
+<Accordion title='What happens to a running Workflow when its manifest changes?' id='workflow-version-pinning'>
+  Nothing changes for that execution. Starting it pins the exact Workflow revision, Site snapshot, and required imported
+  dependencies. A newer active revision is used only by new executions. See [Version
+  pinning](/versions/v0/manifests/v0-workflow#version-pinning).
+</Accordion>
+
+<Accordion title='How does a conditional Workflow step work?' id='workflow-conditional-navigation'>
+  After an action or UI step produces persisted output, its `navigation` routes are evaluated in order. The first `when`
+  that resolves to `true` wins, and a route without `when` is the fallback. See [Navigation
+  DSL](/versions/v0/manifests/v0-workflow#navigation-dsl).
+</Accordion>
+
+<Accordion title='Can a Workflow wait for UI input?' id='workflow-ui-step'>
+  Yes. An interactive UI step renders an imported Component, persists the execution as `WAITING`, and resumes after
+  submitted output is stored. Waiting does not keep an HTTP request or worker open. See [Interactive UI
+  step](/versions/v0/manifests/v0-workflow#interactive-ui-step).
 </Accordion>
 
 <Accordion title='Can dependency recovery attempts conflict?' id='dependency-recovery-queue'>
@@ -88,12 +105,10 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 </Accordion>
 
 <Accordion title='Which manifest kinds are currently defined?' id='defined-kinds'>
-  The dedicated reference pages list the defined contracts. Candidate kinds remain planned until they have a reference
-  page. See [Product status](/versions/v0/status).
+  See [Product status](/versions/v0/status) for the canonical support state of each manifest contract.
 </Accordion>
 
   <Accordion title="Where can I find known limitations?" id="known-limitations">
-    See [Product status](/versions/v0/status#known-limitations-and-open-decisions). It records
-    unresolved behavior and planned contracts that should not be relied on yet.
+    See [Product status](/versions/v0/status#known-limitations-and-open-decisions). It records unresolved behavior and planned contracts that should not be relied on yet.
   </Accordion>
 </Accordions>

@@ -17,8 +17,7 @@ Resources are authored through the Taskmigo UI or API. YAML remains canonical; G
   />
 </Cards>
 
-A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages
-compose registered UI Components. Add Translation resources when a Page needs localized content.
+A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages compose registered UI Components and may expose Workflows. Add Translation resources when a Page needs localized content.
 
 ## Find an answer
 
@@ -36,17 +35,17 @@ compose registered UI Components. Add Translation resources when a Page needs lo
   <Card
     title='Write an Expression'
     href='/versions/v0/expressions'
-    description='Use dynamic values where the field contract accepts them.'
+    description='Use dynamic values and context-specific data where a field accepts an Expression.'
   />
   <Card
     title='Understand runtime behavior'
     href='/versions/v0/runtime'
-    description='Follow validation, recovery, and snapshot activation.'
+    description='Follow validation, snapshot activation, recovery, and Workflow execution.'
   />
   <Card
     title='Check support and limitations'
     href='/versions/v0/status'
-    description='Separate defined contracts from planned work and open decisions.'
+    description='Check contract status, planned work, and open decisions.'
   />
   <Card
     title='Resolve a common question'

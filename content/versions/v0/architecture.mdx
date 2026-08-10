@@ -25,12 +25,13 @@ flowchart TD
   crmIndex -->|imports| header["Component: header"]
   accounts -->|imports| header
   helpdeskIndex -->|imports| header
+  accounts -->|imports| onboarding["Workflow: onboarding"]
+  onboarding -->|imports| approval["Component: approval-form"]
 ```
 
-A Site imports Applications. An Application imports Pages. A Page may import Pages or Components, and a Component
-may import Components.
-Multiple Pages may point to the same Component while supplying different typed props. Resources are
-never discovered by name, so a resource outside this graph cannot become part of the running Site.
+A Site imports Applications. An Application imports Pages. A Page may import Pages or Components and, under the Workflow design, Workflows that users can discover and start from that Page. A Component may import Components, while a Workflow may import Components used by interactive steps.
+
+Multiple Pages may point to the same Component while supplying different typed props. Resources are never discovered by name, so a resource outside this graph cannot become part of the running Site.
 
 The one-Site invariant is system-wide. Schema prefixes do not create separate composition roots, so `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
 
@@ -40,10 +41,12 @@ The [Reference ability matrix](/versions/v0/resources#reference-ability) defines
 
 ## Composition root
 
-The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path. A [Page manifest](/versions/v0/manifests/v0-page) may import Pages and [Components](/versions/v0/manifests/v0-component); a Component may import other Components.
+The [Site manifest](/versions/v0/manifests/v0-site) imports applications and selects which ones to expose. An [Application manifest](/versions/v0/manifests/v0-application) imports pages and assigns each routed page a path below the application's base path. A [Page manifest](/versions/v0/manifests/v0-page) may import Pages, [Components](/versions/v0/manifests/v0-component), and discoverable [Workflows](/versions/v0/manifests/v0-workflow). A Component may import other Components, and a Workflow may import Components for interactive steps.
 
 ## Runtime boundary
 
 A valid graph compiles into an immutable Site snapshot. Each request reads one snapshot. Invalid changes retain diagnostics while the current snapshot continues serving traffic.
 
-Continue with the [Runtime lifecycle](/versions/v0/runtime) to see how a resource change becomes an active snapshot.
+Workflow definitions are compiled into the same immutable snapshot. Workflow executions are durable runtime state created from a selected snapshot and remain pinned to that snapshot and Workflow revision until they finish, so a later snapshot activation affects new executions without mutating existing ones.
+
+Continue with the [Runtime lifecycle](/versions/v0/runtime) to see how resource changes and Workflow executions use that snapshot boundary.
