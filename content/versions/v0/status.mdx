@@ -1,58 +1,50 @@
 ---
 title: Product status
-description: Separate defined contracts from RFCs, planned work, and known limitations.
+description: See which contracts are usable, proposed, or unresolved.
 ---
 
 ## Defined
 
 <Cards>
   <Card href='/versions/v0/resources' title='Resource model'>
-    Identity, revisions, versions, reference rules, validation, snapshots, and the one-Site invariant.
+    Identity, revisions, tags, references, and snapshots.
   </Card>
   <Card href='/versions/v0/expressions' title='Expressions'>
-    Taskmigo Expression syntax, global functions, and context-specific values such as Component props.
+    Dynamic values, functions, and context data.
   </Card>
-  <Card href='/versions/v0/manifests/v0-site' title='v0/site'>
-    The system-wide composition root for applications and shared branding.
+  <Card href='/versions/v0/manifests/v0-site' title='Site'>
+    Applications and shared branding.
   </Card>
-  <Card href='/versions/v0/manifests/v0-application' title='v0/application'>
-    Application metadata, base paths, and page routes.
+  <Card href='/versions/v0/manifests/v0-application' title='Application'>
+    Paths and Page routes.
   </Card>
-  <Card href='/versions/v0/manifests/v0-page' title='v0/page'>
-    Page metadata and declarative component trees.
+  <Card href='/versions/v0/manifests/v0-page' title='Page'>
+    Declarative UI trees.
   </Card>
-  <Card href='/versions/v0/manifests/v0-component' title='v0/component'>
-    Typed inputs and reusable UI templates for Pages.
+  <Card href='/versions/v0/manifests/v0-component' title='Component'>
+    Typed reusable UI templates.
   </Card>
-  <Card href='/versions/v0/manifests/v0-translation' title='v0/translation'>
-    Locale catalogs, placeholders, and CLDR pluralization.
+  <Card href='/versions/v0/manifests/v0-translation' title='Translation'>
+    Locale catalogs and pluralization.
   </Card>
 </Cards>
 
 ## RFC
 
 <Cards>
-  <Card href='/versions/v0/manifests/v0-workflow' title='v0/workflow · RFC'>
-    Proposed durable Workflow contract with version-pinned executions, navigation, actions, and interactive UI steps.
+  <Card href='/versions/v0/manifests/v0-workflow' title='Workflow'>
+    Proposed actions, UI steps, navigation, and durable execution.
   </Card>
 </Cards>
 
-RFCs are design proposals, not supported public contracts. Their syntax and behavior may change before adoption.
+## Planned
 
-## Planned manifest kinds
-
-- `v0/entity`
-- `v0/query` and `v0/action`
-- `v0/policy`, `v0/theme`, and `v0/navigation`
-
-Planned kinds are not public contracts until they have dedicated reference pages or RFCs.
+`entity`, `query`, `action`, `policy`, `theme`, and `navigation`.
 
 ## Known limitations and open decisions
 
-- Multi-tenancy is not available: one deployment manages one Site graph in one configured PostgreSQL schema.
-- The Page component contract currently defines only [`Stack`](/versions/v0/ui-components/stack) and [`Typography`](/versions/v0/ui-components/typography), with their minimum props.
-- Missing-translation-key behavior is not defined.
-- Translation override precedence is not defined.
-- The complete MVP kind list is not finalized.
-- The exact PostgreSQL table layout is not defined.
-- The public schema-versioning policy is not defined.
+- Multi-tenancy is not available.
+- Page UI currently includes only [`Stack`](/versions/v0/ui-components/stack) and [`Typography`](/versions/v0/ui-components/typography), with their minimum props.
+- Missing-translation-key behavior and translation override precedence are not defined.
+- The complete MVP kind list and physical PostgreSQL layout are not finalized.
+- Public revision-tag API paths, authorization, and deletion policy are not defined.

@@ -3,53 +3,25 @@ title: Taskmigo
 description: Build a self-hosted low-code application from declarative resources.
 ---
 
-Taskmigo is an open-source, self-hosted low-code application platform. YAML resources define a site's UI, behavior, and data model.
-
-Resources are authored through the Taskmigo UI or API. YAML remains canonical; Git is not part of the authoring or version-control model.
-
-## Start here
+Taskmigo uses YAML resources to define a Site's UI and behavior. Manage them through the Taskmigo UI or API.
 
 <Cards>
+  <Card title='Build' href='/versions/v0/manifests' description='Choose the resource for what you want to create.' />
   <Card
-    title='Start a Site'
-    href='/versions/v0/manifests/v0-site'
-    description='Create the entry point for your application and choose which Applications it exposes.'
-  />
-</Cards>
-
-A Site starts the resource graph. It exposes Applications; each Application routes Pages; Pages compose registered UI Components and may expose Workflows. Add Translation resources when a Page needs localized content.
-
-## Find an answer
-
-<Cards>
-  <Card
-    title='Choose a manifest'
-    href='/versions/v0/manifests'
-    description='Find the resource that defines a specific part of a Site.'
-  />
-  <Card
-    title='Reference resources'
+    title='Resource model'
     href='/versions/v0/resources'
-    description='Check identity, versions, imports, and allowed references.'
+    description='Identity, revisions, tags, references, and dependencies.'
   />
+  <Card title='Expressions' href='/versions/v0/expressions' description='Dynamic values and context data.' />
   <Card
-    title='Write an Expression'
-    href='/versions/v0/expressions'
-    description='Use dynamic values and context-specific data where a field accepts an Expression.'
-  />
-  <Card
-    title='Understand runtime behavior'
+    title='Runtime'
     href='/versions/v0/runtime'
-    description='Follow validation, snapshot activation, recovery, and Workflow execution.'
+    description='Validation, activation, recovery, and Workflow execution.'
   />
   <Card
-    title='Check support and limitations'
+    title='Product status'
     href='/versions/v0/status'
-    description='Check contract status, planned work, and open decisions.'
+    description='Defined contracts, RFCs, limitations, and open decisions.'
   />
-  <Card
-    title='Resolve a common question'
-    href='/versions/v0/faq'
-    description='Find concise answers with links to the canonical contract.'
-  />
+  <Card title='FAQ' href='/versions/v0/faq' description='Answers to common Taskmigo questions.' />
 </Cards>

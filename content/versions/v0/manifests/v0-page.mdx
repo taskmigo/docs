@@ -8,8 +8,11 @@ A `v0/page` builds one user interface from an ordered tree of registered compone
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ```yaml
-kind: v0/page
-name: index
+apiVersion: v0
+kind: page
+
+metadata:
+  name: index
 
 spec:
   meta:
@@ -31,7 +34,6 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/page"', required: true, description: 'Selects the Page contract.' },
     'spec.meta': { type: 'object', required: true, description: 'Information used to present this Page.' },
     'spec.meta.title': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
@@ -51,7 +53,7 @@ spec:
   }}
 />
 
-A page does not define a route. Route ownership belongs to the importing [v0/application](/versions/v0/manifests/v0-application).
+A Page does not define a route. Route ownership belongs to the importing [Application](/versions/v0/manifests/v0-application).
 
 ## Component nodes
 
@@ -66,27 +68,27 @@ children: []
 
 Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/ui-components/stack) for grouping content and [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
 
-A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [`v0/component`](/versions/v0/manifests/v0-component) only when multiple places should share the same component tree. Use its full resource reference as the node's `component` value and pass values declared by the Component through `props`:
+A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manifests/v0-component) only when multiple places should share the same component tree. Use its `component/<name>` resource reference as the node's `component` value and pass values declared by the Component through `props`:
 
 ```yaml
 imports:
-  - v0/component/header
+  - component/header
 
 spec:
   body:
-    - component: v0/component/header
+    - component: component/header
       props:
         title: Hello World
 ```
 
 Every reusable Component used in `spec.body` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports. Each node must satisfy the selected component's contract.
 
-A Page may also import [`v0/workflow`](/versions/v0/manifests/v0-workflow) resources that users can discover and start from that Page:
+A Page may also import [Workflow](/versions/v0/manifests/v0-workflow) resources that users can discover and start from that Page:
 
 ```yaml
 imports:
-  - v0/component/header
-  - v0/workflow/employee-onboarding
+  - component/header
+  - workflow/employee-onboarding
 ```
 
 Importing a Workflow exposes it to Page runtime UI but does not itself grant permission to execute it. Pages do not embed Workflow steps in `spec.body`; interactive Workflow steps reuse Components imported by the Workflow itself. See [Reference ability](/versions/v0/resources#reference-ability) for the complete import matrix.
