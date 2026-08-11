@@ -1,104 +1,70 @@
 ---
 title: Application
-description: Define application metadata, its base path, and page routes.
+description: Group Pages under a shared URL path.
 ---
-
-A `v0/application` defines the shared URL prefix for an application and maps imported pages to paths below that prefix.
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ```yaml
-kind: v0/application
-name: home
-
+apiVersion: v0
+kind: application
+metadata:
+  name: home
 imports:
-  - v0/page/index
-
+  - page/index
 spec:
   icon: https://example.com/images/home.png
   label: '{{ Trans "applications.home.label" }}'
   description: '{{ Trans "applications.home.description" }}'
   path: /home
-
   routes:
-    - page: v0/page/index
+    - page: page/index
       path: /
 ```
 
-The example exposes `v0/page/index` at `<host>/home/`.
+This exposes `page/index` at `<host>/home/`.
 
 ## Fields
 
 <TypeTable
   type={{
-    kind: {
-      type: '"v0/application"',
-      required: true,
-      description: 'Selects the Application contract.',
-    },
-    imports: {
-      type: 'PageReference[]',
-      required: true,
-      description: 'Unique page references used by the application.',
-    },
     'spec.icon': {
       type: 'URL',
       required: true,
-      description: 'An absolute image URL with a scheme and host.',
+      description: 'Image shown for the application; must include a scheme and host.',
     },
     'spec.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: 'Name shown when presenting this application.',
+      description: 'Name shown to users.',
     },
     'spec.description': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: 'Summary shown alongside the application name.',
+      description: 'Summary shown with the application.',
     },
-    'spec.path': {
-      type: 'AbsolutePath',
-      required: true,
-      description: 'URL prefix shared by every route in this application.',
-    },
-    'spec.routes': {
-      type: 'Route[]',
-      required: true,
-      description: 'Connects each imported Page to a URL below this application.',
-    },
+    'spec.path': { type: 'AbsolutePath', required: true, description: 'URL prefix shared by its routes.' },
+    'spec.routes': { type: 'Route[]', required: true, description: 'Maps imported Pages below the application path.' },
     'spec.routes[].page': {
       type: 'PageReference',
       required: true,
-      description: 'Imported Page exposed by this route.',
+      description: 'Selects the imported Page exposed by this route.',
     },
     'spec.routes[].path': {
       type: 'AbsolutePath',
       required: true,
-      description: 'Route suffix appended to the application path.',
+      description: 'Appends a path below the application prefix.',
     },
   }}
 />
 
-Locale maps cannot be embedded in the application manifest. Translation catalogs are available automatically and must not appear in `imports`. See [Translate a message](/versions/v0/manifests/v0-translation#translate-a-message).
-
 ## Paths and routes
-
-`spec.path` establishes the application's path below the host. Each `spec.routes[].path` is resolved below that application path.
 
 | Application path | Page path   | Result                 |
 | ---------------- | ----------- | ---------------------- |
 | `/home`          | `/`         | `<host>/home/`         |
 | `/home`          | `/settings` | `<host>/home/settings` |
 
-A page path of `/` designates the index page for the application path. Application paths and page paths must begin with `/`; they are paths, not absolute URLs.
+`/` is the Application index. Every routed Page must appear in `imports`; importing one alone does not expose a route. `imports` and `spec.routes` cannot be empty, and route paths must be unique.
 
-## Imports
-
-An application's `imports` entries may target only `v0/page`. Importing a page makes it available to the application;
-it does not expose the page until a matching entry appears in `spec.routes`.
-
-Every routed page must be imported. Page resources are not discovered by name. See [Resource model](/versions/v0/resources#imports).
-
-## Validation
-
-`imports` and `spec.routes` cannot be empty. Each route path must be unique within the Application.
+See [Resource model](/versions/v0/resources#references) for reference rules.

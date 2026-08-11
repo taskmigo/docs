@@ -6,19 +6,13 @@ description: Define locale catalogs and render translated messages.
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
-<Cards>
-  <Card href='#create-a-catalog' title='Create a catalog' description='Define messages for one locale.' />
-  <Card href='#translate-a-message' title='Use Trans' description='Render a message and fill placeholders.' />
-  <Card href='#translate-a-quantity' title='Use TransN' description='Select a CLDR plural form.' />
-</Cards>
-
 ## Quick start
 
 ```yaml
-# Catalog
-kind: v0/translation
-name: english-applications
-
+apiVersion: v0
+kind: translation
+metadata:
+  name: english-applications
 spec:
   locale: en
   content:
@@ -26,63 +20,37 @@ spec:
       home:
         label: Home
         welcome: Welcome, %s!
+```
 
-# Usage in another manifest
+```yaml
 label: '{{ Trans "applications.home.label" }}'
 description: '{{ Trans "applications.home.welcome" .User.Name }}'
 ```
 
-_Example context: `.User`, `.Order`, and `.Cart` on this page are illustrative values, not global
-variables provided by Taskmigo._
+_`.User` is illustrative context data, not a global Taskmigo value._
 
-<Callout title='Catalogs do not participate in imports' type='info'>
-  A translation manifest may declare `imports: []` for compatibility with the common resource shape, but it cannot
-  import any resource. No manifest may import `v0/translation`. Taskmigo assembles the effective catalog for the active
-  locale.
-</Callout>
+Translation resources are selected by locale and are not imported. See [Reference ability](/versions/v0/resources#reference-ability).
 
-Other manifests read catalog data with `Trans` and `TransN`. See [Expressions](/versions/v0/expressions)
-for the common syntax.
-
-## Create a catalog
+## Fields
 
 <TypeTable
   type={{
-    kind: {
-      type: '"v0/translation"',
-      required: true,
-      description: 'Selects the translation catalog contract.',
-    },
     'spec.locale': {
       type: 'BCP 47 language tag',
       required: true,
-      description: 'Locale served by this catalog, such as `en`, `vi`, or `pt-BR`.',
+      description: 'Selects the catalog locale, such as `en`, `vi`, or `pt-BR`.',
     },
     'spec.content': {
       type: 'Record<string, unknown>',
       required: true,
-      description: 'Messages available through dotted lookup keys. Keys cannot be empty.',
+      description: 'Provides messages through non-empty dotted lookup keys.',
     },
   }}
 />
 
-`spec.locale` uses a [BCP 47](https://www.rfc-editor.org/info/bcp47/) language tag.
+Resources with the same normalized locale merge into one effective catalog. Nested keys form dotted lookup paths.
 
-`spec.locale` selects the catalog; `name` identifies the contribution. All translation resources with the same normalized locale merge into one effective catalog.
-
-Nested keys form a dotted lookup path. For example, `account.greeting` resolves this value:
-
-```yaml
-spec:
-  locale: en
-  content:
-    account:
-      greeting: Welcome back
-```
-
-Content may contain objects, arrays, strings, numbers, booleans, and `null`. A value resolved by `Trans` must be usable as a message.
-
-## Translate a message
+## Trans
 
 ```text
 {{ Trans "key" ...values }}
@@ -91,21 +59,15 @@ Content may contain objects, arrays, strings, numbers, booleans, and `null`. A v
 Values fill formatting placeholders from left to right:
 
 ```yaml
-# Catalog
 orders:
   summary: Order %s belongs to %s.
 
-# Usage
 {{ Trans "orders.summary" .Order.Number .User.Name }}
 ```
 
-<Callout title='Pass every placeholder value' type='warn'>
-  Missing values stop rendering with a runtime error. Values must also be compatible with their formatting verbs.
-</Callout>
+Missing or incompatible placeholder values cause a runtime error.
 
-Placeholder order belongs to each translated message and may differ by locale.
-
-## Translate a quantity
+## TransN
 
 `TransN` selects a plural form using the active locale's [Unicode CLDR plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
 
@@ -113,99 +75,61 @@ Placeholder order belongs to each translated message and may differ by locale.
 {{ TransN "key" count ...values }}
 ```
 
-The count selects the category and fills the first compatible placeholder. Remaining values fill placeholders from left to right:
-
 ```yaml
-# English catalog
-spec:
-  locale: en
-  content:
-    items:
-      count:
-        one: You have %d item, %s.
-        other: You have %d items, %s.
+items:
+  count:
+    one: You have %d item, %s.
+    other: You have %d items, %s.
 
-# Usage
-description: '{{ TransN "items.count" .Cart.Count .User.Name }}'
+{{ TransN "items.count" .Cart.Count .User.Name }}
 ```
 
-### CLDR categories
-
-Plural objects use `zero`, `one`, `two`, `few`, `many`, and `other`. Define the categories used by the locale and always include `other`.
-
-Category names do not imply numeric ranges: CLDR evaluates the original count for the active locale, including its decimal precision.
-
-### Resolution
+Plural objects use CLDR categories `zero`, `one`, `two`, `few`, `many`, and `other`. Always define `other`.
 
 <Steps>
   <Step>
 
 ### Resolve the locale
 
-Select the active catalog or the configured global fallback catalog.
+Use the active catalog or configured global fallback.
 
   </Step>
   <Step>
 
-### Select a category
+### Select the plural form
 
-Evaluate the original numeric count with the locale's CLDR rules.
-
-  </Step>
-  <Step>
-
-### Select a form
-
-Use the selected category when present; otherwise use `other`.
+Evaluate the count with the locale's CLDR rules. Fall back to `other` when the selected category is absent.
 
   </Step>
   <Step>
 
 ### Fill placeholders
 
-Apply the count first, followed by additional values from left to right.
+Apply the count first, then additional values from left to right.
 
   </Step>
 </Steps>
 
-## Extend a catalog
+## Merge catalogs
 
-Split one locale across resources when applications or domains own separate message paths:
-
-```yaml
-kind: v0/translation
-name: english-errors
-
-spec:
-  locale: en
-  content:
-    errors:
-      unauthorized: You do not have permission to continue.
-```
-
-### Merge rules
-
-| Situation                             | Result                                                  |
-| ------------------------------------- | ------------------------------------------------------- |
-| Different object paths                | Merge recursively.                                      |
-| A path exists in one resource         | Copy it into the effective catalog.                     |
-| Arrays or non-object values           | Keep them as final values; arrays are not concatenated. |
-| Two resources define the same path    | Reject the catalog, even when values match.             |
-| An object and non-object share a path | Reject the catalog.                                     |
+| Conflict                              | Result                                    |
+| ------------------------------------- | ----------------------------------------- |
+| Different object paths                | Merge recursively.                        |
+| Arrays or non-object values           | Keep as final values; do not concatenate. |
+| Two resources define the same path    | Reject, even when values match.           |
+| An object and non-object share a path | Reject.                                   |
 
 Merge results never depend on load order. Errors identify the locale, path, and both source manifests.
 
 ## Errors and fallbacks
 
-| Condition                                        | Result                                     |
-| ------------------------------------------------ | ------------------------------------------ |
-| `TransN` receives a non-numeric count            | `[invalid_plural_count:key]`               |
-| The selected category is missing                 | Use `other`.                               |
-| The selected category and `other` are missing    | `[untranslated_form:key]`                  |
-| The active locale is unavailable                 | Use the configured global fallback locale. |
-| A message receives too few values                | Stop rendering with a runtime error.       |
-| A value is incompatible with its formatting verb | `[translation_format_error:key]`           |
+| Condition                                      | Result                                     |
+| ---------------------------------------------- | ------------------------------------------ |
+| `TransN` receives a non-numeric count          | `[invalid_plural_count:key]`               |
+| Selected category is missing                   | Use `other`.                               |
+| Selected category and `other` are missing      | `[untranslated_form:key]`                  |
+| Active locale is unavailable                   | Use the configured global fallback locale. |
+| Message receives too few values                | Runtime error.                             |
+| Value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
 Missing-key behavior is not yet defined. See [Product status](/versions/v0/status#known-limitations-and-open-decisions).
-
-Saving, updating, or deleting a translation resource revalidates snapshots that use its locale catalog.

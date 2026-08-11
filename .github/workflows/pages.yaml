@@ -37,6 +37,9 @@ jobs:
       - name: Run format check
         run: npm run format:check
 
+      - name: Run type check
+        run: npm run types:check
+
       - name: Build static documentation
         run: npm run build
 

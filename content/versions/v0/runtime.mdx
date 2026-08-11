@@ -1,128 +1,76 @@
 ---
 title: Runtime lifecycle
-description: Follow resource changes and Workflow executions through the runtime.
+description: Follow a resource change from validation to activation.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-Taskmigo never activates a manifest directly. Every change produces a candidate Site graph. Only a complete, valid candidate can become the current immutable snapshot.
-
-## Complete lifecycle
-
-Create, update, delete, restore, and package import all enter this lifecycle. Dependency recovery rejoins the same flow after its queued work begins.
+## Resource change lifecycle
 
 ```mermaid
 flowchart TD
-  change["Resource change"] --> affected["Find affected Site graph"]
-  recovery["Dependency recovery"] --> queue["Wait in recovery queue"]
-  queue --> affected
-  affected --> resolve["Resolve complete candidate graph"]
+  change["Resource change"] --> resolve["Resolve affected Site graph"]
+  recovery["Dependency recovery"] --> queue["Recovery queue"]
+  queue --> resolve
   resolve --> validate{"Candidate valid?"}
   validate -->|Yes| build["Build immutable snapshot"]
-  build --> activate["Atomically activate snapshot"]
+  build --> activate["Activate atomically"]
   validate -->|No| diagnostics["Store diagnostics"]
   diagnostics --> retain["Keep current snapshot"]
-  activate --> serve["Serve new requests and executions"]
+  activate --> serve["Serve new work"]
 ```
 
-The active Site is never replaced by a partial or invalid candidate. A failed candidate ends at diagnostics; a valid candidate becomes visible only after the atomic activation step.
-
-## How a candidate moves through the lifecycle
+Create, update, delete, restore, package import, and dependency recovery all use this lifecycle.
 
 <Steps>
   <Step>
 
-### Find the affected graph
+### Resolve the affected Site
 
-Taskmigo starts with the changed resource and follows reverse `imports` references to the Site. Resources outside the reachable graph are not revalidated.
-
-Translation catalogs are tracked by effective locale rather than explicit reference edges. Changing a translation resource also affects a Site graph that uses that locale.
+Taskmigo resolves a complete candidate graph. Translation changes also affect Sites using the corresponding locale catalog. See [Resource resolution](/versions/v0/resources#resolution).
 
   </Step>
   <Step>
 
-### Resolve the complete candidate
+### Validate the candidate
 
-Taskmigo resolves the `v0/site` from its current declarations and selects a revision for every import edge. It attaches the translation catalog for the effective locale.
-
-Separate graph branches may select different versions of the same `(kind, name)`, and both revisions may coexist in one candidate. Resolution never rewrites manifests, substitutes a dependency, or falls back to an older revision. See [Resource model](/versions/v0/resources#imports) for reference and version selection rules.
+Each revision is validated against its `apiVersion` and `kind`, followed by dependency, graph, and security checks. Invalid candidates store diagnostics and leave the active snapshot unchanged.
 
   </Step>
   <Step>
 
-### Validate the complete candidate
+### Build and activate
 
-Taskmigo checks YAML and common metadata, kind-specific schemas, dependency resolution, graph rules, and security constraints. Dependencies must be valid before their importers can be valid, but the internal validator call order is not part of the public API.
-
-  </Step>
-  <Step>
-
-### Build an immutable snapshot
-
-A valid candidate is compiled into one Site snapshot containing every selected resource revision and the normalized runtime model. Later resource changes cannot alter that snapshot.
-
-  </Step>
-  <Step>
-
-### Activate atomically
-
-Taskmigo stores the replacement and atomically makes it current in PostgreSQL. New requests and new Workflow executions use the replacement. Requests already in progress may finish on the snapshot they started with, and Workflow executions already started remain pinned to their original snapshot and Workflow revision. There is no separate publish step or manual activation state.
+A valid candidate becomes an immutable snapshot containing the selected revisions and normalized runtime model, then replaces the active snapshot atomically.
 
   </Step>
 </Steps>
 
-## Validation outcome
-
-| Outcome              | Runtime result                                                          |
-| -------------------- | ----------------------------------------------------------------------- |
-| Candidate is valid   | Build and atomically activate a new snapshot.                           |
-| Candidate is invalid | Store structured diagnostics and continue serving the current snapshot. |
-
-Diagnostics identify the error, manifest path, and source location when available. They must not expose credentials, connection strings, or data from schemas that Taskmigo does not own.
+Diagnostics identify the error, manifest path, and source location when available without exposing credentials or data outside Taskmigo's schema.
 
 ## Workflow execution
 
-A Workflow execution is durable runtime state created from one active snapshot. It runs as a resumable state machine rather than one long-lived HTTP operation.
-
 ```mermaid
 flowchart TD
-  snapshot["Active Site snapshot"] --> start["Start execution"]
-  start --> pin["Pin snapshot + Workflow revision"]
-  pin --> ready["Schedule start step"]
-  ready --> run["Run action / prepare UI / fail"]
+  snapshot["Active snapshot"] --> start["Start execution"]
+  start --> pin["Pin snapshot + revisions"]
+  pin --> run["Run step"]
   run --> persist["Persist transition"]
-  persist --> state{"Execution state"}
-  state -->|Runnable| navigate["Evaluate navigation"]
-  navigate --> ready
-  state -->|Waiting| wait["WAITING for user input"]
-  wait --> submit["Persist submitted output"]
-  submit --> persist
+  persist --> state{"State"}
+  state -->|Runnable| run
+  state -->|Waiting| wait["WAITING for input"]
+  wait --> persist
   state -->|Terminal| done["SUCCEEDED / FAILED"]
 ```
 
-Every meaningful transition is persisted before dependent work is scheduled. Waiting for user input does not keep an HTTP request or worker open. Service restarts resume from persisted state.
+Transitions are persisted before dependent work is scheduled. Service restarts resume from persisted state, and waiting for input does not hold an HTTP request or worker.
 
-A newer snapshot changes only future executions. Existing executions continue with their pinned Workflow definition and imported dependencies, including Components used by interactive steps.
-
-| Event                               | Existing Workflow execution            | New Workflow execution                               |
-| ----------------------------------- | -------------------------------------- | ---------------------------------------------------- |
-| A newer Workflow revision activates | Continues on its pinned revision       | Uses the revision selected by the current snapshot   |
-| An imported Component changes       | Continues with the pinned dependency   | Uses the dependency selected by the current snapshot |
-| A candidate snapshot is invalid     | Continues unchanged                    | Starts from the still-current valid snapshot         |
-| Service restarts                    | Resumes from persisted execution state | Starts normally after runtime recovery               |
-
-Execution states are `PENDING`, `RUNNING`, `WAITING`, `SUCCEEDED`, and `FAILED`. Retry attempts, timeouts, step outputs, and UI interaction state belong to execution history rather than Site snapshot revisions. See [Workflow](/versions/v0/manifests/v0-workflow#execution-model) for step-level behavior.
+Existing executions keep their pinned Workflow and dependencies; newer snapshots affect new executions only. See [Workflow RFC](/versions/v0/manifests/v0-workflow#execution-and-revision-pinning) for step behavior.
 
 ## Dependency recovery
 
-When a dependency becomes missing, invalid, or valid again, Taskmigo queues every affected Site graph for reevaluation. Recovery candidates run one at a time in queue order. A candidate must activate or fail before the next begins, which prevents conflicting snapshot activations.
+Dependency changes queue affected Sites for reevaluation. Candidates run one at a time through the lifecycle above, preventing conflicting activations. Intermediate revisions are not guaranteed to activate, and recovery has no fixed completion time.
 
-When its turn begins, recovery follows the same lifecycle shown above: re-resolve the complete graph, validate it, then either activate one new snapshot or retain the current snapshot with updated diagnostics. Queue order coordinates processing; it does not guarantee that every intermediate resource revision becomes active or that recovery completes within a maximum time.
+## Package import
 
-Recovery does not repair invalid manifests or expose the internal queue implementation.
-
-## Package boundary
-
-Package import enters the lifecycle as one change. Taskmigo validates the complete package, including the one-Site invariant and reference hierarchy, before resolving dependencies inside its PostgreSQL schema. A failed import cannot leave a partially active runtime state.
-
-Export produces portable canonical YAML. Importing it still runs the lifecycle above; exported resolution results are not trusted as runtime state.
+A package is validated as one candidate before activation. A failed import cannot partially change runtime state. Exported revision IDs, resolution results, and revision tags are not imported as manifest state.

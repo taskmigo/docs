@@ -1,114 +1,35 @@
 ---
 title: FAQ
-description: Resolve common questions about Taskmigo contracts and runtime behavior.
+description: Resolve common Taskmigo questions quickly.
 ---
 
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-<Accordions type="single">
-  <Accordion title="How many Site resources can a system contain?" id="one-site">
-    Exactly one logical Site. It may have multiple revisions, but a different name or schema prefix does not create another slot. `v0/site` and a future `v1/site` cannot coexist as separate Site resources. See [Site cardinality](/versions/v0/resources#site-cardinality).
+<Accordions type='single'>
+  <Accordion title='What identifies a resource?' id='resource-identity'>
+    `(kind, metadata.name)`. See [Resource model](/versions/v0/resources#identity-and-revisions).
   </Accordion>
-
-<Accordion title='Are the kind prefix and resource version the same?' id='kind-prefix-vs-resource-version'>
-  No. `kind: v0/application` selects the manifest schema. The optional top-level `version` tags an immutable resource
-  revision. See [Identity and revisions](/versions/v0/resources#identity-and-revisions).
-</Accordion>
-
-<Accordion title='Can one manifest reference the same resource more than once?' id='duplicate-references'>
-  No. Imports are unique by `(kind, name)` within a manifest, even when version constraints differ. Separate graph
-  branches may resolve that identity to different versions. See [Uniqueness
-  scope](/versions/v0/resources#uniqueness-scope).
-</Accordion>
-
-<Accordion title='What does a reference without a version select?' id='unversioned-reference'>
-  It selects the latest revision when a candidate snapshot is built. Existing snapshots remain unchanged. See [Reference
-  resolution](/versions/v0/resources#resolution).
-</Accordion>
-
-<Accordion title='Which resources may a manifest import?' id='import-relationships'>
-  A Site may import Applications, an Application may import Pages, a Page may import Pages, Components, or Workflows, a
-  Component may import Components, and a Workflow may import Components. See the complete [Reference ability
-  matrix](/versions/v0/resources#reference-ability).
-</Accordion>
-
-<Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
-  Define a `v0/component` with typed props and a template. Each Page imports the Component, uses its full resource
-  reference as the node's `component` value, and supplies input values through `props`. See
-  [v0/component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
-</Accordion>
-
-<Accordion title='Must a Page use a reusable Component?' id='page-component-optional'>
-  No. A Page may declare built-in components such as `Stack` and `Typography` directly. Import a `v0/component` only
-  when Pages should share a component tree. See [Page component nodes](/versions/v0/manifests/v0-page#component-nodes).
-</Accordion>
-
-<Accordion title='Where can I use an expression?' id='expression-scope'>
-  Only in fields whose Type Table shows the Expression tag. The field keeps its actual data type, and the evaluated
-  result must match that type. See [Expressions](/versions/v0/expressions) for syntax, functions, and context-specific
-  values including Workflow execution data.
-</Accordion>
-
-<Accordion title='Where is a Page route defined?' id='page-route'>
-  An Application owns Page routing. Its `spec.path` defines the application path and each `spec.routes[].path` defines a
-  path below it. A Page path of `/` is the index page for the application path. See [Paths and
-  routes](/versions/v0/manifests/v0-application#paths-and-routes).
-</Accordion>
-
-<Accordion title='Do consumers import translation resources?' id='translation-imports'>
-  No. No manifest may import `v0/translation`. Taskmigo assembles the catalog for the active locale, and consumers use
-  `Trans` or `TransN`. See [v0/translation](/versions/v0/manifests/v0-translation).
-</Accordion>
-
-<Accordion title='Can a translation manifest declare imports?' id='translation-imports-field'>
-  Yes, but only as an empty list: `imports: []`. The field is accepted for compatibility with the common resource shape;
-  any entry makes the translation manifest invalid. See [Reference ability](/versions/v0/resources#reference-ability).
-</Accordion>
-
-<Accordion title='What happens when a resource change is invalid?' id='invalid-change'>
-  Candidate activation stops, diagnostics are stored, and the current Site snapshot continues serving traffic. See
-  [Validation outcome](/versions/v0/runtime#validation-outcome).
-</Accordion>
-
-<Accordion title='Is there a manual publish or activation step?' id='manual-activation'>
-  No. A complete valid candidate is compiled and activated atomically. New Workflow executions use the Workflow revision
-  in the active Site snapshot. See [Runtime lifecycle](/versions/v0/runtime).
-</Accordion>
-
-<Accordion title='What happens to a running Workflow when its manifest changes?' id='workflow-version-pinning'>
-  Nothing changes for that execution. Starting it pins the exact Workflow revision, Site snapshot, and required imported
-  dependencies. A newer active revision is used only by new executions. See [Version
-  pinning](/versions/v0/manifests/v0-workflow#version-pinning).
-</Accordion>
-
-<Accordion title='How does a conditional Workflow step work?' id='workflow-conditional-navigation'>
-  After an action or UI step produces persisted output, its `navigation` routes are evaluated in order. The first `when`
-  that resolves to `true` wins, and a route without `when` is the fallback. See [Navigation
-  DSL](/versions/v0/manifests/v0-workflow#navigation-dsl).
-</Accordion>
-
-<Accordion title='Can a Workflow wait for UI input?' id='workflow-ui-step'>
-  Yes. An interactive UI step renders an imported Component, persists the execution as `WAITING`, and resumes after
-  submitted output is stored. Waiting does not keep an HTTP request or worker open. See [Interactive UI
-  step](/versions/v0/manifests/v0-workflow#interactive-ui-step).
-</Accordion>
-
-<Accordion title='Can dependency recovery attempts conflict?' id='dependency-recovery-queue'>
-  No. Taskmigo queues dependency recovery and processes one candidate at a time. Each candidate must finish validation
-  and activation, or fail, before the next candidate starts. The current snapshot remains active while recovery is
-  queued or when a candidate fails. See [Dependency recovery](/versions/v0/runtime#dependency-recovery).
-</Accordion>
-
-<Accordion title='Can a package import partially activate?' id='package-atomicity'>
-  No. The complete package is validated first, including the one-Site invariant. A failed import does not change active
-  runtime state. See [Package boundary](/versions/v0/runtime#package-boundary).
-</Accordion>
-
-<Accordion title='Which manifest kinds are currently defined?' id='defined-kinds'>
-  See [Product status](/versions/v0/status) for the canonical support state of each manifest contract.
-</Accordion>
-
-  <Accordion title="Where can I find known limitations?" id="known-limitations">
-    See [Product status](/versions/v0/status#known-limitations-and-open-decisions). It records unresolved behavior and planned contracts that should not be relied on yet.
+  <Accordion title='How do I pin an imported resource version?' id='import-version'>
+    Append a tag constraint, such as `component/header@1.2.0` or `component/header@^1.2.0`. See
+    [References](/versions/v0/resources#references).
+  </Accordion>
+  <Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
+    Import it from each Page and pass Page-specific `props`. See
+    [Component](/versions/v0/manifests/v0-component#use-the-component-in-a-page).
+  </Accordion>
+  <Accordion title='Where can I use an Expression?' id='expression-scope'>
+    Fields marked with the Expression tag in their Type Table. See [Expressions](/versions/v0/expressions).
+  </Accordion>
+  <Accordion title='Where is a Page route defined?' id='page-route'>
+    In its Application. See [Paths and routes](/versions/v0/manifests/v0-application#paths-and-routes).
+  </Accordion>
+  <Accordion title='Why did my change not become active?' id='invalid-change'>
+    See [Runtime lifecycle](/versions/v0/runtime).
+  </Accordion>
+  <Accordion title='What happens to a running Workflow after an update?' id='workflow-version-pinning'>
+    See [Execution and revision pinning](/versions/v0/manifests/v0-workflow#execution-and-revision-pinning).
+  </Accordion>
+  <Accordion title='Which contracts can I use now?' id='defined-kinds'>
+    See [Product status](/versions/v0/status).
   </Accordion>
 </Accordions>

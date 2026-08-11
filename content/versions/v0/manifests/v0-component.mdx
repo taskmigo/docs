@@ -5,16 +5,16 @@ description: Define a typed, reusable UI template for Pages.
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
-A `v0/component` packages a component tree once so any Page can import and render it. Declare the
-values each Page may provide in `spec.props`, then read those values from `spec.template` through
-`{{ props.<name> }}`.
+A `v0/component` packages a component tree once so any Page can import and render it. Declare the values each Page may provide in `spec.props`, then read those values from `spec.template` through `{{ props.<name> }}`.
 
-A Component may import other Components. Every reusable Component used in `spec.template` must
-appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
+A Component may import other Components. Every reusable Component used in `spec.template` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
 
 ```yaml
-kind: v0/component
-name: header
+apiVersion: v0
+kind: component
+
+metadata:
+  name: header
 
 spec:
   props:
@@ -43,11 +43,6 @@ spec:
 
 <TypeTable
   type={{
-    kind: {
-      type: '"v0/component"',
-      required: true,
-      description: 'Selects the reusable Component contract.',
-    },
     'spec.props': {
       type: 'Record<string, PropDefinition>',
       required: true,
@@ -68,32 +63,27 @@ spec:
       required: false,
       description: 'Fallback used when an importing Page omits this prop.',
     },
-    'spec.template': {
-      type: 'ComponentNode',
-      required: true,
-      description: 'Component tree rendered for every use.',
-    },
+    'spec.template': { type: 'ComponentNode', required: true, description: 'Component tree rendered for every use.' },
   }}
 />
 
-Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may
-contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in
-`spec.template` may use the full Taskmigo Expression syntax and access declared props through
-`props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
+Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in `spec.template` may use the full Taskmigo Expression syntax and access declared props through `props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
 
 Every node in `spec.template` must satisfy the selected component's contract.
 
 ## Use the Component in a Page
 
-Import the Component by resource reference, then use the same reference as the node's `component`
-value. The node's `props` are validated against `spec.props`.
+Import the Component by resource identity, then use the same `component/<name>` reference as the node's `component` value. The node's `props` are validated against `spec.props`.
 
 ```yaml
-kind: v0/page
-name: dashboard
+apiVersion: v0
+kind: page
+
+metadata:
+  name: dashboard
 
 imports:
-  - v0/component/header
+  - component/header
 
 spec:
   meta:
@@ -101,14 +91,12 @@ spec:
     description: Account overview
 
   body:
-    - component: v0/component/header
+    - component: component/header
       props:
         title: Dashboard
         showDescription: false
 ```
 
-Any number of Pages may import the same Component. Each Page supplies its own props while every use
-renders the same template.
+Any number of Pages may import the same Component. Each Page supplies its own props while every use renders the same template.
 
-An importing Page is invalid when it omits a required prop, supplies an undeclared prop, or provides
-a value that does not match the declared prop type.
+An importing Page is invalid when it omits a required prop, supplies an undeclared prop, or provides a value that does not match the declared prop type.
