@@ -1,0 +1,86 @@
+---
+title: Policy
+description: RFC: define global access-control rules for requests, responses, and UI.
+---
+
+<Callout title="RFC — not implemented" type="warning">
+  This page proposes the Policy contract. It is not available in the current runtime.
+</Callout>
+
+## Purpose
+
+A Policy is a global manifest, like Translation: Taskmigo selects it for every Site snapshot rather than importing it from another manifest. A policy controls three points:
+
+| Point | Effects | Purpose |
+| --- | --- | --- |
+| Incoming request | `allow`, `deny` | Decide whether a matching route may run. |
+| Outgoing response | `deny`, `redact` | Block a response or remove fields from a JSON response. |
+| UI | `show`, `hide` | Control whether an application, page, or identified UI instance renders. |
+
+UI policy is not a security boundary. A hidden UI target must still be protected by an incoming-request rule.
+
+## Example
+
+```yaml
+kind: v0/policy
+name: customer-access
+
+spec:
+  rules:
+    - id: allow-customer-read
+      effect: allow
+      target:
+        request:
+          method: GET
+          path: /customers/**
+      when: '{{ has .Principal.roles "customer-reader" }}'
+
+    - id: redact-customer-email
+      effect: redact
+      target:
+        response:
+          request:
+            method: GET
+            path: /customers/**
+          contentType: application/json
+          fields:
+            - customers.*.email
+      when: '{{ not (has .Principal.roles "customer-admin") }}'
+
+    - id: hide-admin
+      effect: hide
+      target:
+        ui:
+          application: admin
+      when: '{{ not (has .Principal.roles "admin") }}'
+```
+
+## Fields
+
+<TypeTable
+  type={{
+    kind: { type: '"v0/policy"', required: true, description: "Selects the global policy contract." },
+    "spec.rules": { type: "PolicyRule[]", required: true, description: "Rules evaluated for every Site snapshot." },
+    "spec.rules[].id": { type: "string", required: true, description: "Unique rule identifier for validation and audit diagnostics." },
+    "spec.rules[].effect": { type: '"allow" | "deny" | "redact" | "show" | "hide"', required: true, description: "Decision this rule may produce; it must be valid for the target point." },
+    "spec.rules[].target": { type: "RequestTarget | ResponseTarget | UITarget", required: true, description: "Selects the routes or UI target governed by the rule." },
+    "spec.rules[].when": { type: "string", required: true, description: "<ExpressionSupport />Condition that decides whether the rule matches." },
+  }}
+/>
+
+A request target specifies its route with `method` and `path`. A response target adds `contentType: application/json` and `fields`; each matching field is removed. A UI target identifies an `application`, `page`, or `componentId` (the value of `data-component-id`).
+
+## Evaluation
+
+The policy target decides which route types it applies to; Page and API routes use the same request matching contract.
+
+- `deny` takes precedence over `allow`; no matching request rule denies the request.
+- All matching `redact` rules remove their selected JSON fields. Without a response rule, an allowed response is unchanged.
+- `hide` takes precedence over `show`. UI is hidden by default only when its target is managed by UI policy.
+- Rules are evaluated from the snapshot-pinned policy revisions, so an active request does not change behavior mid-execution.
+
+Policy Expressions receive only the context for their point. The common identity context is `.Principal.username`, `.Principal.roles`, and `.Principal.groups`.
+
+## Global selection
+
+Policies do not participate in `imports` and no manifest may import `v0/policy`. A policy change rebuilds affected Site snapshots. Each snapshot pins the policy revision it selected.
