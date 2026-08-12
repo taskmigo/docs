@@ -33,7 +33,10 @@ spec:
         request:
           method: GET
           path: /customers/**
-      when: '{{ has .Principal.roles "customer-reader" }}'
+      when:
+        field: principal.roles
+        operator: contains
+        value: customer-reader
 
     - id: redact-customer-email
       effect: redact
@@ -45,14 +48,21 @@ spec:
           contentType: application/json
           fields:
             - customers.*.email
-      when: '{{ not (has .Principal.roles "customer-admin") }}'
+      when:
+        not:
+          field: principal.roles
+          operator: contains
+          value: customer-admin
 
     - id: hide-admin
       effect: hide
       target:
         ui:
           application: admin
-      when: '{{ not (has .Principal.roles "admin") }}'
+      when:
+        field: principal.roles
+        operator: contains
+        value: admin
 ```
 
 ## Fields
@@ -60,15 +70,31 @@ spec:
 <TypeTable
   type={{
     kind: { type: '"v0/policy"', required: true, description: "Selects the global policy contract." },
-    "spec.rules": { type: "PolicyRule[]", required: true, description: "Rules evaluated for every Site snapshot." },
+    "spec.rules": { type: "object[]", required: true, description: "Rules evaluated for every Site snapshot." },
     "spec.rules[].id": { type: "string", required: true, description: "Unique rule identifier for validation and audit diagnostics." },
     "spec.rules[].effect": { type: '"allow" | "deny" | "redact" | "show" | "hide"', required: true, description: "Decision this rule may produce; it must be valid for the target point." },
-    "spec.rules[].target": { type: "RequestTarget | ResponseTarget | UITarget", required: true, description: "Selects the routes or UI target governed by the rule." },
-    "spec.rules[].when": { type: "string", required: true, description: "<ExpressionSupport />Condition that decides whether the rule matches." },
+    "spec.rules[].target": { type: "object", required: true, description: "Selects the routes or UI target governed by the rule." },
+    "spec.rules[].when": { type: "object", required: true, description: "Declarative condition that determines whether the rule matches." },
   }}
 />
 
 A request target specifies its route with `method` and `path`. A response target adds `contentType: application/json` and `fields`; each matching field is removed. A UI target identifies an `application`, `page`, or `componentId` (the value of `data-component-id`).
+
+## Conditions and database filtering
+
+Policy conditions are a declarative, portable DSL—not general-purpose Expressions and never raw SQL. This lets one rule have equivalent runtime and database evaluation.
+
+A condition is one of:
+
+- A comparison: `field`, `operator`, and `value`.
+- `all` or `any`: an array of nested conditions.
+- `not`: one nested condition.
+
+The initial operators are `eq`, `ne`, `in`, and `contains`. Conditions may read the authenticated `principal.username`, `principal.roles`, and `principal.groups`. A future data-resource contract may additionally expose logical record fields; it must map each supported field to its database representation.
+
+When a policy governs which records a caller may read, the runtime compiles its condition to a parameterized SQL `WHERE` predicate and applies it as part of the database query. It must not fetch candidate records and then filter them in application memory. A condition that cannot be compiled for a data source makes the affected snapshot invalid; it never falls back to an unfiltered query.
+
+The data-resource contract will define its field-to-database mapping separately. Policy owns the condition syntax and its security semantics, while a data source owns the physical schema.
 
 ## Evaluation
 
@@ -78,8 +104,6 @@ The policy target decides which route types it applies to; Page and API routes u
 - All matching `redact` rules remove their selected JSON fields. Without a response rule, an allowed response is unchanged.
 - `hide` takes precedence over `show`. UI is hidden by default only when its target is managed by UI policy.
 - Rules are evaluated from the snapshot-pinned policy revisions, so an active request does not change behavior mid-execution.
-
-Policy Expressions receive only the context for their point. The common identity context is `.Principal.username`, `.Principal.roles`, and `.Principal.groups`.
 
 ## Global selection
 
