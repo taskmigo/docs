@@ -60,9 +60,10 @@ spec:
         ui:
           application: admin
       when:
-        field: principal.roles
-        operator: contains
-        value: admin
+        not:
+          field: principal.roles
+          operator: contains
+          value: admin
 ```
 
 ## Fields
