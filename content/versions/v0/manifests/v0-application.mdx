@@ -18,11 +18,11 @@ spec:
   description: '{{ Trans "applications.home.description" }}'
   path: /home
   routes:
-    - page: page/index
+    - page: index
       path: /
 ```
 
-This exposes `page/index` at `<host>/home/`.
+This exposes the imported Page `index` at `<host>/home/`.
 
 ## Fields
 
@@ -44,11 +44,11 @@ This exposes `page/index` at `<host>/home/`.
       description: 'Summary shown with the application.',
     },
     'spec.path': { type: 'AbsolutePath', required: true, description: 'URL prefix shared by its routes.' },
-    'spec.routes': { type: 'Route[]', required: true, description: 'Maps imported Pages below the application path.' },
+    'spec.routes': { type: 'object[]', required: true, description: 'Maps imported Pages below the application path.' },
     'spec.routes[].page': {
-      type: 'PageReference',
+      type: 'string',
       required: true,
-      description: 'Selects the imported Page exposed by this route.',
+      description: 'Name of an imported Page exposed by this route.',
     },
     'spec.routes[].path': {
       type: 'AbsolutePath',

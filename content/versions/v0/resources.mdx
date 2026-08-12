@@ -22,7 +22,7 @@ spec:
 | `kind`          | Resource kind.                                                |
 | `metadata`      | Resource metadata.                                            |
 | `metadata.name` | Resource name matching `[a-zA-Z0-9_-]+`.                      |
-| `imports`       | Allowed dependency references; each identity may appear once. |
+| `imports`       | `ResourceReference[]`; allowed dependencies, each identity appearing once. |
 | `spec`          | Kind-specific configuration.                                  |
 
 ## Identity and revisions
@@ -51,7 +51,13 @@ imports:
 
 Without a constraint, Taskmigo uses the current revision. With one, it selects the highest matching tagged revision. Exact versions, caret ranges such as `^1.2.0`, and tilde ranges such as `~1.2.0` are supported.
 
-`apiVersion` and revision IDs never appear in references. Within one `imports` field, `(kind, name)` may appear only once.
+A `ResourceReference` contains the target `kind` and `name`; its tag constraint is optional. `apiVersion` and revision IDs never appear in references. Within one `imports` field, `(kind, name)` may appear only once.
+
+| Part | Required | Meaning |
+| ---- | :------: | ------- |
+| `kind` | Yes | Target resource kind, such as `page` or `component`. |
+| `name` | Yes | Target resource name. Names are unique only within their kind. |
+| `tag-constraint` | No | Exact tag or supported range used to select a tagged revision. |
 
 ### Reference ability
 

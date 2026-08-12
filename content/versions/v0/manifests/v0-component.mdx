@@ -44,7 +44,7 @@ spec:
 <TypeTable
   type={{
     'spec.props': {
-      type: 'Record<string, PropDefinition>',
+      type: 'object',
       required: true,
       description: 'Contract that importing Pages use to supply values.',
     },
@@ -63,7 +63,7 @@ spec:
       required: false,
       description: 'Fallback used when an importing Page omits this prop.',
     },
-    'spec.template': { type: 'ComponentNode', required: true, description: 'Component tree rendered for every use.' },
+    'spec.template': { type: 'object', required: true, description: 'Component tree rendered for every use.' },
   }}
 />
 
@@ -73,7 +73,7 @@ Every node in `spec.template` must satisfy the selected component's contract.
 
 ## Use the Component in a Page
 
-Import the Component by resource identity, then use the same `component/<name>` reference as the node's `component` value. The node's `props` are validated against `spec.props`.
+Import the Component by resource identity, then use its name as the node's `component` value. The node's `props` are validated against `spec.props`.
 
 ```yaml
 apiVersion: v0
@@ -91,7 +91,7 @@ spec:
     description: Account overview
 
   body:
-    - component: component/header
+    - component: header
       props:
         title: Dashboard
         showDescription: false

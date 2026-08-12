@@ -46,7 +46,7 @@ spec:
       description: 'Short summary of this Page.',
     },
     'spec.body': {
-      type: 'ComponentNode[]',
+      type: 'object[]',
       required: true,
       description: 'Top-level component nodes rendered in source order.',
     },
@@ -68,7 +68,7 @@ children: []
 
 Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/ui-components/stack) for grouping content and [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
 
-A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manifests/v0-component) only when multiple places should share the same component tree. Use its `component/<name>` resource reference as the node's `component` value and pass values declared by the Component through `props`:
+A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manifests/v0-component) only when multiple places should share the same component tree. Use its name as a node's `component` value and pass values declared by the Component through `props`:
 
 ```yaml
 imports:
@@ -76,7 +76,7 @@ imports:
 
 spec:
   body:
-    - component: component/header
+    - component: header
       props:
         title: Hello World
 ```
