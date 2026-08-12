@@ -9,6 +9,8 @@ A `v0/component` packages a component tree once so any Page can import and rende
 
 A Component may import other Components. Every reusable Component used in `spec.template` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
 
+A Component's `metadata.name` must not match the name of a built-in [UI Component](/versions/v0/ui-components). Built-in names are reserved, so `Stack` and `Typography` are invalid Component names.
+
 ```yaml
 apiVersion: v0
 kind: component
