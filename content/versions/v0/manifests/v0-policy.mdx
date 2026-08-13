@@ -11,15 +11,16 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ## Purpose
 
-A Policy is a global manifest, like Translation: Taskmigo selects it for every Site snapshot rather than importing it from another manifest. A policy controls three points:
+A Policy is a global manifest, like Translation: Taskmigo selects it for every Site snapshot rather than importing it from another manifest. It has only two effects: `allow` and `deny`. The target gives that decision its meaning.
 
-| Point             | Effects          | Purpose                                                                  |
-| ----------------- | ---------------- | ------------------------------------------------------------------------ |
-| Incoming request  | `allow`, `deny`  | Decide whether a matching route may run.                                 |
-| Outgoing response | `deny`, `redact` | Block a response or remove fields from a JSON response.                  |
-| UI                | `show`, `hide`   | Control whether an application, page, or identified UI instance renders. |
+| Target      | `allow`                                 | `deny`                                          |
+| ----------- | --------------------------------------- | ----------------------------------------------- |
+| Request     | Let the matching Page or API route run. | Reject the request before its handler runs.     |
+| Data record | Permit a matching record to be read.    | Exclude matching records in the database query. |
+| Data field  | Permit a selected field to be returned. | Remove the field from the result.               |
+| UI          | Render a policy-managed target.         | Do not render the target.                       |
 
-UI policy is not a security boundary. A hidden UI target must still be protected by an incoming-request rule.
+UI policy is not a security boundary. A hidden UI target must still be protected by request and data rules.
 
 ## Example
 
@@ -29,43 +30,38 @@ name: customer-access
 
 spec:
   rules:
-    - id: allow-customer-read
+    - id: allow-finance-invoices
       effect: allow
       target:
         request:
           method: GET
-          path: /customers/**
-      when:
-        field: principal.roles
-        operator: contains
-        value: customer-reader
+          path: /invoices/**
+      when: 'principal.groups.contains("finance")'
 
-    - id: redact-customer-email
-      effect: redact
+    - id: allow-public-or-owned-projects
+      effect: allow
       target:
-        response:
-          request:
-            method: GET
-            path: /customers/**
-          contentType: application/json
-          fields:
-            - customers.*.email
-      when:
-        not:
-          field: principal.roles
-          operator: contains
-          value: customer-admin
+        data:
+          resource: project
+          operation: read
+      when: >-
+        resource.visibility == "public" ||
+        resource.ownerUsername == principal.username
 
-    - id: hide-admin
-      effect: hide
+    - id: deny-email-to-non-admins
+      effect: deny
+      target:
+        data:
+          resource: customer
+          fields: [email]
+      when: '!principal.roles.contains("admin")'
+
+    - id: deny-admin-application
+      effect: deny
       target:
         ui:
           application: admin
-      when:
-        not:
-          field: principal.roles
-          operator: contains
-          value: admin
+      when: '!principal.roles.contains("admin")'
 ```
 
 ## Fields
@@ -80,48 +76,43 @@ spec:
       description: 'Unique rule identifier for validation and audit diagnostics.',
     },
     'spec.rules[].effect': {
-      type: '"allow" | "deny" | "redact" | "show" | "hide"',
+      type: '"allow" | "deny"',
       required: true,
-      description: 'Decision this rule may produce; it must be valid for the target point.',
+      description: 'Access decision; the target determines whether it grants, rejects, filters, removes, or hides.',
     },
     'spec.rules[].target': {
       type: 'object',
       required: true,
-      description: 'Selects the routes or UI target governed by the rule.',
+      description: 'Selects the route, data resource or field, or UI target governed by the rule.',
     },
     'spec.rules[].when': {
-      type: 'object',
+      type: 'string',
       required: true,
-      description: 'Declarative condition that determines whether the rule matches.',
+      description: 'Predicate expression that determines whether the rule matches.',
     },
   }}
 />
 
-A request target specifies its route with `method` and `path`. A response target adds `contentType: application/json` and `fields`; each matching field is removed. A UI target identifies an `application`, `page`, or `componentId` (the value of `data-component-id`).
+A request target specifies its route with `method` and `path`. A data target identifies a `resource`, an `operation`, and optionally `fields`; a denied field is removed from the response. A UI target identifies an `application`, `page`, or `componentId` (the value of `data-component-id`).
 
 ## Conditions and database filtering
 
-Policy conditions are a declarative, portable DSL—not general-purpose Expressions and never raw SQL. This lets one rule have equivalent runtime and database evaluation.
+`when` is a compact predicate language—not a general-purpose Expression and never raw SQL. It supports `&&`, `||`, `!`, parentheses, comparisons, `in` / `not in`, literals, lists, and a fixed set of SQL-compilable functions such as `contains()` and `startsWith()`.
 
-A condition is one of:
+It may read `principal.username`, `principal.roles`, `principal.groups`, and phase-specific request, resource, or UI context. It cannot call arbitrary functions, run templates, perform I/O, or cause side effects. This lets the runtime give one rule equivalent application and database evaluation.
 
-- A comparison: `field`, `operator`, and `value`.
-- `all` or `any`: an array of nested conditions.
-- `not`: one nested condition.
+When a policy governs which records a caller may read, the runtime compiles its predicate to a parameterized SQL `WHERE` clause and applies it as part of the database query. It must not fetch candidate records and then filter them in application memory. A predicate that cannot be compiled for a data source makes the affected snapshot invalid; it never falls back to an unfiltered query.
 
-The initial operators are `eq`, `ne`, `in`, and `contains`. Conditions may read the authenticated `principal.username`, `principal.roles`, and `principal.groups`. A future data-resource contract may additionally expose logical record fields; it must map each supported field to its database representation.
-
-When a policy governs which records a caller may read, the runtime compiles its condition to a parameterized SQL `WHERE` predicate and applies it as part of the database query. It must not fetch candidate records and then filter them in application memory. A condition that cannot be compiled for a data source makes the affected snapshot invalid; it never falls back to an unfiltered query.
-
-The data-resource contract will define its field-to-database mapping separately. Policy owns the condition syntax and its security semantics, while a data source owns the physical schema.
+The data-resource contract defines the logical field-to-database mapping separately. A database column or computed field with a SQL translation may appear in a data predicate. A field computed only in the application layer may not decide record or field access; using it there makes the snapshot invalid. It may be used only in non-data phases where it cannot grant access to protected data.
 
 ## Evaluation
 
 The policy target decides which route types it applies to; Page and API routes use the same request matching contract.
 
-- `deny` takes precedence over `allow`; no matching request rule denies the request.
-- All matching `redact` rules remove their selected JSON fields. Without a response rule, an allowed response is unchanged.
-- `hide` takes precedence over `show`. UI is hidden by default only when its target is managed by UI policy.
+- `deny` takes precedence over `allow`.
+- Request and data-record access require a matching `allow`; otherwise access is denied.
+- A matching data-field `deny` removes the field. The runtime omits it from `SELECT` where possible and always removes it before JSON serialization.
+- UI remains visible unless a matching UI `deny` applies. A UI `allow` can make an explicitly policy-managed target render, but it never overrides a matching `deny`.
 - Rules are evaluated from the snapshot-pinned policy revisions, so an active request does not change behavior mid-execution.
 
 ## Global selection

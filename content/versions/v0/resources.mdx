@@ -63,16 +63,17 @@ A `ResourceReference` contains the target `kind` and `name`; its tag constraint 
 
 **Legend:** ✅ allowed · 🧪 RFC · ❌ not allowed
 
-| Importer      | `site` | `application` | `page` | `component` | `translation` | `workflow` |
-| ------------- | :----: | :-----------: | :----: | :---------: | :-----------: | :--------: |
-| `site`        |   ❌   |      ✅       |   ❌   |     ❌      |      ❌       |     ❌     |
-| `application` |   ❌   |      ❌       |   ✅   |     ❌      |      ❌       |     ❌     |
-| `page`        |   ❌   |      ❌       |   ✅   |     ✅      |      ❌       |     🧪     |
-| `component`   |   ❌   |      ❌       |   ❌   |     ✅      |      ❌       |     ❌     |
-| `translation` |   ❌   |      ❌       |   ❌   |     ❌      |      ❌       |     ❌     |
-| `workflow`    |   ❌   |      ❌       |   ❌   |     🧪      |      ❌       |     ❌     |
+| Importer      | `site` | `application` | `page` | `component` | `translation` | `workflow` | `policy` |
+| ------------- | :----: | :-----------: | :----: | :---------: | :-----------: | :--------: | :------: |
+| `site`        |   ❌   |      ✅       |   ❌   |     ❌      |      ❌       |     ❌     |    ❌    |
+| `application` |   ❌   |      ❌       |   ✅   |     ❌      |      ❌       |     ❌     |    ❌    |
+| `page`        |   ❌   |      ❌       |   ✅   |     ✅      |      ❌       |     🧪     |    ❌    |
+| `component`   |   ❌   |      ❌       |   ❌   |     ✅      |      ❌       |     ❌     |    ❌    |
+| `translation` |   ❌   |      ❌       |   ❌   |     ❌      |      ❌       |     ❌     |    ❌    |
+| `workflow`    |   ❌   |      ❌       |   ❌   |     🧪      |      ❌       |     ❌     |    ❌    |
+| `policy`      |   ❌   |      ❌       |   ❌   |     ❌      |      ❌       |     ❌     |    ❌    |
 
-Translation catalogs are selected by locale. Workflow relationships are part of the [Workflow RFC](/versions/v0/manifests/v0-workflow).
+Translation catalogs are selected by locale. Policies are selected globally for each Site snapshot and cannot be imported. Workflow relationships are part of the [Workflow RFC](/versions/v0/manifests/v0-workflow).
 
 ### Resolution
 
