@@ -3,11 +3,11 @@ title: Expressions
 description: Put dynamic text or values into fields that accept an Expression.
 ---
 
-Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the manifest: translated text, the current manifest identity, runtime values, or Workflow execution state.
+Use an Expression when a field needs a value that Taskmigo can resolve while it evaluates the manifest: translated text, the current manifest identity, runtime values, or Workflow execution state. The language follows Go [`text/template`](https://pkg.go.dev/text/template) syntax and semantics, restricted to the context values and functions documented for each field.
 
 ## Start here
 
-Write an Expression between `{{` and `}}`. Quote the complete YAML value.
+Write an Expression between `{{` and `}}`. Quote the complete YAML value. Taskmigo does not allow arbitrary Go code, custom functions, I/O, or side effects.
 
 ```yaml
 spec:

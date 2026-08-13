@@ -12,7 +12,7 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
-- Manuals serve product users, manifest developers, QC/QA, and product managers. Developer pages serve engineers building Taskmigo, from new team members to architects. Keep role-specific entry paths concise, then link them to one canonical contract. Structure reference pages as outcome, smallest useful example, contract, failure states, and next step.
+- Manuals serve product users, manifest developers, QC/QA, and product managers. `content/versions/v0/developer/index.mdx` is one cohesive engineering document for people building Taskmigo, from new team members to architects. It presents the canonical target system design and keeps package, class, function, database, transaction, and verification guidance together. Do not reference active PRs, branches, commits, or implementation history in that design. Structure reference pages as outcome, smallest useful example, contract, failure states, and next step.
 - The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/manuals/...`.
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.

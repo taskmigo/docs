@@ -1,12 +1,4 @@
 {
   "title": "Developer",
-  "pages": [
-    "index",
-    "architecture",
-    "resource-pipeline",
-    "policy-engine",
-    "workflow-engine",
-    "quality-strategy",
-    "documentation"
-  ]
+  "pages": ["index"]
 }

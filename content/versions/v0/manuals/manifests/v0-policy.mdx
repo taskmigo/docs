@@ -195,25 +195,27 @@ There is no implicit `and`. Boolean composition belongs in the YAML `and`, `or`,
 
 ## Available predicate functions
 
-Policy statements use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Request mode evaluates them against request context. Object mode compiles them to the equivalent parameterized database operation.
+Policy statements use the regular Go `text/template` `{{ ... }}` action syntax, but permit only the functions below. Request mode evaluates them against request context. Object mode compiles them to the equivalent parameterized PostgreSQL operation.
 
-| Function     | Arguments            | Object-mode database equivalent           |
-| ------------ | -------------------- | ----------------------------------------- |
-| `eq`         | `left right`         | `left = right`                            |
-| `ne`         | `left right`         | `left <> right`                           |
-| `lt`         | `left right`         | `left < right`                            |
-| `le`         | `left right`         | `left <= right`                           |
-| `gt`         | `left right`         | `left > right`                            |
-| `ge`         | `left right`         | `left >= right`                           |
-| `in`         | `value candidate...` | `value IN (candidate...)`                 |
-| `notIn`      | `value candidate...` | `value NOT IN (candidate...)`             |
-| `contains`   | `collection value`   | The collection contains the value.        |
-| `startsWith` | `value prefix`       | The value begins with the literal prefix. |
-| `endsWith`   | `value suffix`       | The value ends with the literal suffix.   |
-| `isNull`     | `value`              | `value IS NULL`                           |
-| `isNotNull`  | `value`              | `value IS NOT NULL`                       |
+| Function     | Arguments            | Object-mode PostgreSQL equivalent                              |
+| ------------ | -------------------- | -------------------------------------------------------------- | --- | ---------------------------- |
+| `eq`         | `left right`         | `left = :right`                                                |
+| `ne`         | `left right`         | `left <> :right`                                               |
+| `lt`         | `left right`         | `left < :right`                                                |
+| `le`         | `left right`         | `left <= :right`                                               |
+| `gt`         | `left right`         | `left > :right`                                                |
+| `ge`         | `left right`         | `left >= :right`                                               |
+| `in`         | `value candidate...` | `value = ANY(:candidates)`                                     |
+| `notIn`      | `value candidate...` | `value <> ALL(:candidates)`                                    |
+| `contains`   | `collection value`   | `value = ANY(:collection)` or the registered column equivalent |
+| `startsWith` | `value prefix`       | `value LIKE escape(:prefix)                                    |     | '%' ESCAPE '\\'`             |
+| `endsWith`   | `value suffix`       | `value LIKE '%'                                                |     | escape(:suffix) ESCAPE '\\'` |
+| `isNull`     | `value`              | `value IS NULL`                                                |
+| `isNotNull`  | `value`              | `value IS NOT NULL`                                            |
 
 Use `isNull` and `isNotNull` for null checks; `eq` and `ne` do not accept `null`. Adapters treat prefix and suffix arguments as literals, not wildcard patterns.
+
+Every dynamic operand becomes a bound parameter. The shown names are explanatory rather than literal SQL placeholders. `contains` may target a Principal/Request collection parameter or a Resource collection with a registered database mapping; snapshot validation rejects it when no equivalent exists.
 
 Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Taskmigo parses the Expression for the selected mode; object mode builds a parameterized predicate and never renders an Expression into raw SQL.
 
