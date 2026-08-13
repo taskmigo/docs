@@ -22,13 +22,13 @@ In this example:
 
 ## Choose what you need
 
-| I want to…                                           | Start with                                                                                   |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Show text from a translation catalog                 | [Translate a message](#translate-a-message)                                                  |
-| Change text for a count                              | [Translate a quantity](#translate-a-quantity)                                                |
-| Use runtime, manifest, Component, or Workflow values | [Use context values](#use-context-values)                                                    |
-| Format, compare, or transform a value                | [Use built-in functions](#use-built-in-functions)                                            |
-| Filter database records in a Policy                  | [Policy predicate functions](/versions/v0/manifests/v0-policy#available-predicate-functions) |
+| I want to…                                           | Start with                                                                                           |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Show text from a translation catalog                 | [Translate a message](#translate-a-message)                                                          |
+| Change text for a count                              | [Translate a quantity](#translate-a-quantity)                                                        |
+| Use runtime, manifest, Component, or Workflow values | [Use context values](#use-context-values)                                                            |
+| Format, compare, or transform a value                | [Use built-in functions](#use-built-in-functions)                                                    |
+| Filter database records in a Policy                  | [Policy predicate functions](/versions/v0/manuals/manifests/v0-policy#available-predicate-functions) |
 
 ## Translate a message
 
@@ -38,7 +38,7 @@ Use `Trans` with a catalog key. Additional values fill the message placeholders.
 description: '{{ Trans "applications.home.description" }}'
 ```
 
-For catalog structure, placeholders, fallbacks, and errors, see [Translation](/versions/v0/manifests/v0-translation#translate-a-message).
+For catalog structure, placeholders, fallbacks, and errors, see [Translation](/versions/v0/manuals/manifests/v0-translation#translate-a-message).
 
 ## Translate a quantity
 
@@ -48,7 +48,7 @@ Use `TransN` when the catalog message changes for a quantity.
 description: '{{ TransN "cart.items" 3 }}'
 ```
 
-The second argument is the count. Taskmigo selects the locale's plural form. See [Translation](/versions/v0/manifests/v0-translation#translate-a-quantity) for the complete rule.
+The second argument is the count. Taskmigo selects the locale's plural form. See [Translation](/versions/v0/manuals/manifests/v0-translation#translate-a-quantity) for the complete rule.
 
 ## Use context values
 
@@ -68,7 +68,7 @@ Context values are available only where the field contract exposes them.
 | `step.input`        | Current Workflow step     | Input resolved for the step currently being evaluated       |
 | `step.output`       | Workflow navigation       | Current step output used to choose the next navigation edge |
 
-Workflow Expressions read persisted execution state from the pinned Workflow revision and Site snapshot. See [Workflow](/versions/v0/manifests/v0-workflow#expressions-and-data-flow) for field-specific availability.
+Workflow Expressions read persisted execution state from the pinned Workflow revision and Site snapshot. See [Workflow](/versions/v0/manuals/manifests/v0-workflow#expressions-and-data-flow) for field-specific availability.
 
 ## Use built-in functions
 

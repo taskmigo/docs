@@ -9,7 +9,7 @@ A `v0/component` packages a component tree once so any Page can import and rende
 
 A Component may import other Components. Every reusable Component used in `spec.template` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
 
-A Component's `metadata.name` must not match the name of a built-in [UI Component](/versions/v0/ui-components). Built-in names are reserved, so `Stack` and `Typography` are invalid Component names.
+A Component's `metadata.name` must not match the name of a built-in [UI Component](/versions/v0/manuals/ui-components). Built-in names are reserved, so `Stack` and `Typography` are invalid Component names.
 
 ```yaml
 apiVersion: v0
@@ -67,14 +67,14 @@ spec:
     },
     'spec.template': {
       type: 'ComponentNode',
-      typeDescriptionLink: '/versions/v0/manifests/v0-page#component-nodes',
+      typeDescriptionLink: '/versions/v0/manuals/manifests/v0-page#component-nodes',
       required: true,
       description: 'Component tree rendered for every use, using the structure defined by Page component nodes.',
     },
   }}
 />
 
-Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in `spec.template` may use the full Taskmigo Expression syntax and access declared props through `props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
+Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in `spec.template` may use the full Taskmigo Expression syntax and access declared props through `props.<name>`. See [Expressions](/versions/v0/manuals/expressions#use-context-values) for syntax and context.
 
 Every node in `spec.template` must satisfy the selected component's contract.
 

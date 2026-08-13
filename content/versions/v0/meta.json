@@ -1,15 +1,5 @@
 {
   "title": "v0",
   "root": true,
-  "pages": [
-    "index",
-    "manifests",
-    "ui-components",
-    "expressions",
-    "resources",
-    "architecture",
-    "runtime",
-    "faq",
-    "status"
-  ]
+  "pages": ["index", "manuals", "developer"]
 }

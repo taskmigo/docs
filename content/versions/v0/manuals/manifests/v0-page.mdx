@@ -58,7 +58,7 @@ spec:
   }}
 />
 
-A Page does not define a route. Route ownership belongs to the importing [Application](/versions/v0/manifests/v0-application).
+A Page does not define a route. Route ownership belongs to the importing [Application](/versions/v0/manuals/manifests/v0-application).
 
 ## Component nodes
 
@@ -90,9 +90,9 @@ children: []
   }}
 />
 
-Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/ui-components/stack) for grouping content and [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
+Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/manuals/ui-components/stack) for grouping content and [Typography](/versions/v0/manuals/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
 
-A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manifests/v0-component) only when multiple places should share the same component tree. Use its name as a node's `component` value and pass values declared by the Component through `props`:
+A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manuals/manifests/v0-component) only when multiple places should share the same component tree. Use its name as a node's `component` value and pass values declared by the Component through `props`:
 
 ```yaml
 imports:
@@ -107,7 +107,7 @@ spec:
 
 Every reusable Component used in `spec.body` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports. Each node must satisfy the selected component's contract.
 
-A Page may also import [Workflow](/versions/v0/manifests/v0-workflow) resources that users can discover and start from that Page:
+A Page may also import [Workflow](/versions/v0/manuals/manifests/v0-workflow) resources that users can discover and start from that Page:
 
 ```yaml
 imports:
@@ -115,4 +115,4 @@ imports:
   - workflow/employee-onboarding
 ```
 
-Importing a Workflow exposes it to Page runtime UI but does not itself grant permission to execute it. Pages do not embed Workflow steps in `spec.body`; interactive Workflow steps reuse Components imported by the Workflow itself. See [Reference ability](/versions/v0/resources#reference-ability) for the complete import matrix.
+Importing a Workflow exposes it to Page runtime UI but does not itself grant permission to execute it. Pages do not embed Workflow steps in `spec.body`; interactive Workflow steps reuse Components imported by the Workflow itself. See [Reference ability](/versions/v0/manuals/resources#reference-ability) for the complete import matrix.

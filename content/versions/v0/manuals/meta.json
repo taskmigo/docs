@@ -1,0 +1,14 @@
+{
+  "title": "Manuals",
+  "pages": [
+    "index",
+    "manifests",
+    "ui-components",
+    "expressions",
+    "resources",
+    "architecture",
+    "runtime",
+    "faq",
+    "status"
+  ]
+}

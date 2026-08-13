@@ -1,0 +1,28 @@
+---
+title: Documentation development
+description: Run and verify the Taskmigo documentation site locally.
+---
+
+## Local setup
+
+Use a supported Node.js environment and install the locked dependencies from the repository root:
+
+```bash
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`. Product manuals live under `content/versions/v0/manuals/`; developer documentation lives under `content/versions/v0/developer/`. Update the nearest `meta.json` whenever a page is added, removed, or reordered.
+
+## Verification
+
+Run every gate in order before committing or publishing:
+
+```bash
+npm run lint:check
+npm run format:check
+npm run types:check
+npm run build
+```
+
+Fix a failed gate and restart the sequence from `npm run lint:check`. Use `npm run lint:fix` and `npm run format:fix` for supported automatic fixes, then review the resulting changes before rerunning the checks.

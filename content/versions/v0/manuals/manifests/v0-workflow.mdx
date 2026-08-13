@@ -6,7 +6,7 @@ description: Define durable workflows with actions, UI steps, navigation, and fa
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 <Callout title='RFC: not a supported manifest contract' type='warn'>
-  This contract may change before adoption. Check [Product status](/versions/v0/status) before relying on it.
+  This contract may change before adoption. Check [Product status](/versions/v0/manuals/status) before relying on it.
 </Callout>
 
 A Workflow is a durable execution graph. It can run built-in actions, wait for user interaction, and choose the next step from persisted data.
@@ -214,7 +214,7 @@ Entering the step terminates the execution as `FAILED`.
 
 ## Expressions and data flow
 
-Workflow fields marked as Expression-capable use [Expressions](/versions/v0/expressions) with these additional values:
+Workflow fields marked as Expression-capable use [Expressions](/versions/v0/manuals/expressions) with these additional values:
 
 | Value               | Meaning                                            |
 | ------------------- | -------------------------------------------------- |
@@ -254,7 +254,7 @@ flowchart TD
 
 ## Execution and revision pinning
 
-Starting an execution pins its Site snapshot, Workflow revision, and imported dependencies. Later changes affect new executions only. See [Runtime lifecycle](/versions/v0/runtime#workflow-execution).
+Starting an execution pins its Site snapshot, Workflow revision, and imported dependencies. Later changes affect new executions only. See [Runtime lifecycle](/versions/v0/manuals/runtime#workflow-execution).
 
 ## Page integration
 
@@ -264,7 +264,7 @@ imports:
   - workflow/access-review@1.0.0
 ```
 
-A Page imports Workflows that its users may discover and start. Workflow-to-Workflow imports are not supported. See [Reference ability](/versions/v0/resources#reference-ability).
+A Page imports Workflows that its users may discover and start. Workflow-to-Workflow imports are not supported. See [Reference ability](/versions/v0/manuals/resources#reference-ability).
 
 ## Validation
 
