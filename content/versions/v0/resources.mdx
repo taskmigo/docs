@@ -16,14 +16,14 @@ spec:
   # kind-specific configuration
 ```
 
-| Field           | Rule                                                          |
-| --------------- | ------------------------------------------------------------- |
-| `apiVersion`    | Contract version for this revision.                           |
-| `kind`          | Resource kind.                                                |
-| `metadata`      | Resource metadata.                                            |
-| `metadata.name` | Resource name matching `[a-zA-Z0-9_-]+`.                      |
+| Field           | Rule                                                                       |
+| --------------- | -------------------------------------------------------------------------- |
+| `apiVersion`    | Contract version for this revision.                                        |
+| `kind`          | Resource kind.                                                             |
+| `metadata`      | Resource metadata.                                                         |
+| `metadata.name` | Resource name matching `[a-zA-Z0-9_-]+`.                                   |
 | `imports`       | `ResourceReference[]`; allowed dependencies, each identity appearing once. |
-| `spec`          | Kind-specific configuration.                                  |
+| `spec`          | Kind-specific configuration.                                               |
 
 ## Identity and revisions
 
@@ -53,11 +53,11 @@ Without a constraint, Taskmigo uses the current revision. With one, it selects t
 
 A `ResourceReference` contains the target `kind` and `name`; its tag constraint is optional. `apiVersion` and revision IDs never appear in references. Within one `imports` field, `(kind, name)` may appear only once.
 
-| Part | Required | Meaning |
-| ---- | :------: | ------- |
-| `kind` | Yes | Target resource kind, such as `page` or `component`. |
-| `name` | Yes | Target resource name. Names are unique only within their kind. |
-| `tag-constraint` | No | Exact tag or supported range used to select a tagged revision. |
+| Part             | Required | Meaning                                                        |
+| ---------------- | :------: | -------------------------------------------------------------- |
+| `kind`           |   Yes    | Target resource kind, such as `page` or `component`.           |
+| `name`           |   Yes    | Target resource name. Names are unique only within their kind. |
+| `tag-constraint` |    No    | Exact tag or supported range used to select a tagged revision. |
 
 ### Reference ability
 

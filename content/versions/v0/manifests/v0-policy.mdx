@@ -1,9 +1,11 @@
 ---
 title: Policy
-description: RFC: define global access-control rules for requests, responses, and UI.
+description: 'RFC: define global access-control rules for requests, responses, and UI.'
 ---
 
-<Callout title="RFC — not implemented" type="warning">
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+<Callout title='RFC — not implemented' type='warning'>
   This page proposes the Policy contract. It is not available in the current runtime.
 </Callout>
 
@@ -11,11 +13,11 @@ description: RFC: define global access-control rules for requests, responses, an
 
 A Policy is a global manifest, like Translation: Taskmigo selects it for every Site snapshot rather than importing it from another manifest. A policy controls three points:
 
-| Point | Effects | Purpose |
-| --- | --- | --- |
-| Incoming request | `allow`, `deny` | Decide whether a matching route may run. |
-| Outgoing response | `deny`, `redact` | Block a response or remove fields from a JSON response. |
-| UI | `show`, `hide` | Control whether an application, page, or identified UI instance renders. |
+| Point             | Effects          | Purpose                                                                  |
+| ----------------- | ---------------- | ------------------------------------------------------------------------ |
+| Incoming request  | `allow`, `deny`  | Decide whether a matching route may run.                                 |
+| Outgoing response | `deny`, `redact` | Block a response or remove fields from a JSON response.                  |
+| UI                | `show`, `hide`   | Control whether an application, page, or identified UI instance renders. |
 
 UI policy is not a security boundary. A hidden UI target must still be protected by an incoming-request rule.
 
@@ -70,12 +72,28 @@ spec:
 
 <TypeTable
   type={{
-    kind: { type: '"v0/policy"', required: true, description: "Selects the global policy contract." },
-    "spec.rules": { type: "object[]", required: true, description: "Rules evaluated for every Site snapshot." },
-    "spec.rules[].id": { type: "string", required: true, description: "Unique rule identifier for validation and audit diagnostics." },
-    "spec.rules[].effect": { type: '"allow" | "deny" | "redact" | "show" | "hide"', required: true, description: "Decision this rule may produce; it must be valid for the target point." },
-    "spec.rules[].target": { type: "object", required: true, description: "Selects the routes or UI target governed by the rule." },
-    "spec.rules[].when": { type: "object", required: true, description: "Declarative condition that determines whether the rule matches." },
+    kind: { type: '"v0/policy"', required: true, description: 'Selects the global policy contract.' },
+    'spec.rules': { type: 'object[]', required: true, description: 'Rules evaluated for every Site snapshot.' },
+    'spec.rules[].id': {
+      type: 'string',
+      required: true,
+      description: 'Unique rule identifier for validation and audit diagnostics.',
+    },
+    'spec.rules[].effect': {
+      type: '"allow" | "deny" | "redact" | "show" | "hide"',
+      required: true,
+      description: 'Decision this rule may produce; it must be valid for the target point.',
+    },
+    'spec.rules[].target': {
+      type: 'object',
+      required: true,
+      description: 'Selects the routes or UI target governed by the rule.',
+    },
+    'spec.rules[].when': {
+      type: 'object',
+      required: true,
+      description: 'Declarative condition that determines whether the rule matches.',
+    },
   }}
 />
 
