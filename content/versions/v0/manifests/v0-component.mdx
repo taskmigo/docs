@@ -47,6 +47,7 @@ spec:
   type={{
     'spec.props': {
       type: 'Dictionary<PropDefinition>',
+      typeDescriptionLink: '#prop-definitions',
       required: true,
       description: 'Contract that importing Pages use to supply values.',
     },
@@ -67,11 +68,14 @@ spec:
     },
     'spec.template': {
       type: 'ComponentNode',
+      typeDescriptionLink: '/versions/v0/manifests/v0-page#component-nodes',
       required: true,
       description: 'Component tree rendered for every use, using the structure defined by Page component nodes.',
     },
   }}
 />
+
+### Prop definitions
 
 `Dictionary<PropDefinition>` means each user-defined prop name maps to a definition containing `type`, `required`, and optional `default` fields listed above.
 

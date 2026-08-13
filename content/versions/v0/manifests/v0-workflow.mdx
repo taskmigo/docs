@@ -67,7 +67,7 @@ spec:
 <TypeTable
   type={{
     'spec.meta': {
-      type: '{ title: string; description: string }',
+      type: 'object',
       required: true,
       description: 'Groups the information used to present the Workflow.',
     },
@@ -83,14 +83,92 @@ spec:
     },
     'spec.inputs': {
       type: 'Dictionary<InputDefinition>',
+      typeDescriptionLink: '#input-definitions',
       required: false,
       description: 'Values accepted when an execution starts.',
+    },
+    'InputDefinition.type': {
+      type: '"string" | "number" | "boolean"',
+      required: true,
+      description: 'Constrains values accepted for this input.',
+    },
+    'InputDefinition.required': {
+      type: 'boolean',
+      required: true,
+      description: 'Controls whether callers may omit the input.',
+    },
+    'InputDefinition.default': {
+      type: 'string | number | boolean',
+      description: 'Supplies a value when an optional input is omitted.',
     },
     'spec.start': { type: 'string', required: true, description: 'Identifies the first step to schedule.' },
     'spec.steps': {
       type: 'Dictionary<StepDefinition>',
+      typeDescriptionLink: '#step-kinds',
       required: true,
       description: 'Defines executable steps by stable identifier.',
+    },
+    'StepDefinition.action': {
+      type: 'string',
+      description: 'Selects one Action Registry entry; mutually exclusive with `ui` and `fail`.',
+    },
+    'StepDefinition.input': {
+      type: 'Dictionary<unknown>',
+      description: 'Supplies named values validated by the selected Action contract.',
+    },
+    'StepDefinition.timeout': {
+      type: 'duration',
+      description: 'Limits one Action attempt.',
+    },
+    'StepDefinition.retry': {
+      type: 'object',
+      description: 'Configures retry behavior for an Action step.',
+    },
+    'StepDefinition.retry.attempts': {
+      type: 'integer',
+      description: 'Limits the total number of Action attempts.',
+    },
+    'StepDefinition.retry.delay': {
+      type: 'duration',
+      description: 'Waits this long between Action attempts.',
+    },
+    'StepDefinition.continueOnError': {
+      type: 'boolean',
+      description: 'Continues to navigation after Action attempts are exhausted.',
+    },
+    'StepDefinition.ui': {
+      type: 'object',
+      description:
+        'Waits for interaction rendered by an imported Component; mutually exclusive with `action` and `fail`.',
+    },
+    'StepDefinition.ui.component': {
+      type: 'string',
+      description: 'Selects an imported Component by name.',
+    },
+    'StepDefinition.ui.props': {
+      type: 'Dictionary<unknown>',
+      description: 'Supplies named values validated by the selected Component contract.',
+    },
+    'StepDefinition.fail': {
+      type: 'object',
+      description: 'Terminates execution as failed; mutually exclusive with `action` and `ui`.',
+    },
+    'StepDefinition.fail.message': {
+      type: 'string',
+      description: 'Records the failure message.',
+    },
+    'StepDefinition.navigation': {
+      type: 'object[]',
+      description: 'Tests routes in order and selects the first matching destination.',
+    },
+    'StepDefinition.navigation[].when': {
+      type: <FieldType supportsExpression={true}>boolean</FieldType>,
+      description: 'Controls whether this navigation route matches; omission defines a fallback.',
+    },
+    'StepDefinition.navigation[].goto': {
+      type: 'string',
+      required: true,
+      description: 'Selects the next stable step identifier.',
     },
   }}
 />
@@ -98,22 +176,6 @@ spec:
 `Dictionary<InputDefinition>` means each user-defined input name maps to the `type`, `required`, and optional `default` fields below. `Dictionary<StepDefinition>` means each stable step identifier maps to exactly one Action, Interactive UI, or Fail structure documented under [Step kinds](#step-kinds).
 
 ### Input definitions
-
-<TypeTable
-  type={{
-    type: {
-      type: '"string" | "number" | "boolean"',
-      required: true,
-      description: 'Constrains values accepted for this input.',
-    },
-    required: { type: 'boolean', required: true, description: 'Controls whether callers may omit the input.' },
-    default: {
-      type: 'string | number | boolean',
-      required: false,
-      description: 'Supplies a value when an optional input is omitted.',
-    },
-  }}
-/>
 
 ## Step kinds
 
