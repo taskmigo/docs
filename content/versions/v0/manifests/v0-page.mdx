@@ -55,20 +55,6 @@ spec:
       required: true,
       description: 'Top-level component nodes rendered in source order.',
     },
-    'ComponentNode.component': {
-      type: 'string',
-      required: true,
-      description: 'Selects a built-in or imported reusable Component by its case-sensitive name.',
-    },
-    'ComponentNode.props': {
-      type: 'Dictionary<unknown>',
-      description: 'Supplies named values validated by the selected component contract.',
-    },
-    'ComponentNode.children': {
-      type: <FieldType supportsExpression={true}>ReactNode</FieldType>,
-      typeDescriptionLink: '#component-nodes',
-      description: 'Supplies content accepted by the selected component contract.',
-    },
   }}
 />
 
@@ -84,6 +70,25 @@ props:
   data-component-id: example
 children: []
 ```
+
+<TypeTable
+  type={{
+    component: {
+      type: 'string',
+      required: true,
+      description: 'Selects a built-in or imported reusable Component by its case-sensitive name.',
+    },
+    props: {
+      type: 'Dictionary<unknown>',
+      description: 'Supplies named values validated by the selected component contract.',
+    },
+    children: {
+      type: <FieldType supportsExpression={true}>ReactNode</FieldType>,
+      typeDescriptionLink: '#component-nodes',
+      description: 'Supplies content accepted by the selected component contract.',
+    },
+  }}
+/>
 
 `Dictionary<unknown>` means the generic node shape does not prescribe the dictionary values. The selected component contract still validates every key and value.
 

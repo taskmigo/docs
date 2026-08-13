@@ -100,82 +100,15 @@ The generated database syntax may differ by adapter, but its result must be equi
     },
     'spec.target': {
       type: 'object',
+      typeDescriptionLink: '#target-fields',
       required: true,
       description: 'Selects one request, data, or UI scope governed by the policy.',
-    },
-    'spec.target.request': {
-      type: 'object',
-      description: 'Selects a Page or API route; mutually exclusive with `data` and `ui`.',
-    },
-    'spec.target.request.method': {
-      type: '"GET" | "POST" | "PUT" | "PATCH" | "DELETE"',
-      required: true,
-      description: 'Matches the incoming request method when `request` is selected.',
-    },
-    'spec.target.request.path': {
-      type: 'string',
-      required: true,
-      description: 'Matches an absolute Page or API path pattern when `request` is selected.',
-    },
-    'spec.target.data': {
-      type: 'object',
-      description: 'Selects records or fields; mutually exclusive with `request` and `ui`.',
-    },
-    'spec.target.data.resource': {
-      type: 'string',
-      required: true,
-      description: 'Selects the logical data resource when `data` is selected.',
-    },
-    'spec.target.data.operation': {
-      type: '"read"',
-      required: true,
-      description: 'Applies the data policy while records are read.',
-    },
-    'spec.target.data.fields': {
-      type: 'string[]',
-      description: 'Limits the decision to these logical fields; omission governs whole records.',
-    },
-    'spec.target.ui': {
-      type: 'object',
-      description: 'Selects one UI element; mutually exclusive with `request` and `data`.',
-    },
-    'spec.target.ui.application': {
-      type: 'string',
-      description: 'Selects one Application by name when `ui` is selected.',
-    },
-    'spec.target.ui.page': {
-      type: 'string',
-      description: 'Selects one Page by name when `ui` is selected.',
-    },
-    'spec.target.ui.componentId': {
-      type: 'string',
-      description: 'Selects one rendered component instance by its `data-component-id`.',
     },
     'spec.where': {
       type: 'PolicyCondition',
       typeDescriptionLink: '#boolean-conditions',
       required: true,
       description: 'Combines database-capable predicate Expressions with explicit boolean groups.',
-    },
-    'PolicyCondition.Expression': {
-      type: 'string',
-      typeDescriptionLink: '#available-predicate-functions',
-      description: 'Calls one available policy predicate function.',
-    },
-    'PolicyCondition.and': {
-      type: 'PolicyCondition[]',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Matches only when every child condition matches.',
-    },
-    'PolicyCondition.or': {
-      type: 'PolicyCondition[]',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Matches when at least one child condition matches.',
-    },
-    'PolicyCondition.not': {
-      type: 'PolicyCondition',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Negates one child condition or boolean group.',
     },
   }}
 />
@@ -186,11 +119,75 @@ One manifest has no `rules` collection or rule `id`. `metadata.name` is the poli
 
 Declare exactly one of `request`, `data`, or `ui` under `spec.target`.
 
+<TypeTable
+  type={{
+    request: {
+      type: 'object',
+      description: 'Selects a Page or API route; mutually exclusive with `data` and `ui`.',
+    },
+    'request.method': {
+      type: '"GET" | "POST" | "PUT" | "PATCH" | "DELETE"',
+      required: true,
+      description: 'Matches the incoming request method.',
+    },
+    'request.path': {
+      type: 'string',
+      required: true,
+      description: 'Matches an absolute Page or API path pattern.',
+    },
+    data: {
+      type: 'object',
+      description: 'Selects records or fields; mutually exclusive with `request` and `ui`.',
+    },
+    'data.resource': { type: 'string', required: true, description: 'Selects the logical data resource.' },
+    'data.operation': { type: '"read"', required: true, description: 'Applies while records are read.' },
+    'data.fields': {
+      type: 'string[]',
+      description: 'Limits the decision to these logical fields; omission governs whole records.',
+    },
+    ui: {
+      type: 'object',
+      description: 'Selects one UI element; mutually exclusive with `request` and `data`.',
+    },
+    'ui.application': { type: 'string', description: 'Selects one Application by name.' },
+    'ui.page': { type: 'string', description: 'Selects one Page by name.' },
+    'ui.componentId': {
+      type: 'string',
+      description: 'Selects one rendered component instance by its `data-component-id`.',
+    },
+  }}
+/>
+
 A UI target declares exactly one of `application`, `page`, or `componentId`.
 
 ## Boolean conditions
 
 A `PolicyCondition` is exactly one of the following structures. This definition is recursive: each child may be another boolean group or a predicate Expression.
+
+<TypeTable
+  type={{
+    Expression: {
+      type: 'string',
+      typeDescriptionLink: '#available-predicate-functions',
+      description: 'Calls one available policy predicate function.',
+    },
+    and: {
+      type: 'PolicyCondition[]',
+      typeDescriptionLink: '#boolean-conditions',
+      description: 'Matches only when every child condition matches.',
+    },
+    or: {
+      type: 'PolicyCondition[]',
+      typeDescriptionLink: '#boolean-conditions',
+      description: 'Matches when at least one child condition matches.',
+    },
+    not: {
+      type: 'PolicyCondition',
+      typeDescriptionLink: '#boolean-conditions',
+      description: 'Negates one child condition or boolean group.',
+    },
+  }}
+/>
 
 There is no implicit `and`. Use `and`, `or`, and `not` so the YAML structure always exposes the complete boolean logic.
 

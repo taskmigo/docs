@@ -47,9 +47,9 @@ spec:
   type={{
     'spec.props': {
       type: 'Dictionary<PropDefinition>',
-      typeDescriptionLink: '#prop-definitions',
+      typeDescriptionLink: '#fields',
       required: true,
-      description: 'Contract that importing Pages use to supply values.',
+      description: 'Maps each user-defined prop name to the definition fields listed below.',
     },
     'spec.props.*.type': {
       type: '"string" | "number" | "boolean" | "array"',
@@ -74,10 +74,6 @@ spec:
     },
   }}
 />
-
-### Prop definitions
-
-`Dictionary<PropDefinition>` means each user-defined prop name maps to a definition containing `type`, `required`, and optional `default` fields listed above.
 
 Prop names are case-sensitive. A `default` value must match its declared `type`. An `array` may contain strings, numbers, and booleans; nested arrays and objects are not supported. Values in `spec.template` may use the full Taskmigo Expression syntax and access declared props through `props.<name>`. See [Expressions](/versions/v0/expressions#use-context-values) for syntax and context.
 

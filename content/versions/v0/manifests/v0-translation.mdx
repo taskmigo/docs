@@ -42,16 +42,12 @@ Translation resources are selected by locale and are not imported. See [Referenc
     },
     'spec.content': {
       type: 'Dictionary<string | TranslationDictionary>',
-      typeDescriptionLink: '#translation-dictionary',
+      typeDescriptionLink: '#fields',
       required: true,
-      description: 'Provides messages through non-empty dotted lookup keys.',
+      description: 'Maps each user-defined key to a message string or another dictionary of the same shape.',
     },
   }}
 />
-
-### Translation dictionary
-
-`TranslationDictionary` is the same recursive dictionary type as `spec.content`: each user-defined key maps to either a message string or another Translation dictionary.
 
 Resources with the same normalized locale merge into one effective catalog. Nested keys form dotted lookup paths.
 
