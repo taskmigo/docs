@@ -1,0 +1,49 @@
+---
+title: Quality strategy
+description: Verify public contracts and architecture invariants at the right test layer.
+---
+
+Organize tests by decision boundary. A large end-to-end suite cannot replace deterministic unit and contract tests for resolution, compilation, and security behavior.
+
+## Test layers
+
+| Layer             | Primary subject                                                                       | Required evidence                                                       |
+| ----------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Unit              | Parsers, reference selection, graph traversal, validators, predicate AST, navigation. | Boundary cases and deterministic outputs.                               |
+| Contract          | Each `apiVersion`/`kind`, Action contract, database adapter capability.               | Shared fixtures accepted/rejected consistently by every implementation. |
+| Integration       | PostgreSQL persistence, transactions, activation, query filtering, worker claims.     | Atomicity, isolation, parameter binding, and restart behavior.          |
+| End to end        | Authoring change through active Site, API, or Workflow outcome.                       | Critical user journeys and observable diagnostics.                      |
+| Failure injection | Process crash, transaction conflict, queue redelivery, unavailable dependency.        | No partial activation, duplicate transition, or security fallback.      |
+
+## Invariant matrix
+
+| Invariant                                 | Minimum test                                                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| One operation observes one snapshot.      | Activate a newer snapshot during an in-flight request and prove the request retains the original reference. |
+| Invalid candidate preserves availability. | Introduce a graph error and prove the active snapshot ID and served behavior do not change.                 |
+| Resolution is deterministic.              | Shuffle storage/query ordering and assert identical selected revisions and diagnostics.                     |
+| Activation is atomic.                     | Fail immediately before and after the active-reference update and inspect visible state.                    |
+| Policy is fail-closed.                    | Inject adapter/compiler errors and prove no query executes without the predicate.                           |
+| Workflow transition is recoverable.       | Crash at each persistence/scheduling boundary and resume without double advancement.                        |
+
+## Fixture design
+
+Keep fixtures small and explicit: identity, revision, tag, source location, imports, expected normalized result, and expected diagnostics. Reuse the same contract fixtures in validators, APIs, package import, and recovery paths to prevent semantic drift.
+
+For graph tests, vary cycles, diamond dependencies, missing nodes, tag ranges, duplicate identities, and disallowed edges. For Expressions, test syntax, function availability, context availability, result types, and sensitive-value diagnostics independently.
+
+## Compatibility and migration
+
+Adding a new `apiVersion` must not change validation or runtime interpretation of historical revisions. Run old-version contract fixtures against every release. Any snapshot artifact format change needs either backward-readable artifacts or an explicit rebuild procedure that preserves the active snapshot until replacement succeeds.
+
+## Review checklist
+
+Before merging a contract-affecting change:
+
+1. Update the canonical Manual and Product status.
+2. Add positive, boundary, and failure fixtures.
+3. Identify affected snapshot cache keys and invalidation events.
+4. Check authorization, data exposure, and fail-closed behavior.
+5. Verify diagnostics do not disclose sensitive values.
+6. Test recovery from the last durable boundary.
+7. Run repository-specific lint, format, type, test, and build gates.

@@ -1,14 +1,49 @@
 ---
 title: Developer
-description: Develop and contribute to Taskmigo.
+description: Engineering architecture and contribution guidance for Taskmigo developers.
 ---
 
-Developer documentation is separate from the product manuals so implementation and contribution workflows do not interrupt the product learning path.
+This section is for engineers building Taskmigo: new team members learning the system, contributors implementing a bounded change, and architects reviewing cross-cutting behavior.
+
+<Callout title='Contract and implementation status' type='info'>
+  Manuals define the public product contract. Developer pages translate that contract into engineering boundaries and
+  required invariants. Policy and Workflow remain RFCs; implementation recommendations and open decisions are labeled
+  explicitly.
+</Callout>
 
 <Cards>
   <Card
+    title='New team member'
+    href='/versions/v0/developer/architecture'
+    description='Start with system boundaries, data ownership, and the runtime model.'
+  />
+  <Card
+    title='Resource and runtime work'
+    href='/versions/v0/developer/resource-pipeline'
+    description='Trace a change through resolution, validation, compilation, and activation.'
+  />
+  <Card
+    title='Security work'
+    href='/versions/v0/developer/policy-engine'
+    description='Implement request authorization and database-backed object filtering safely.'
+  />
+  <Card
+    title='Workflow work'
+    href='/versions/v0/developer/workflow-engine'
+    description='Understand execution state, persistence boundaries, retries, and revision pinning.'
+  />
+  <Card
+    title='Quality engineering'
+    href='/versions/v0/developer/quality-strategy'
+    description='Map invariants to unit, contract, integration, and failure-injection tests.'
+  />
+  <Card
     title='Documentation development'
     href='/versions/v0/developer/documentation'
-    description='Run, edit, verify, and publish the documentation site.'
+    description='Run, edit, verify, and publish this documentation site.'
   />
 </Cards>
+
+## Reading rule
+
+When a Developer page conflicts with a Manual, the Manual is the public contract. Resolve the mismatch in the same change instead of allowing implementation documentation to become a second contract.

@@ -5,14 +5,14 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 ## Source of truth
 
 - Use the content on the current branch under `content/versions/v0/manuals/` as the product contract. The deployed site and generated `llms.txt` routes may lag behind unpublished changes.
-- Read the pages relevant to the task. For cross-cutting changes, also review `resources.mdx`, `runtime.mdx`, `architecture.mdx`, `status.mdx`, `faq.mdx`, and the affected files under `manifests/`.
+- Read the pages relevant to the task. For cross-cutting changes, also review `manuals/resources.mdx`, `manuals/runtime.mdx`, `manuals/status.mdx`, the affected files under `manuals/manifests/`, and the implementation consequences under `developer/`.
 - Do not invent behavior, infer current behavior from planned work, or present an RFC as supported behavior. Ask for clarification when the contract is ambiguous or contradictory.
 - Keep product-specific rules in the documentation, not in this file, so there is only one maintained source of truth.
 
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
-- Write for product users completing a task and developers implementing or integrating the contract. Structure the reading path as outcome, smallest useful example, contract, failure states, and next step.
+- Manuals serve product users, manifest developers, QC/QA, and product managers. Developer pages serve engineers building Taskmigo, from new team members to architects. Keep role-specific entry paths concise, then link them to one canonical contract. Structure reference pages as outcome, smallest useful example, contract, failure states, and next step.
 - The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/manuals/...`.
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.

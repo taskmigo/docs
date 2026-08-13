@@ -1,48 +1,22 @@
 ---
 title: Product status
-description: See which contracts are usable, proposed, or unresolved.
+description: Distinguish defined contracts, RFCs, planned work, and open decisions.
 ---
 
-## Defined
+| Status  | Capability                                                   | Contract scope                                                        |
+| ------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Defined | [Resource model](/versions/v0/manuals/resources)             | Identity, revisions, tags, references, and snapshots.                 |
+| Defined | [Expressions](/versions/v0/manuals/expressions)              | Dynamic values, functions, and context data.                          |
+| Defined | [Site](/versions/v0/manuals/manifests/v0-site)               | Applications and shared branding.                                     |
+| Defined | [Application](/versions/v0/manuals/manifests/v0-application) | Paths and Page routes.                                                |
+| Defined | [Page](/versions/v0/manuals/manifests/v0-page)               | Declarative UI trees.                                                 |
+| Defined | [Component](/versions/v0/manuals/manifests/v0-component)     | Typed reusable UI templates.                                          |
+| Defined | [Translation](/versions/v0/manuals/manifests/v0-translation) | Locale catalogs and pluralization.                                    |
+| RFC     | [Workflow](/versions/v0/manuals/manifests/v0-workflow)       | Actions, UI steps, navigation, and durable execution.                 |
+| RFC     | [Policy](/versions/v0/manuals/manifests/v0-policy)           | Role-attached API authorization and database-backed object filtering. |
+| Planned | `entity`, `query`, `action`, `theme`, `navigation`           | No public contract yet.                                               |
 
-<Cards>
-  <Card href='/versions/v0/manuals/resources' title='Resource model'>
-    Identity, revisions, tags, references, and snapshots.
-  </Card>
-  <Card href='/versions/v0/manuals/expressions' title='Expressions'>
-    Dynamic values, functions, and context data.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-site' title='Site'>
-    Applications and shared branding.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-application' title='Application'>
-    Paths and Page routes.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-page' title='Page'>
-    Declarative UI trees.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-component' title='Component'>
-    Typed reusable UI templates.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-translation' title='Translation'>
-    Locale catalogs and pluralization.
-  </Card>
-</Cards>
-
-## RFC
-
-<Cards>
-  <Card href='/versions/v0/manuals/manifests/v0-workflow' title='Workflow'>
-    Proposed actions, UI steps, navigation, and durable execution.
-  </Card>
-  <Card href='/versions/v0/manuals/manifests/v0-policy' title='Policy'>
-    Proposed API authorization and database-backed response filtering through Role-attached Policies.
-  </Card>
-</Cards>
-
-## Planned
-
-`entity`, `query`, `action`, `theme`, and `navigation`.
+“Defined” means the documentation defines the intended public contract; it does not independently guarantee that every contract is implemented. RFC capabilities are explicitly unavailable in the current runtime.
 
 ## Known limitations and open decisions
 
