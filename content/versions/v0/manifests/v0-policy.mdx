@@ -31,6 +31,7 @@ name: customer-access
 spec:
   rules:
     - id: allow-finance-invoices
+      name: Allow finance invoice access
       effect: allow
       target:
         request:
@@ -39,6 +40,7 @@ spec:
       when: 'principal.groups.contains("finance")'
 
     - id: allow-public-or-owned-projects
+      name: Allow public or owned projects
       effect: allow
       target:
         data:
@@ -49,6 +51,7 @@ spec:
         resource.ownerUsername == principal.username
 
     - id: deny-email-to-non-admins
+      name: Hide customer email from non-admins
       effect: deny
       target:
         data:
@@ -57,6 +60,7 @@ spec:
       when: '!principal.roles.contains("admin")'
 
     - id: deny-admin-application
+      name: Hide the admin application
       effect: deny
       target:
         ui:
@@ -73,7 +77,13 @@ spec:
     'spec.rules[].id': {
       type: 'string',
       required: true,
-      description: 'Unique rule identifier for validation and audit diagnostics.',
+      description:
+        'Unique rule key matching `[a-zA-Z0-9_-]+`; use it for validation, audit diagnostics, and stable references.',
+    },
+    'spec.rules[].name': {
+      type: 'string',
+      required: true,
+      description: 'Human-readable rule name shown in policy management and audit views.',
     },
     'spec.rules[].effect': {
       type: '"allow" | "deny"',
