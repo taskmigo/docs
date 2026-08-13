@@ -66,7 +66,11 @@ spec:
 
 <TypeTable
   type={{
-    'spec.meta': { type: 'object', required: true, description: 'Information used to present the Workflow.' },
+    'spec.meta': {
+      type: '{ title: string; description: string }',
+      required: true,
+      description: 'Groups the information used to present the Workflow.',
+    },
     'spec.meta.title': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
@@ -78,18 +82,20 @@ spec:
       description: 'Summary shown with the Workflow.',
     },
     'spec.inputs': {
-      type: 'object',
+      type: 'Dictionary<InputDefinition>',
       required: false,
       description: 'Values accepted when an execution starts.',
     },
     'spec.start': { type: 'string', required: true, description: 'Identifies the first step to schedule.' },
     'spec.steps': {
-      type: 'object',
+      type: 'Dictionary<StepDefinition>',
       required: true,
       description: 'Defines executable steps by stable identifier.',
     },
   }}
 />
+
+`Dictionary<InputDefinition>` means each user-defined input name maps to the `type`, `required`, and optional `default` fields below. `Dictionary<StepDefinition>` means each stable step identifier maps to exactly one Action, Interactive UI, or Fail structure documented under [Step kinds](#step-kinds).
 
 ### Input definitions
 

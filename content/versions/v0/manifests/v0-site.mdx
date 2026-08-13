@@ -40,7 +40,11 @@ spec:
 
 <TypeTable
   type={{
-    'spec.brand': { type: 'object', required: true, description: 'Brand values shared by every exposed application.' },
+    'spec.brand': {
+      type: '{ label: string; logo: string; favicon: string }',
+      required: true,
+      description: 'Groups the brand values shared by every exposed application.',
+    },
     'spec.brand.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,

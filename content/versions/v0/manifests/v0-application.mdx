@@ -44,7 +44,11 @@ This exposes the imported Page `index` at `<host>/home/`.
       description: 'Summary shown with the application.',
     },
     'spec.path': { type: 'AbsolutePath', required: true, description: 'URL prefix shared by its routes.' },
-    'spec.routes': { type: 'object[]', required: true, description: 'Maps imported Pages below the application path.' },
+    'spec.routes': {
+      type: 'Array<{ page: string; path: AbsolutePath }>',
+      required: true,
+      description: 'Maps imported Pages below the application path.',
+    },
     'spec.routes[].page': {
       type: 'string',
       required: true,

@@ -1,6 +1,6 @@
 ---
 title: Policy
-description: 'RFC: define global access-control rules for requests, responses, and UI.'
+description: 'RFC: filter database records and control request, field, and UI access.'
 ---
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
@@ -11,120 +11,256 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ## Purpose
 
-A Policy is a global manifest, like Translation: Taskmigo selects it for every Site snapshot rather than importing it from another manifest. It has only two effects: `allow` and `deny`. The target gives that decision its meaning.
+One Policy manifest defines one access rule. Registering it makes the policy available but does not activate it. The registered policy must be attached to one Role; that Role is then assigned directly to a user or inherited through a Group.
 
-| Target      | `allow`                                 | `deny`                                          |
-| ----------- | --------------------------------------- | ----------------------------------------------- |
-| Request     | Let the matching Page or API route run. | Reject the request before its handler runs.     |
-| Data record | Permit a matching record to be read.    | Exclude matching records in the database query. |
-| Data field  | Permit a selected field to be returned. | Remove the field from the result.               |
-| UI          | Render a policy-managed target.         | Do not render the target.                       |
+```mermaid
+flowchart LR
+  policy["Policy"] --> role["Role"]
+  role --> user["User"]
+  role --> group["Group"]
+  group --> user
+```
 
-UI policy is not a security boundary. A hidden UI target must still be protected by request and data rules.
+The Principal receives the union of directly assigned and Group-inherited Roles. Taskmigo evaluates only policies attached to those effective Roles. The Role attachment API and configuration surface remain an open decision; the attachment is not declared inside the Policy manifest.
 
-## Example
+A policy has only two effects, `allow` and `deny`. The target gives that decision its meaning.
+
+| Target      | `allow`                                     | `deny`                                      |
+| ----------- | ------------------------------------------- | ------------------------------------------- |
+| Request     | Let the matching Page or API route run.     | Reject the request before its handler runs. |
+| Data record | Include records matching the policy filter. | Exclude records matching the policy filter. |
+| Data field  | Permit the selected field to be returned.   | Remove the selected field from the result.  |
+| UI          | Render a policy-managed target.             | Do not render the target.                   |
+
+UI policy is not a security boundary. A hidden UI target must still be protected by request and data policies.
+
+## Filter database records
+
+This policy permits reading an active or pending Project when it is public, owned by the current user, or belongs to one of the current user's Groups.
 
 ```yaml
-kind: v0/policy
-name: customer-access
+apiVersion: v0
+kind: policy
+metadata:
+  name: project-read-access
 
 spec:
-  rules:
-    - id: allow-finance-invoices
-      name: Allow finance invoice access
-      effect: allow
-      target:
-        request:
-          method: GET
-          path: /invoices/**
-      when: 'principal.groups.contains("finance")'
+  name: Read accessible projects
+  effect: allow
 
-    - id: allow-public-or-owned-projects
-      name: Allow public or owned projects
-      effect: allow
-      target:
-        data:
-          resource: project
-          operation: read
-      when: >-
-        resource.visibility == "public" ||
-        resource.ownerUsername == principal.username
+  target:
+    data:
+      resource: project
+      operation: read
 
-    - id: deny-email-to-non-admins
-      name: Hide customer email from non-admins
-      effect: deny
-      target:
-        data:
-          resource: customer
-          fields: [email]
-      when: '!principal.roles.contains("admin")'
+  where:
+    and:
+      - '{{ in .Resource.status "active" "pending" }}'
+      - '{{ isNull .Resource.deletedAt }}'
 
-    - id: deny-admin-application
-      name: Hide the admin application
-      effect: deny
-      target:
-        ui:
-          application: admin
-      when: '!principal.roles.contains("admin")'
+      - or:
+          - '{{ eq .Resource.visibility "public" }}'
+          - '{{ eq .Resource.ownerUsername .Principal.username }}'
+          - '{{ contains .Principal.groups .Resource.groupId }}'
 ```
+
+The database adapter compiles the condition into a parameterized predicate equivalent to:
+
+```sql
+WHERE status IN ($1, $2)
+  AND deleted_at IS NULL
+  AND (
+    visibility = $3
+    OR owner_username = :principal_username
+    OR group_id = ANY(:principal_groups)
+  )
+```
+
+The generated database syntax may differ by adapter, but its result must be equivalent. Taskmigo never renders an Expression into a raw SQL string.
 
 ## Fields
 
 <TypeTable
   type={{
-    kind: { type: '"v0/policy"', required: true, description: 'Selects the global policy contract.' },
-    'spec.rules': { type: 'object[]', required: true, description: 'Rules evaluated for every Site snapshot.' },
-    'spec.rules[].id': {
+    kind: { type: '"policy"', required: true, description: 'Selects the global Policy contract.' },
+    'metadata.name': {
       type: 'string',
       required: true,
-      description:
-        'Unique rule key matching `[a-zA-Z0-9_-]+`; use it for validation, audit diagnostics, and stable references.',
+      description: 'Provides the stable policy key used by registration, Role attachment, and audit records.',
     },
-    'spec.rules[].name': {
+    'spec.name': {
       type: 'string',
       required: true,
-      description: 'Human-readable rule name shown in policy management and audit views.',
+      description: 'Provides the human-readable policy name shown in management and audit views.',
     },
-    'spec.rules[].effect': {
+    'spec.effect': {
       type: '"allow" | "deny"',
       required: true,
-      description: 'Access decision; the target determines whether it grants, rejects, filters, removes, or hides.',
+      description: 'Makes the access decision whose outcome is defined by the selected target.',
     },
-    'spec.rules[].target': {
-      type: 'object',
+    'spec.target': {
+      type: 'RequestTarget | DataTarget | UITarget',
       required: true,
-      description: 'Selects the route, data resource or field, or UI target governed by the rule.',
+      description: 'Selects one request, data, or UI scope governed by the policy.',
     },
-    'spec.rules[].when': {
-      type: 'string',
+    'spec.where': {
+      type: 'PolicyCondition',
       required: true,
-      description: 'Predicate expression that determines whether the rule matches.',
+      description: 'Combines database-capable predicate Expressions with explicit boolean groups.',
     },
   }}
 />
 
-A request target specifies its route with `method` and `path`. A data target identifies a `resource`, an `operation`, and optionally `fields`; a denied field is removed from the response. A UI target identifies an `application`, `page`, or `componentId` (the value of `data-component-id`).
+One manifest has no `rules` collection or rule `id`. `metadata.name` is the policy's stable key, while `spec.name` is its display name.
 
-## Conditions and database filtering
+### Target fields
 
-`when` is a compact predicate language—not a general-purpose Expression and never raw SQL. It supports `&&`, `||`, `!`, parentheses, comparisons, `in` / `not in`, literals, lists, and a fixed set of SQL-compilable functions such as `contains()` and `startsWith()`.
+Declare exactly one of `request`, `data`, or `ui` under `spec.target`.
 
-It may read `principal.username`, `principal.roles`, `principal.groups`, and phase-specific request, resource, or UI context. It cannot call arbitrary functions, run templates, perform I/O, or cause side effects. This lets the runtime give one rule equivalent application and database evaluation.
+<TypeTable
+  type={{
+    'request.method': {
+      type: 'HTTPMethod',
+      required: true,
+      description: 'Matches the incoming request method.',
+    },
+    'request.path': {
+      type: 'AbsolutePathPattern',
+      required: true,
+      description: 'Matches a Page or API route.',
+    },
+    'data.resource': {
+      type: 'string',
+      required: true,
+      description: 'Selects the logical data resource whose query or projection is governed.',
+    },
+    'data.operation': {
+      type: '"read"',
+      required: true,
+      description: 'Applies the policy while records are read.',
+    },
+    'data.fields': {
+      type: 'string[]',
+      description: 'Limits the decision to the listed logical fields; omission governs whole records.',
+    },
+    'ui.application': {
+      type: 'string',
+      description: 'Selects one Application by name.',
+    },
+    'ui.page': {
+      type: 'string',
+      description: 'Selects one Page by name.',
+    },
+    'ui.componentId': {
+      type: 'string',
+      description: 'Selects one rendered component instance by its `data-component-id`.',
+    },
+  }}
+/>
 
-When a policy governs which records a caller may read, the runtime compiles its predicate to a parameterized SQL `WHERE` clause and applies it as part of the database query. It must not fetch candidate records and then filter them in application memory. A predicate that cannot be compiled for a data source makes the affected snapshot invalid; it never falls back to an unfiltered query.
+A UI target declares exactly one of `application`, `page`, or `componentId`.
 
-The data-resource contract defines the logical field-to-database mapping separately. A database column or computed field with a SQL translation may appear in a data predicate. A field computed only in the application layer may not decide record or field access; using it there makes the snapshot invalid. It may be used only in non-data phases where it cannot grant access to protected data.
+## Boolean conditions
+
+A `PolicyCondition` is exactly one of the following structures. This definition is recursive: each child may be another boolean group or a predicate Expression.
+
+<TypeTable
+  type={{
+    Expression: {
+      type: 'string',
+      description: 'Calls one available policy predicate function and returns one database-capable condition.',
+    },
+    and: {
+      type: 'PolicyCondition[]',
+      description: 'Matches only when every child condition matches.',
+    },
+    or: {
+      type: 'PolicyCondition[]',
+      description: 'Matches when at least one child condition matches.',
+    },
+    not: {
+      type: 'PolicyCondition',
+      description: 'Negates one child condition or boolean group.',
+    },
+  }}
+/>
+
+There is no implicit `and`. Use `and`, `or`, and `not` so the YAML structure always exposes the complete boolean logic.
+
+```yaml
+where:
+  and:
+    - '{{ in .Resource.status "active" "pending" }}'
+
+    - or:
+        - '{{ eq .Resource.visibility "public" }}'
+        - '{{ eq .Resource.ownerUsername .Principal.username }}'
+
+    - not:
+        and:
+          - '{{ eq .Resource.region "EU" }}'
+          - '{{ contains .Principal.roles "contractor" }}'
+```
+
+## Available predicate functions
+
+Policy conditions use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Each function has a database-equivalent operation implemented by every supported adapter.
+
+| Function     | Arguments            | Database-equivalent predicate             |
+| ------------ | -------------------- | ----------------------------------------- |
+| `eq`         | `left right`         | `left = right`                            |
+| `ne`         | `left right`         | `left <> right`                           |
+| `lt`         | `left right`         | `left < right`                            |
+| `le`         | `left right`         | `left <= right`                           |
+| `gt`         | `left right`         | `left > right`                            |
+| `ge`         | `left right`         | `left >= right`                           |
+| `in`         | `value candidate...` | `value IN (candidate...)`                 |
+| `notIn`      | `value candidate...` | `value NOT IN (candidate...)`             |
+| `contains`   | `collection value`   | The collection contains the value.        |
+| `startsWith` | `value prefix`       | The value begins with the literal prefix. |
+| `endsWith`   | `value suffix`       | The value ends with the literal suffix.   |
+| `isNull`     | `value`              | `value IS NULL`                           |
+| `isNotNull`  | `value`              | `value IS NOT NULL`                       |
+
+Use `isNull` and `isNotNull` for null checks. `eq` and `ne` do not accept `null`. Database adapters must escape prefix and suffix values as literals rather than treating their contents as wildcard syntax.
+
+Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
+
+## Available values
+
+| Value                 | Meaning                                                                  |
+| --------------------- | ------------------------------------------------------------------------ |
+| `.Principal.username` | Authenticated username.                                                  |
+| `.Principal.roles`    | Effective Roles assigned directly or inherited through Groups.           |
+| `.Principal.groups`   | Groups containing the authenticated user.                                |
+| `.Resource.<field>`   | Logical field exposed as policy-queryable by the targeted data resource. |
+| `.Request.<field>`    | Validated request value explicitly exposed by a request target.          |
+| `.UI.<field>`         | Value explicitly exposed by a UI target.                                 |
+
+Names and paths are case-sensitive. A context is available only for a target that declares it.
+
+## Database filtering contract
+
+When a policy governs record access, Taskmigo compiles `where` into a parameterized database predicate and applies it before pagination, counting, ordering, or serialization. It must not fetch candidate records and then filter them in application memory.
+
+A data predicate may use only:
+
+- A database-backed logical field.
+- A computed field with a database translation supplied by the data-resource contract.
+- An available Principal or validated request value passed as a query parameter.
+
+A field computed only in the application layer cannot decide record or field access. An unsupported function, unavailable value, type mismatch, missing database translation, or adapter compilation failure makes the affected Site snapshot invalid. Taskmigo never falls back to an unfiltered query.
+
+For a denied data field, the runtime omits that field from the database projection where possible and always removes it before serialization.
 
 ## Evaluation
 
-The policy target decides which route types it applies to; Page and API routes use the same request matching contract.
-
-- `deny` takes precedence over `allow`.
+- `deny` takes precedence over `allow` when policies attached to the Principal's effective Roles govern the same target.
 - Request and data-record access require a matching `allow`; otherwise access is denied.
-- A matching data-field `deny` removes the field. The runtime omits it from `SELECT` where possible and always removes it before JSON serialization.
-- UI remains visible unless a matching UI `deny` applies. A UI `allow` can make an explicitly policy-managed target render, but it never overrides a matching `deny`.
-- Rules are evaluated from the snapshot-pinned policy revisions, so an active request does not change behavior mid-execution.
+- A matching data-field `deny` removes the selected field.
+- UI remains visible unless a matching UI `deny` applies. A UI `allow` never overrides a matching `deny`.
+- Policies are evaluated from snapshot-pinned revisions, so an active operation does not change behavior mid-execution.
 
-## Global selection
+## Global registration
 
-Policies do not participate in `imports` and no manifest may import `v0/policy`. A policy change rebuilds affected Site snapshots. Each snapshot pins the policy revision it selected.
+Policies do not participate in `imports`, and no manifest may import `policy`. Registering or changing a policy rebuilds affected Site snapshots. Each snapshot pins the selected policy revision and its Role attachment.

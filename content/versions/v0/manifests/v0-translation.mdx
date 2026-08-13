@@ -41,12 +41,14 @@ Translation resources are selected by locale and are not imported. See [Referenc
       description: 'Selects the catalog locale, such as `en`, `vi`, or `pt-BR`.',
     },
     'spec.content': {
-      type: 'Record<string, unknown>',
+      type: 'Dictionary<string | TranslationDictionary>',
       required: true,
       description: 'Provides messages through non-empty dotted lookup keys.',
     },
   }}
 />
+
+`TranslationDictionary` is the same recursive dictionary type as `spec.content`: each user-defined key maps to either a message string or another Translation dictionary.
 
 Resources with the same normalized locale merge into one effective catalog. Nested keys form dotted lookup paths.
 

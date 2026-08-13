@@ -32,7 +32,7 @@ children:
       description: 'Selects the Stack renderer; casing must match exactly.',
     },
     props: {
-      type: 'Record<`data-${string}`, unknown>',
+      type: 'Dictionary<unknown>',
       description: 'Data attributes passed to Stack. Every key must begin with `data-`.',
     },
     children: {
@@ -42,5 +42,7 @@ children:
     },
   }}
 />
+
+`Dictionary<unknown>` means Stack accepts arbitrary values, but every dictionary key must match `data-${string}`.
 
 `children` can be a string, a component node, or an ordered list of component nodes and strings.
