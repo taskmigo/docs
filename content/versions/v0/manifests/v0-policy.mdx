@@ -13,29 +13,46 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 One Policy manifest defines one statement for APIs whose registered paths match its glob. Its `mode` selects one authorization phase:
 
-| Mode      | Purpose                                                          | Effect                                                        |
-| --------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| `request` | Allow or deny an incoming API request before its handler runs.   | Requires `allow` or `deny`.                                   |
-| `object`  | Filter which response objects an allowed API request may return. | Has no effect field; matching statements grant object scopes. |
+| Mode      | Purpose                                                        | `spec.effect`                                       |
+| --------- | -------------------------------------------------------------- | --------------------------------------------------- |
+| `request` | Allow or deny an incoming API request before its handler runs. | Required: `allow` or `deny`.                        |
+| `object`  | Filter which objects an allowed API request may return.        | Forbidden; matching statements grant object scopes. |
 
 A Policy does not control response fields, Page routes, or UI visibility.
 
 Registering a Policy does not grant it to every user. The Policy must also be attached to a Role assigned directly to the user or inherited through a Group.
 
 ```mermaid
-flowchart LR
-  policy["Policy"] -->|path glob| api["API"]
-  policy -->|attached to| role["Role"]
-  role --> user["User"]
-  role --> group["Group"]
-  group --> user
+flowchart TD
+  request["Incoming API request"] --> select["Select Policies: path glob + effective Roles"]
+  select --> gate["Request mode: deny wins; allow required"]
+  gate --> filter["Object mode: build OR database predicate"]
+  filter --> handler["API handler and object query"]
+  handler --> response["Filtered API response"]
 ```
 
-An API may match multiple Policies. For each request, Taskmigo applies only the Policies that both match the API path and belong to the Principal's effective Roles.
+## Request mode
 
-## Request Policy
+Request grants and denials use separate manifests. This grant lets project readers call matching APIs:
 
-This Policy denies requests from users in the `suspended` Group before a matching API handler runs.
+```yaml
+apiVersion: v0
+kind: policy
+metadata:
+  name: allow-project-readers
+
+spec:
+  name: Allow project readers
+  mode: request
+  effect: allow
+
+  target:
+    api: /api/v1/projects/**
+
+  statement: '{{ contains .Principal.roles "project-reader" }}'
+```
+
+This separate Policy denies suspended users even when another Policy grants access:
 
 ```yaml
 apiVersion: v0
@@ -54,11 +71,9 @@ spec:
   statement: '{{ contains .Principal.groups "suspended" }}'
 ```
 
-A separate request-mode Policy must grant the request with `effect: allow`. Keeping grants and denials in separate manifests prevents incoming-request decisions from being mixed with response-object filtering.
+## Object mode
 
-## Object Policy
-
-This Policy applies to every registered API path below `/api/v1/projects` and permits those APIs to return active or pending Projects that are public, owned by the current user, or assigned to one of the user's Groups.
+This Policy permits matching APIs to return active or pending Projects that are public, owned by the current user, or assigned to one of the user's Groups. It excludes EU Projects from contractors.
 
 ```yaml
 apiVersion: v0
@@ -82,6 +97,11 @@ spec:
           - '{{ eq .Resource.visibility "public" }}'
           - '{{ eq .Resource.ownerUsername .Principal.username }}'
           - '{{ contains .Principal.groups .Resource.groupId }}'
+
+      - not:
+          and:
+            - '{{ eq .Resource.region "EU" }}'
+            - '{{ contains .Principal.roles "contractor" }}'
 ```
 
 ## Fields
@@ -150,7 +170,6 @@ A `PolicyStatement` is either one predicate Expression or exactly one boolean gr
   type={{
     Expression: {
       type: 'string',
-      typeDescriptionLink: '#available-predicate-functions',
       description:
         'Calls one available predicate function and produces a boolean request condition or database-capable object condition.',
     },
@@ -173,21 +192,6 @@ A `PolicyStatement` is either one predicate Expression or exactly one boolean gr
 />
 
 There is no implicit `and`. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
-
-```yaml
-statement:
-  and:
-    - '{{ in .Resource.status "active" "pending" }}'
-
-    - or:
-        - '{{ eq .Resource.visibility "public" }}'
-        - '{{ eq .Resource.ownerUsername .Principal.username }}'
-
-    - not:
-        and:
-          - '{{ eq .Resource.region "EU" }}'
-          - '{{ contains .Principal.roles "contractor" }}'
-```
 
 ## Available predicate functions
 
@@ -227,12 +231,17 @@ Names and paths are case-sensitive. A request value is available only when every
 
 ## Evaluation
 
-For every incoming API request, Taskmigo first selects the Policies whose API glob matches the normalized registered path and that are attached to the Principal's effective Roles. It then evaluates the two modes in separate phases:
+Taskmigo first keeps only Policies whose API glob matches the normalized registered path and that are attached to the Principal's effective Roles. It then applies this decision table:
 
-1. **Request phase:** evaluates request-mode statements before the handler runs. Any matching `deny` statement that evaluates to `true` returns `403`. Otherwise, at least one matching `allow` statement must evaluate to `true`; if none does, Taskmigo returns `403`.
-2. **Object phase:** after the request is allowed and before an object query executes, compiles object-mode statements into parameterized database predicates. It combines matching statements with `OR` and applies the result before counting, ordering, pagination, and serialization.
+| Phase     | Applicable result                  | Runtime action                                                       |
+| --------- | ---------------------------------- | -------------------------------------------------------------------- |
+| `request` | Any `deny` statement is `true`     | Return `403`; `deny` takes precedence.                               |
+| `request` | No denial and an `allow` is `true` | Continue to the API handler.                                         |
+| `request` | No matching grant                  | Return `403`.                                                        |
+| `object`  | One or more Policies               | Compile statements, combine them with `OR`, and apply the DB filter. |
+| `object`  | No Policy                          | Apply a false predicate and return no policy-queryable objects.      |
 
-The request phase is fail-closed: no applicable grant means no API access. The object phase is also fail-closed: when an API returns policy-queryable objects but no applicable object-mode Policy exists, Taskmigo uses a false predicate and returns no objects. A Policy whose statement matches nothing never makes the query unfiltered.
+Both phases are fail-closed. An object Policy whose statement matches nothing contributes no objects and never makes the query unfiltered. The database filter runs before counting, ordering, pagination, and serialization.
 
 For example, if the user receives `read-public-projects` and `read-owned-projects`, the resulting predicate is equivalent to:
 
