@@ -25,6 +25,6 @@ flowchart TD
   onboarding -->|imports| approval["Component: approval-form"]
 ```
 
-Resources outside the reachable graph are not included in the running Site. Multiple resources may depend on the same resource. Translation catalogs are selected by locale instead of dependency edges. Policy RFC resources are registered globally and activated through Role attachments rather than dependency edges.
+Resources outside the reachable graph are not included in the running Site. Multiple resources may depend on the same resource. Translation catalogs are selected by locale instead of dependency edges. Policy RFC resources target registered API paths and are activated through Role attachments rather than dependency edges.
 
 See [Resource model](/versions/v0/resources) for identity and references, and [Runtime lifecycle](/versions/v0/runtime) for activation and execution.

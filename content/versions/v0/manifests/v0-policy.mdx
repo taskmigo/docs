@@ -1,6 +1,6 @@
 ---
 title: Policy
-description: 'RFC: filter database records and control request, field, and UI access.'
+description: 'RFC: authorize API access and filter the records an API may return.'
 ---
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
@@ -11,49 +11,38 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ## Purpose
 
-One Policy manifest defines one access rule. Registering it makes the policy available but does not activate it. The registered policy must be attached to one Role; that Role is then assigned directly to a user or inherited through a Group.
+One Policy manifest defines one statement for APIs whose registered paths match its glob. A Policy controls which records those APIs may return; it does not control response fields, Page routes, or UI visibility.
+
+Registering a Policy does not grant it to every user. The Policy must also be attached to a Role assigned directly to the user or inherited through a Group.
 
 ```mermaid
 flowchart LR
-  policy["Policy"] --> role["Role"]
+  policy["Policy"] -->|path glob| api["API"]
+  policy -->|attached to| role["Role"]
   role --> user["User"]
   role --> group["Group"]
   group --> user
 ```
 
-The Principal receives the union of directly assigned and Group-inherited Roles. Taskmigo evaluates only policies attached to those effective Roles. The Role attachment API and configuration surface remain an open decision; the attachment is not declared inside the Policy manifest.
+An API may match multiple Policies. For each request, Taskmigo applies only the Policies that both match the API path and belong to the Principal's effective Roles.
 
-A policy has only two effects, `allow` and `deny`. The target gives that decision its meaning.
+## Example
 
-| Target      | `allow`                                     | `deny`                                      |
-| ----------- | ------------------------------------------- | ------------------------------------------- |
-| Request     | Let the matching Page or API route run.     | Reject the request before its handler runs. |
-| Data record | Include records matching the policy filter. | Exclude records matching the policy filter. |
-| Data field  | Permit the selected field to be returned.   | Remove the selected field from the result.  |
-| UI          | Render a policy-managed target.             | Do not render the target.                   |
-
-UI policy is not a security boundary. A hidden UI target must still be protected by request and data policies.
-
-## Filter database records
-
-This policy permits reading an active or pending Project when it is public, owned by the current user, or belongs to one of the current user's Groups.
+This Policy applies to every registered API path below `/api/v1/projects` and permits those APIs to return active or pending Projects that are public, owned by the current user, or assigned to one of the user's Groups.
 
 ```yaml
 apiVersion: v0
 kind: policy
 metadata:
-  name: project-read-access
+  name: read-accessible-projects
 
 spec:
   name: Read accessible projects
-  effect: allow
 
   target:
-    data:
-      resource: project
-      operation: read
+    api: /api/v1/projects/**
 
-  where:
+  statement:
     and:
       - '{{ in .Resource.status "active" "pending" }}'
       - '{{ isNull .Resource.deletedAt }}'
@@ -64,20 +53,6 @@ spec:
           - '{{ contains .Principal.groups .Resource.groupId }}'
 ```
 
-The database adapter compiles the condition into a parameterized predicate equivalent to:
-
-```sql
-WHERE status IN ($1, $2)
-  AND deleted_at IS NULL
-  AND (
-    visibility = $3
-    OR owner_username = :principal_username
-    OR group_id = ANY(:principal_groups)
-  )
-```
-
-The generated database syntax may differ by adapter, but its result must be equivalent. Taskmigo never renders an Expression into a raw SQL string.
-
 ## Fields
 
 <TypeTable
@@ -86,113 +61,80 @@ The generated database syntax may differ by adapter, but its result must be equi
     'metadata.name': {
       type: 'string',
       required: true,
-      description: 'Provides the stable policy key used by registration, Role attachment, and audit records.',
+      description: 'Provides the stable Policy key used by Role attachments and audit records.',
     },
     'spec.name': {
       type: 'string',
       required: true,
-      description: 'Provides the human-readable policy name shown in management and audit views.',
-    },
-    'spec.effect': {
-      type: '"allow" | "deny"',
-      required: true,
-      description: 'Makes the access decision whose outcome is defined by the selected target.',
+      description: 'Provides the human-readable name shown in management and audit views.',
     },
     'spec.target': {
       type: 'object',
-      typeDescriptionLink: '#target-fields',
       required: true,
-      description: 'Selects one request, data, or UI scope governed by the policy.',
+      description: 'Groups the API selection fields.',
     },
-    'spec.where': {
-      type: 'PolicyCondition',
-      typeDescriptionLink: '#boolean-conditions',
+    'spec.target.api': {
+      type: 'string',
+      required: true,
+      description: 'Matches normalized registered API paths using the absolute glob syntax documented below.',
+    },
+    'spec.statement': {
+      type: 'PolicyStatement',
+      typeDescriptionLink: '#statements',
       required: true,
       description: 'Combines database-capable predicate Expressions with explicit boolean groups.',
     },
   }}
 />
 
-One manifest has no `rules` collection or rule `id`. `metadata.name` is the policy's stable key, while `spec.name` is its display name.
+One manifest has no `rules` collection or response `fields`. `metadata.name` is the stable key, while `spec.name` is the display name.
 
-### Target fields
+## API path glob
 
-Declare exactly one of `request`, `data`, or `ui` under `spec.target`.
+`spec.target.api` matches the normalized path of a registered API. It does not match an API name, raw request URL, query string, fragment, or HTTP method.
 
-<TypeTable
-  type={{
-    request: {
-      type: 'object',
-      description: 'Selects a Page or API route; mutually exclusive with `data` and `ui`.',
-    },
-    'request.method': {
-      type: '"GET" | "POST" | "PUT" | "PATCH" | "DELETE"',
-      required: true,
-      description: 'Matches the incoming request method.',
-    },
-    'request.path': {
-      type: 'string',
-      required: true,
-      description: 'Matches an absolute Page or API path pattern.',
-    },
-    data: {
-      type: 'object',
-      description: 'Selects records or fields; mutually exclusive with `request` and `ui`.',
-    },
-    'data.resource': { type: 'string', required: true, description: 'Selects the logical data resource.' },
-    'data.operation': { type: '"read"', required: true, description: 'Applies while records are read.' },
-    'data.fields': {
-      type: 'string[]',
-      description: 'Limits the decision to these logical fields; omission governs whole records.',
-    },
-    ui: {
-      type: 'object',
-      description: 'Selects one UI element; mutually exclusive with `request` and `data`.',
-    },
-    'ui.application': { type: 'string', description: 'Selects one Application by name.' },
-    'ui.page': { type: 'string', description: 'Selects one Page by name.' },
-    'ui.componentId': {
-      type: 'string',
-      description: 'Selects one rendered component instance by its `data-component-id`.',
-    },
-  }}
-/>
+| Pattern            | Matches                                      |
+| ------------------ | -------------------------------------------- |
+| `/api/v1/projects` | Only that exact registered path.             |
+| `/api/v1/*`        | Exactly one path segment below `/api/v1`.    |
+| `/api/v1/**`       | `/api/v1` and any number of nested segments. |
+| `/**`              | Every registered API path.                   |
 
-A UI target declares exactly one of `application`, `page`, or `componentId`.
+The glob must begin with `/`. Only `*` and `**` are special; regex, `?`, and character classes are not supported. Because the target does not include an HTTP method, a matching Policy applies to every method registered at that path.
 
-## Boolean conditions
+## Statements
 
-A `PolicyCondition` is exactly one of the following structures. This definition is recursive: each child may be another boolean group or a predicate Expression.
+A `PolicyStatement` is either one predicate Expression or exactly one boolean group:
 
 <TypeTable
   type={{
     Expression: {
       type: 'string',
       typeDescriptionLink: '#available-predicate-functions',
-      description: 'Calls one available policy predicate function.',
+      description: 'Calls one available predicate function and produces a database-capable condition.',
     },
     and: {
-      type: 'PolicyCondition[]',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Matches only when every child condition matches.',
+      type: 'PolicyStatement[]',
+      typeDescriptionLink: '#statements',
+      description: 'Matches only when every child statement matches.',
     },
     or: {
-      type: 'PolicyCondition[]',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Matches when at least one child condition matches.',
+      type: 'PolicyStatement[]',
+      typeDescriptionLink: '#statements',
+      description: 'Matches when at least one child statement matches.',
     },
     not: {
-      type: 'PolicyCondition',
-      typeDescriptionLink: '#boolean-conditions',
-      description: 'Negates one child condition or boolean group.',
+      type: 'PolicyStatement',
+      typeDescriptionLink: '#statements',
+      description: 'Negates one child statement or boolean group.',
     },
   }}
 />
 
-There is no implicit `and`. Use `and`, `or`, and `not` so the YAML structure always exposes the complete boolean logic.
+There is no implicit `and`. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
 
 ```yaml
-where:
+statement:
   and:
     - '{{ in .Resource.status "active" "pending" }}'
 
@@ -208,7 +150,7 @@ where:
 
 ## Available predicate functions
 
-Policy conditions use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Each function has a database-equivalent operation implemented by every supported adapter.
+Policy statements use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Every supported database adapter must implement an equivalent parameterized operation.
 
 | Function     | Arguments            | Database-equivalent predicate             |
 | ------------ | -------------------- | ----------------------------------------- |
@@ -226,45 +168,53 @@ Policy conditions use the regular `{{ ... }}` Expression syntax, but permit only
 | `isNull`     | `value`              | `value IS NULL`                           |
 | `isNotNull`  | `value`              | `value IS NOT NULL`                       |
 
-Use `isNull` and `isNotNull` for null checks. `eq` and `ne` do not accept `null`. Database adapters must escape prefix and suffix values as literals rather than treating their contents as wildcard syntax.
+Use `isNull` and `isNotNull` for null checks; `eq` and `ne` do not accept `null`. Adapters treat prefix and suffix arguments as literals, not wildcard patterns.
 
-Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
+Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Taskmigo parses the Expression and builds a parameterized predicate; it never renders an Expression into raw SQL.
 
 ## Available values
 
-| Value                 | Meaning                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| `.Principal.username` | Authenticated username.                                                  |
-| `.Principal.roles`    | Effective Roles assigned directly or inherited through Groups.           |
-| `.Principal.groups`   | Groups containing the authenticated user.                                |
-| `.Resource.<field>`   | Logical field exposed as policy-queryable by the targeted data resource. |
-| `.Request.<field>`    | Validated request value explicitly exposed by a request target.          |
-| `.UI.<field>`         | Value explicitly exposed by a UI target.                                 |
+| Value                 | Meaning                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `.Principal.username` | Authenticated username.                                                                     |
+| `.Principal.roles`    | Roles assigned directly or inherited through Groups.                                        |
+| `.Principal.groups`   | Groups containing the authenticated user.                                                   |
+| `.Resource.<field>`   | Logical response record field exposed as policy-queryable by every API matched by the glob. |
+| `.Request.<field>`    | Validated request value explicitly exposed by every API matched by the glob.                |
 
-Names and paths are case-sensitive. A context is available only for a target that declares it.
+Names and paths are case-sensitive. A value is available only when every API matched by the glob declares a compatible type and database mapping.
+
+## Request evaluation
+
+For an incoming API request, Taskmigo:
+
+1. Resolves the normalized registered API path.
+2. Finds every Policy whose `spec.target.api` glob matches that path.
+3. Resolves the Principal's effective Roles from direct assignments and Group membership.
+4. Keeps only matching Policies attached to those Roles.
+5. Returns `403` when no Policy remains.
+6. Compiles each remaining `statement` into a parameterized database predicate.
+7. Combines those predicates with `OR` and applies the result before counting, ordering, pagination, and serialization.
+
+Using `OR` means each additional Policy grants another permitted record scope. A Policy whose statement matches no records contributes no records; it does not make the query unfiltered.
+
+For example, if the user receives `read-public-projects` and `read-owned-projects`, the resulting predicate is equivalent to:
+
+```sql
+WHERE visibility = $1
+   OR owner_username = :principal_username
+```
 
 ## Database filtering contract
 
-When a policy governs record access, Taskmigo compiles `where` into a parameterized database predicate and applies it before pagination, counting, ordering, or serialization. It must not fetch candidate records and then filter them in application memory.
+Every `.Resource.*` field must be backed by a database field or a computed field with a database translation. Every `.Request.*` and `.Principal.*` value becomes a query parameter.
 
-A data predicate may use only:
+When one glob matches multiple APIs, all of them must expose compatible types and database mappings for every value used by the statement. An unsupported function, unavailable value, type mismatch, missing database translation, or compilation failure makes the Policy invalid for the affected Site snapshot.
 
-- A database-backed logical field.
-- A computed field with a database translation supplied by the data-resource contract.
-- An available Principal or validated request value passed as a query parameter.
-
-A field computed only in the application layer cannot decide record or field access. An unsupported function, unavailable value, type mismatch, missing database translation, or adapter compilation failure makes the affected Site snapshot invalid. Taskmigo never falls back to an unfiltered query.
-
-For a denied data field, the runtime omits that field from the database projection where possible and always removes it before serialization.
-
-## Evaluation
-
-- `deny` takes precedence over `allow` when policies attached to the Principal's effective Roles govern the same target.
-- Request and data-record access require a matching `allow`; otherwise access is denied.
-- A matching data-field `deny` removes the selected field.
-- UI remains visible unless a matching UI `deny` applies. A UI `allow` never overrides a matching `deny`.
-- Policies are evaluated from snapshot-pinned revisions, so an active operation does not change behavior mid-execution.
+Taskmigo never fetches candidate records and filters them in application memory. It never falls back to an unfiltered query.
 
 ## Global registration
 
-Policies do not participate in `imports`, and no manifest may import `policy`. Registering or changing a policy rebuilds affected Site snapshots. Each snapshot pins the selected policy revision and its Role attachment.
+Policies do not participate in `imports`, and no manifest may import `policy`. Registering or changing a Policy rebuilds affected Site snapshots. Each snapshot pins the Policy revision, matched API contracts, and Role attachment used for evaluation.
+
+The Role attachment API and management surface remain an open decision; the attachment is not declared inside the Policy manifest.
