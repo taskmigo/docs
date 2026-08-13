@@ -11,7 +11,14 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 
 ## Purpose
 
-One Policy manifest defines one statement for APIs whose registered paths match its glob. A Policy controls which records those APIs may return; it does not control response fields, Page routes, or UI visibility.
+One Policy manifest defines one statement for APIs whose registered paths match its glob. Its `mode` selects one authorization phase:
+
+| Mode      | Purpose                                                          | Effect                                                        |
+| --------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| `request` | Allow or deny an incoming API request before its handler runs.   | Requires `allow` or `deny`.                                   |
+| `object`  | Filter which response objects an allowed API request may return. | Has no effect field; matching statements grant object scopes. |
+
+A Policy does not control response fields, Page routes, or UI visibility.
 
 Registering a Policy does not grant it to every user. The Policy must also be attached to a Role assigned directly to the user or inherited through a Group.
 
@@ -26,7 +33,30 @@ flowchart LR
 
 An API may match multiple Policies. For each request, Taskmigo applies only the Policies that both match the API path and belong to the Principal's effective Roles.
 
-## Example
+## Request Policy
+
+This Policy denies requests from users in the `suspended` Group before a matching API handler runs.
+
+```yaml
+apiVersion: v0
+kind: policy
+metadata:
+  name: deny-suspended-project-users
+
+spec:
+  name: Deny suspended project users
+  mode: request
+  effect: deny
+
+  target:
+    api: /api/v1/projects/**
+
+  statement: '{{ contains .Principal.groups "suspended" }}'
+```
+
+A separate request-mode Policy must grant the request with `effect: allow`. Keeping grants and denials in separate manifests prevents incoming-request decisions from being mixed with response-object filtering.
+
+## Object Policy
 
 This Policy applies to every registered API path below `/api/v1/projects` and permits those APIs to return active or pending Projects that are public, owned by the current user, or assigned to one of the user's Groups.
 
@@ -38,6 +68,7 @@ metadata:
 
 spec:
   name: Read accessible projects
+  mode: object
 
   target:
     api: /api/v1/projects/**
@@ -68,6 +99,15 @@ spec:
       required: true,
       description: 'Provides the human-readable name shown in management and audit views.',
     },
+    'spec.mode': {
+      type: '"request" | "object"',
+      required: true,
+      description: 'Selects incoming request authorization or response object filtering.',
+    },
+    'spec.effect': {
+      type: '"allow" | "deny"',
+      description: 'Makes a request-mode decision; required in request mode and forbidden in object mode.',
+    },
     'spec.target': {
       type: 'object',
       required: true,
@@ -82,7 +122,7 @@ spec:
       type: 'PolicyStatement',
       typeDescriptionLink: '#statements',
       required: true,
-      description: 'Combines database-capable predicate Expressions with explicit boolean groups.',
+      description: 'Defines a runtime request condition or a database-capable object filter, depending on the mode.',
     },
   }}
 />
@@ -111,7 +151,8 @@ A `PolicyStatement` is either one predicate Expression or exactly one boolean gr
     Expression: {
       type: 'string',
       typeDescriptionLink: '#available-predicate-functions',
-      description: 'Calls one available predicate function and produces a database-capable condition.',
+      description:
+        'Calls one available predicate function and produces a boolean request condition or database-capable object condition.',
     },
     and: {
       type: 'PolicyStatement[]',
@@ -150,9 +191,9 @@ statement:
 
 ## Available predicate functions
 
-Policy statements use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Every supported database adapter must implement an equivalent parameterized operation.
+Policy statements use the regular `{{ ... }}` Expression syntax, but permit only the functions below. Request mode evaluates them against request context. Object mode compiles them to the equivalent parameterized database operation.
 
-| Function     | Arguments            | Database-equivalent predicate             |
+| Function     | Arguments            | Object-mode database equivalent           |
 | ------------ | -------------------- | ----------------------------------------- |
 | `eq`         | `left right`         | `left = right`                            |
 | `ne`         | `left right`         | `left <> right`                           |
@@ -170,33 +211,28 @@ Policy statements use the regular `{{ ... }}` Expression syntax, but permit only
 
 Use `isNull` and `isNotNull` for null checks; `eq` and `ne` do not accept `null`. Adapters treat prefix and suffix arguments as literals, not wildcard patterns.
 
-Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Taskmigo parses the Expression and builds a parameterized predicate; it never renders an Expression into raw SQL.
+Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Taskmigo parses the Expression for the selected mode; object mode builds a parameterized predicate and never renders an Expression into raw SQL.
 
 ## Available values
 
-| Value                 | Meaning                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------- |
-| `.Principal.username` | Authenticated username.                                                                     |
-| `.Principal.roles`    | Roles assigned directly or inherited through Groups.                                        |
-| `.Principal.groups`   | Groups containing the authenticated user.                                                   |
-| `.Resource.<field>`   | Logical response record field exposed as policy-queryable by every API matched by the glob. |
-| `.Request.<field>`    | Validated request value explicitly exposed by every API matched by the glob.                |
+| Value                 | Mode                   | Meaning                                                                                     |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `.Principal.username` | `request` and `object` | Authenticated username.                                                                     |
+| `.Principal.roles`    | `request` and `object` | Roles assigned directly or inherited through Groups.                                        |
+| `.Principal.groups`   | `request` and `object` | Groups containing the authenticated user.                                                   |
+| `.Request.<field>`    | `request` and `object` | Validated request value explicitly exposed by every API matched by the glob.                |
+| `.Resource.<field>`   | `object` only          | Logical response record field exposed as policy-queryable by every API matched by the glob. |
 
-Names and paths are case-sensitive. A value is available only when every API matched by the glob declares a compatible type and database mapping.
+Names and paths are case-sensitive. A request value is available only when every API matched by the glob declares a compatible validated type. In object mode, each Resource value must also have a compatible database mapping across those APIs.
 
-## Request evaluation
+## Evaluation
 
-For an incoming API request, Taskmigo:
+For every incoming API request, Taskmigo first selects the Policies whose API glob matches the normalized registered path and that are attached to the Principal's effective Roles. It then evaluates the two modes in separate phases:
 
-1. Resolves the normalized registered API path.
-2. Finds every Policy whose `spec.target.api` glob matches that path.
-3. Resolves the Principal's effective Roles from direct assignments and Group membership.
-4. Keeps only matching Policies attached to those Roles.
-5. Returns `403` when no Policy remains.
-6. Compiles each remaining `statement` into a parameterized database predicate.
-7. Combines those predicates with `OR` and applies the result before counting, ordering, pagination, and serialization.
+1. **Request phase:** evaluates request-mode statements before the handler runs. Any matching `deny` statement that evaluates to `true` returns `403`. Otherwise, at least one matching `allow` statement must evaluate to `true`; if none does, Taskmigo returns `403`.
+2. **Object phase:** after the request is allowed and before an object query executes, compiles object-mode statements into parameterized database predicates. It combines matching statements with `OR` and applies the result before counting, ordering, pagination, and serialization.
 
-Using `OR` means each additional Policy grants another permitted record scope. A Policy whose statement matches no records contributes no records; it does not make the query unfiltered.
+The request phase is fail-closed: no applicable grant means no API access. The object phase is also fail-closed: when an API returns policy-queryable objects but no applicable object-mode Policy exists, Taskmigo uses a false predicate and returns no objects. A Policy whose statement matches nothing never makes the query unfiltered.
 
 For example, if the user receives `read-public-projects` and `read-owned-projects`, the resulting predicate is equivalent to:
 
@@ -207,11 +243,11 @@ WHERE visibility = $1
 
 ## Database filtering contract
 
-Every `.Resource.*` field must be backed by a database field or a computed field with a database translation. Every `.Request.*` and `.Principal.*` value becomes a query parameter.
+This contract applies only to object mode. Every `.Resource.*` field must be backed by a database field or a computed field with a database translation. Every `.Request.*` and `.Principal.*` value becomes a query parameter.
 
 When one glob matches multiple APIs, all of them must expose compatible types and database mappings for every value used by the statement. An unsupported function, unavailable value, type mismatch, missing database translation, or compilation failure makes the Policy invalid for the affected Site snapshot.
 
-Taskmigo never fetches candidate records and filters them in application memory. It never falls back to an unfiltered query.
+Taskmigo never fetches candidate records and filters them in application memory. It never falls back to an unfiltered query. Request-mode statements are evaluated before the handler and do not produce database filters.
 
 ## Global registration
 
