@@ -83,16 +83,14 @@ spec:
     },
     'spec.inputs': {
       type: 'Dictionary<InputDefinition>',
-      typeDescriptionLink: '#input-definitions',
       required: false,
-      description: 'Values accepted when an execution starts.',
+      description: 'Maps each user-defined input name to the definition documented below.',
     },
     'spec.start': { type: 'string', required: true, description: 'Identifies the first step to schedule.' },
     'spec.steps': {
       type: 'Dictionary<StepDefinition>',
-      typeDescriptionLink: '#step-kinds',
       required: true,
-      description: 'Defines executable steps by stable identifier.',
+      description: 'Maps each stable step identifier to the step definition documented below.',
     },
   }}
 />
@@ -129,13 +127,19 @@ A step declares exactly one of `action`, `ui`, or `fail`.
       description: 'Selects one Action Registry entry; mutually exclusive with `ui` and `fail`.',
     },
     input: {
-      type: 'Dictionary<unknown>',
+      type: 'Dictionary',
       description: 'Supplies named values validated by the selected Action contract.',
     },
-    timeout: { type: 'duration', description: 'Limits one Action attempt.' },
+    timeout: { type: 'string', description: 'Limits one Action attempt using a duration such as `30s`.' },
     retry: { type: 'object', description: 'Configures retry behavior for an Action step.' },
-    'retry.attempts': { type: 'integer', description: 'Limits the total number of Action attempts.' },
-    'retry.delay': { type: 'duration', description: 'Waits this long between Action attempts.' },
+    'retry.attempts': {
+      type: 'number',
+      description: 'Limits the total number of Action attempts; must be a positive integer.',
+    },
+    'retry.delay': {
+      type: 'string',
+      description: 'Waits this duration between Action attempts, such as `5s`.',
+    },
     continueOnError: {
       type: 'boolean',
       description: 'Continues to navigation after Action attempts are exhausted.',
@@ -146,7 +150,7 @@ A step declares exactly one of `action`, `ui`, or `fail`.
     },
     'ui.component': { type: 'string', description: 'Selects an imported Component by name.' },
     'ui.props': {
-      type: 'Dictionary<unknown>',
+      type: 'Dictionary',
       description: 'Supplies named values validated by the selected Component contract.',
     },
     fail: {

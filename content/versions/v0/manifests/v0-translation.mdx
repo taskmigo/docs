@@ -36,13 +36,12 @@ Translation resources are selected by locale and are not imported. See [Referenc
 <TypeTable
   type={{
     'spec.locale': {
-      type: 'BCP 47 language tag',
+      type: 'string',
       required: true,
-      description: 'Selects the catalog locale, such as `en`, `vi`, or `pt-BR`.',
+      description: 'Selects the catalog locale using a BCP 47 language tag such as `en`, `vi`, or `pt-BR`.',
     },
     'spec.content': {
       type: 'Dictionary<string | TranslationDictionary>',
-      typeDescriptionLink: '#fields',
       required: true,
       description: 'Maps each user-defined key to a message string or another dictionary of the same shape.',
     },

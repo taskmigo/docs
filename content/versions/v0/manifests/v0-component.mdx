@@ -47,7 +47,6 @@ spec:
   type={{
     'spec.props': {
       type: 'Dictionary<PropDefinition>',
-      typeDescriptionLink: '#fields',
       required: true,
       description: 'Maps each user-defined prop name to the definition fields listed below.',
     },
@@ -62,7 +61,7 @@ spec:
       description: 'Controls whether an importing Page may omit this prop.',
     },
     'spec.props.*.default': {
-      type: 'string | number | boolean | Array<string | number | boolean>',
+      type: 'string | number | boolean | (string | number | boolean)[]',
       required: false,
       description: 'Fallback used when an importing Page omits this prop.',
     },

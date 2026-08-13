@@ -79,7 +79,7 @@ children: []
       description: 'Selects a built-in or imported reusable Component by its case-sensitive name.',
     },
     props: {
-      type: 'Dictionary<unknown>',
+      type: 'Dictionary',
       description: 'Supplies named values validated by the selected component contract.',
     },
     children: {
@@ -89,8 +89,6 @@ children: []
     },
   }}
 />
-
-`Dictionary<unknown>` means the generic node shape does not prescribe the dictionary values. The selected component contract still validates every key and value.
 
 Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/ui-components/stack) for grouping content and [Typography](/versions/v0/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
 

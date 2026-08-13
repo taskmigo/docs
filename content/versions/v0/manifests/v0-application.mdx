@@ -29,9 +29,9 @@ This exposes the imported Page `index` at `<host>/home/`.
 <TypeTable
   type={{
     'spec.icon': {
-      type: 'URL',
+      type: 'string',
       required: true,
-      description: 'Image shown for the application; must include a scheme and host.',
+      description: 'Image URL shown for the application; must include a scheme and host.',
     },
     'spec.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
@@ -44,10 +44,9 @@ This exposes the imported Page `index` at `<host>/home/`.
       description: 'Summary shown with the application.',
     },
     'spec.path': {
-      type: 'AbsolutePath',
-      typeDescriptionLink: '#paths-and-routes',
+      type: 'string',
       required: true,
-      description: 'URL prefix shared by its routes.',
+      description: 'Absolute URL path used as the prefix shared by its routes.',
     },
     'spec.routes': {
       type: 'object[]',
@@ -60,10 +59,9 @@ This exposes the imported Page `index` at `<host>/home/`.
       description: 'Name of an imported Page exposed by this route.',
     },
     'spec.routes[].path': {
-      type: 'AbsolutePath',
-      typeDescriptionLink: '#paths-and-routes',
+      type: 'string',
       required: true,
-      description: 'Appends a path below the application prefix.',
+      description: 'Absolute URL path appended below the application prefix.',
     },
   }}
 />
