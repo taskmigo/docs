@@ -10,7 +10,8 @@
     "lint:check": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix",
     "format:fix": "oxfmt .",
-    "format:check": "oxfmt . --check"
+    "format:check": "oxfmt . --check",
+    "verify:api-reference": "bash scripts/verify-api-reference.sh"
   },
   "dependencies": {
     "beautiful-mermaid": "^1.1.3",
