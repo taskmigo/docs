@@ -1,0 +1,72 @@
+---
+title: Verification
+description: Run Taskmigo locally and prove architecture, persistence, security, and runtime behavior.
+---
+
+Use this page before handing off application work. A passing unit suite alone is not enough when the change affects PostgreSQL, security chains, snapshot activation, or durable execution.
+
+## Run and verify Taskmigo
+
+The application lives in `console/`. The repository root contains Compose and development examples.
+
+```bash
+bash examples/docker-compose.sh up --build
+```
+
+The sample starts PostgreSQL and Console on port `9000`. It creates the local bootstrap user `developer` and two environment-configured OAuth clients. The wrapper removes conflicting exported credentials before invoking Compose, so use it instead of calling Docker Compose directly when reproducing the documented sample.
+
+Run without Compose only when Java 26 and PostgreSQL 18 are available:
+
+```bash
+cd console
+./gradlew bootRun
+```
+
+The repository acceptance gate is:
+
+```bash
+cd console
+./gradlew test
+./gradlew build
+```
+
+`./gradlew test` includes PostgreSQL integration tests when Docker is available. Do not interpret a Docker-disabled run as evidence that migrations, JDBC repositories, OAuth issuance, or deletion cascades work.
+
+## Verification strategy
+
+The quality target is complete coverage of canonical behavior and failure boundaries, not 100% line coverage.
+
+| Test layer               | What it should prove                                                                  | Typical tools                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Unit                     | Parsers, mappings, domain transitions, service decisions, failure propagation.        | JUnit, AssertJ, Mockito only at true ports.                                   |
+| Architecture             | Modulith boundaries, forbidden internal imports, injection style, security ownership. | Spring Modulith verification and ArchUnit.                                    |
+| Persistence integration  | Flyway compatibility, JPA mappings, constraints, transactions, locks, cascades.       | PostgreSQL 18 Testcontainer.                                                  |
+| Web/security integration | Chain precedence, authentication, scopes/roles, Problem Details, no secret leakage.   | Spring Boot, MockMvc, Spring Security test.                                   |
+| Failure injection        | Process/transaction conflicts, duplicate delivery, compiler/adapter failure.          | Test seams such as `Clock`, factories, outbox worker, controlled concurrency. |
+| End to end               | One critical product journey across modules and durable boundaries.                   | Full application with PostgreSQL and real HTTP/security configuration.        |
+
+Maintain `docs/UseCaseCoverage.md` as the source-to-test map: every new workflow is added to the inventory with the tests that prove it.
+
+Before merging application work, at minimum:
+
+```bash
+cd console
+./gradlew test
+./gradlew build
+```
+
+Review the test output to confirm the PostgreSQL Testcontainer ran. A skipped container is incomplete verification; the delivery gate must include an environment that executes the integration suite.
+
+## Debugging and operational entry points
+
+| Symptom                                  | Inspect first                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Application fails before serving         | Flyway output, validated configuration, bootstrap runners, client mapper, signing-key initialization.          |
+| `/api/**` returns unexpected status      | Security chain match/order, JWT issuer/expiry, then controller `@PreAuthorize`.                                |
+| OAuth client disappeared from token flow | `oauth2_registered_client_state.active`, configuration synchronization, manual override.                       |
+| Client deletion rejected                 | Configured-client set, confirmation hash, expiry, requester, reuse and target client.                          |
+| JWT remains valid after client deletion  | Expected self-contained JWT behavior; inspect `exp`, not the deleted client row.                               |
+| Candidate does not activate              | Candidate correlation ID, resolution/validation diagnostics, compiler capability, activation version conflict. |
+| Workflow appears stuck                   | Execution version/status, current step, attempt/outbox rows, lease/worker telemetry.                           |
+
+Candidate and Workflow logs should use correlation IDs and stable failure categories. Inputs, outputs, client secrets, passwords, raw confirmation tokens, private JWKs, and values outside Taskmigo's schema must not appear in logs or diagnostics.

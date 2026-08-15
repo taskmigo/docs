@@ -1,4 +1,4 @@
 {
   "title": "Developer",
-  "pages": ["index"]
+  "pages": ["index", "architecture", "codebase", "resource-runtime", "policy", "workflow", "verification"]
 }

@@ -1,0 +1,112 @@
+---
+title: Policy
+description: Implement Role-attached API request authorization and database-backed object filtering.
+---
+
+This page translates the [Policy contract](/versions/v0/manuals/manifests/v0-policy) into module boundaries, public ports, database integration, and fail-closed verification.
+
+Policy applies only to registered APIs. A Policy is globally registered, targets an absolute API path glob, and becomes effective only through a Role attached directly to the user or inherited through a Group. Request authorization and object filtering are separate phases and separate Policy manifests.
+
+## Target packages and public ports
+
+```text
+com.taskmigo.console.policy/
+├── package-info.java                         # allowedDependencies = {"access", "resource"}
+├── ApiPolicyAuthorizer.java                  # called before an API handler
+├── ApiPolicyContract.java                    # feature-owned API metadata SPI
+├── ObjectPolicyFilterCompiler.java           # called by object query builders
+└── internal/
+    ├── application/{PolicySnapshotContributor,PolicySelectionService}.java
+    ├── application/ApiPolicyContractRegistry.java
+    ├── domain/expression/{PolicyExpressionParser,PredicateNode,PredicateTypeChecker}.java
+    ├── domain/target/ApiPathGlob.java
+    ├── domain/evaluation/{RequestPolicyEvaluator,ObjectPolicyCombiner}.java
+    ├── persistence/attachment/
+    └── configuration/PolicyConfiguration.java
+```
+
+Add public access contracts at `com.taskmigo.console.access` for a snapshot-independent principal view:
+
+```java
+public record PrincipalContext(
+    String username,
+    Set<String> roles,
+    Set<String> groups) {}
+
+public interface PrincipalContextResolver {
+  PrincipalContext resolve(Authentication authentication);
+}
+```
+
+The Policy ports should remain small:
+
+```java
+public interface ApiPolicyAuthorizer {
+  RequestDecision authorize(
+      AcquiredSiteSnapshot snapshot,
+      String registeredApiPath,
+      PrincipalContext principal,
+      Map<String, Object> requestValues);
+}
+
+public interface ObjectPolicyFilterCompiler {
+  CompiledObjectFilter compile(
+      AcquiredSiteSnapshot snapshot,
+      String registeredApiPath,
+      PrincipalContext principal,
+      Map<String, Object> requestValues,
+      ResourceQueryMapping mapping);
+}
+```
+
+Every feature exposing a Policy-aware API registers one `ApiPolicyContract` bean. The contract supplies the normalized registered path, validated `.Request.*` names/types, and—when the API returns queryable objects—the logical `.Resource.*` types and their `ResourceQueryMapping`. `ApiPolicyContractRegistry` rejects duplicate paths and gives snapshot compilation a deterministic API catalog. Spring MVC route discovery alone is insufficient because handler metadata cannot describe database translations.
+
+`RequestDecision` is either allowed or denied with a non-sensitive audit reason. `CompiledObjectFilter` is a typed adapter-neutral predicate plus bound parameters, never raw SQL.
+
+## Predicate representation
+
+Policy Expressions use the restricted Go `text/template` action syntax but are not rendered into text. `PolicyExpressionParser` accepts exactly one approved predicate function per Expression and produces a typed tree:
+
+```java
+sealed interface PredicateNode
+    permits AndNode, OrNode, NotNode, ComparisonNode,
+            MembershipNode, StringMatchNode, NullCheckNode {}
+
+sealed interface ValueNode
+    permits LiteralValue, PrincipalValue, RequestValue, ResourceValue {}
+```
+
+The type checker validates arity, operand type, null semantics, collection element type, and mode availability. `.Resource.*` is valid only in object mode. Request mode requires `effect`; object mode rejects it.
+
+## Request and object phases
+
+For each request, `PolicySelectionService` intersects snapshot-pinned Policies matching the normalized registered API path with Policies attached to the Principal's effective Roles.
+
+Request mode runs before the handler. Any true `deny` wins. Without a denial, at least one `allow` must evaluate true; otherwise return `403`.
+
+After authorization, object mode compiles every applicable statement and combines them with `OR`. No applicable Policy becomes a false predicate. The filter must enter the base database query before count, ordering, pagination, projection, and serialization. Fetching candidates and filtering them in application memory is prohibited.
+
+## Database adapter boundary
+
+Define the adapter in the capability that owns object querying, not in a controller:
+
+```java
+public interface DatabasePredicateAdapter<Q> {
+  Q apply(Q query, PredicateNode predicate, List<BoundParameter> parameters);
+  Set<PredicateCapability> capabilities();
+}
+```
+
+Snapshot compilation verifies that every API matched by the glob exposes compatible Request values, Resource field types, and database mappings. Computed application-layer fields are policy-queryable only when their query mapping supplies an equivalent database expression. Any missing capability invalidates the candidate snapshot; runtime never retries without the filter.
+
+## Roles, Groups, and attachments
+
+Keep Spring platform authorities such as `ROLE_ADMIN` separate from Taskmigo Policy roles. Extend `access` with `access_role`, `access_group`, `access_user_role`, `access_group_member`, and `access_group_role`. `PrincipalContextResolver` resolves direct and inherited Roles and the user's Groups for each request.
+
+The `policy` module owns `policy_role_attachment(role_name, policy_name, created_at)`. Candidate compilation resolves each attachment to an exact Policy revision and stores the resulting map in the snapshot. User membership can change at runtime; the Policy revision and Role-to-Policy attachment used by the snapshot do not.
+
+## Policy verification
+
+Unit tests cover glob boundaries, Expression parsing, type checking, deny precedence, allow requirements, and OR combination. Contract tests run the same predicate fixtures against every database adapter. PostgreSQL integration tests prove bound parameters, null and empty-collection behavior, filter-before-count/pagination ordering, direct and Group-inherited Roles, and fail-closed compilation.
+
+Security tests must explicitly inject SQL metacharacters and adapter/compiler failures and prove that no unfiltered query executes.
