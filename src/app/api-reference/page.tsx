@@ -19,14 +19,12 @@ declare global {
   }
 }
 
+const openApiUrl = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/openapi/v0/openapi.yaml`;
+
 export default function ApiReferencePage() {
   const initialize = () => {
-    if (!window.Scalar) return;
-
-    const basePath = window.location.pathname.replace(/\/api-reference\/?$/, '');
-
-    window.Scalar.createApiReference('#scalar-api-reference', {
-      url: `${basePath}/openapi/v0/openapi.yaml`,
+    globalThis.Scalar?.createApiReference('#scalar-api-reference', {
+      url: openApiUrl,
       theme: 'default',
       layout: 'modern',
     });
