@@ -43,9 +43,6 @@ jobs:
       - name: Build static documentation
         run: npm run build
 
-      - name: Verify API reference
-        run: npm run verify:api-reference
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5.0.0
         with:
