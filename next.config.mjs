@@ -13,9 +13,6 @@ const config = {
   reactStrictMode: true,
   basePath,
   assetPrefix: basePath ? `${basePath}/` : undefined,
-  env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
-  },
   serverExternalPackages: ['@takumi-rs/core'],
 };
 
