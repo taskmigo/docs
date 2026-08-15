@@ -11,7 +11,7 @@ Workflow is a durable state machine pinned to the Site snapshot, Workflow revisi
 
 ```text
 com.taskmigo.console.workflow/
-├── package-info.java                         # allowedDependencies = {"resource"}
+├── package-info.java                         # allowedDependencies = {"expression", "resource"}
 ├── WorkflowService.java                      # start and inspect public application port
 ├── WorkflowInteractionService.java           # submit waiting-step interaction
 ├── Action.java                               # Action implementation SPI

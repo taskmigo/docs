@@ -18,6 +18,10 @@ taskmigo/
         ├── main/java/com/taskmigo/console/
         │   ├── ConsoleApplication.java  # application entry point
         │   ├── access/                  # identity and access bounded context
+        │   ├── expression/              # FreeMarker compilation and evaluation foundation
+        │   ├── resource/                # revisions, validation, snapshots and runtime acquisition
+        │   ├── policy/                  # API authorization and object filtering RFC
+        │   ├── workflow/                # durable execution RFC
         │   └── system/                  # sample system endpoints
         ├── main/resources/
         │   ├── application.yml
@@ -40,6 +44,7 @@ Start at `console/src/main/java/com/taskmigo/console/ConsoleApplication.java`. I
 | OAuth client lifecycle API      | `access/internal/web/oauth/OAuthClientManagementController.java`                 | `OAuthClientManagementService`.                                         |
 | OAuth deletion confirmation     | `access/internal/application/oauth/management/OAuthClientManagementService.java` | `ClientDeletionConfirmation` and its repository.                        |
 | RSA signing-key lifecycle       | `access/internal/application/signing/SigningKeyLifecycle.java`                   | `RsaSigningKeyGenerator`, `SigningKeyRepository`, `DatabaseJwkSource`.  |
+| Expression compilation          | `expression/internal/compilation/FreeMarkerExpressionCompiler.java`              | `ExpressionContract`, function registry, and template-model factory.    |
 | System API scopes               | `system/internal/web/SystemApiController.java`                                   | `AccessSecurityConfiguration`.                                          |
 | Database structure              | `console/src/main/resources/db/migration/`                                       | JPA entities and Spring Authorization Server JDBC services.             |
 | Architecture enforcement        | `console/src/test/java/com/taskmigo/console/ArchitectureTest.java`               | Spring Modulith verification and ArchUnit rules.                        |
@@ -97,19 +102,62 @@ Paths under a capability are relative to `console/src/main/java/com/taskmigo/con
 
 ### Expression engine
 
-Taskmigo Expressions follow Go `text/template` syntax and semantics. The implementation exposes only field-approved context values and functions; it never evaluates arbitrary code. A field contract supplies the expected result type and an expression profile such as `GENERAL`, `WORKFLOW`, or `POLICY_PREDICATE`.
+Taskmigo uses Apache FreeMarker as its Java Expression engine. A field contract supplies the expected result type and a profile such as `GENERAL`, `WORKFLOW`, or `POLICY_PREDICATE`; the profile controls the visible data model, Taskmigo functions, directives, and built-ins.
 
-| Type / function                                | Responsibility and behavior                                                                                                               |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `ExpressionCompiler.compile(source, contract)` | Parses once, rejects unavailable syntax/functions/context paths, checks the expected result type, and returns an immutable compiled form. |
-| `ExpressionContract`                           | Declares the profile, context schema, function set, expected type, and whether literal text around template actions is permitted.         |
-| `ExpressionFunctionRegistry`                   | Registers explicit, side-effect-free functions by profile; duplicate names fail startup.                                                  |
-| `CompiledExpression.evaluate(context)`         | Evaluates against validated data with execution limits and returns the typed result or a source-aware error.                              |
-| `ExpressionDiagnostic`                         | Carries a stable code, manifest path, line/column, and safe message without input secrets.                                                |
+Keep the engine in a small foundation module so Resource, Policy, and Workflow depend on one implementation:
 
-A value containing only one action, such as `'{{ eq .Step.status "done" }}'`, preserves the function's typed result. Literal text or multiple rendering actions produce a string and are valid only where the field accepts rendered text. If the implementation language is not Go, conformance fixtures must compare parsing, whitespace, pipelines, variables, conditionals, iteration, escaping, and error behavior with Go `text/template` for every supported construct.
+```text
+com.taskmigo.console.expression/
+├── package-info.java
+├── ExpressionCompiler.java
+├── ExpressionContract.java
+├── ExpressionProfile.java
+├── ExpressionFunctionProvider.java
+└── internal/
+    ├── compilation/{FreeMarkerExpressionCompiler,TypedExpressionCompiler}.java
+    ├── evaluation/{CompiledFreeMarkerExpression,TaskmigoTemplateModelFactory}.java
+    ├── function/ExpressionFunctionRegistry.java
+    └── configuration/FreeMarkerConfigurationFactory.java
+```
 
-Policy uses a restricted `POLICY_PREDICATE` profile. It accepts the familiar `{{ ... }}` action grammar but forbids output rendering, pipelines, variables, control blocks, iteration, I/O, and side effects. The complete user-facing function lists remain in [Expressions](/versions/v0/manuals/expressions) and [Policy predicate functions](/versions/v0/manuals/manifests/v0-policy#available-predicate-functions).
+Pin FreeMarker in `console/build.gradle.kts`; do not inherit an incidental transitive version:
+
+```kotlin
+dependencies {
+  implementation("org.freemarker:freemarker:2.3.34")
+}
+```
+
+| Type / function                                | Responsibility and behavior                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `FreeMarkerConfigurationFactory.create()`      | Creates one long-lived, immutable `Configuration` pinned to the selected FreeMarker compatibility version.                      |
+| `ExpressionCompiler.compile(source, contract)` | Selects typed-expression or rendered-template compilation, validates the profile, and returns an immutable compiled form.       |
+| `ExpressionContract`                           | Declares the profile, context schema, expected result type, output limit, and whether literal text or directives are permitted. |
+| `TaskmigoTemplateModelFactory.create(context)` | Converts approved scalars, maps, and lists into the exact FreeMarker data model exposed by the contract.                        |
+| `ExpressionFunctionRegistry`                   | Registers explicit `TemplateMethodModelEx` or directive implementations by profile; duplicate names fail startup.               |
+| `CompiledExpression.evaluate(context)`         | Evaluates with bounded output/iteration limits and returns the typed result or a source-aware diagnostic.                       |
+| `ExpressionDiagnostic`                         | Carries a stable code, manifest path, line/column, and safe message without context values or secrets.                          |
+
+Configure FreeMarker with a fixed compatibility version, `SimpleObjectWrapper`, `TemplateExceptionHandler.RETHROW_HANDLER`, and `api_builtin_enabled = false`. Do not expose Java beans, reflection, static models, class resolution, or a template loader. Manifest Expressions cannot include or import files. Construct the data model from immutable maps, lists, strings, numbers, booleans, and Taskmigo-owned `TemplateModel` implementations only.
+
+```java
+Configuration configuration = new Configuration(Configuration.VERSION_2_3_34);
+configuration.setDefaultEncoding(StandardCharsets.UTF_8.name());
+configuration.setObjectWrapper(new SimpleObjectWrapper(Configuration.VERSION_2_3_34));
+configuration.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+configuration.setAPIBuiltinEnabled(false);
+configuration.setLogTemplateExceptions(false);
+configuration.setWrapUncheckedExceptions(true);
+configuration.setFallbackOnNullLoopVariable(false);
+```
+
+Create and publish this `Configuration` once, then never mutate it. Its template loader remains unset, so `#include` and `#import` cannot resolve external content. Compile manifest-owned source directly from an in-memory `Reader` and cache the immutable result by Expression source, contract/profile version, and expected result type.
+
+An entire YAML value containing one interpolation, such as `'${step.output.status == "done"}'`, is a typed Expression. Validate the interpolation boundary, compile its inner FreeMarker expression into an internal assignment, process it, then read the resulting `TemplateModel` from the `Environment` and convert it to the field's expected type. Do not infer typed values by parsing rendered text.
+
+A string or node field may instead compile a normal FreeMarker template containing literal text, interpolation, and permitted directives. Render through a size-limited `Writer`; enforce contract limits on source length, nesting, sequence size, and iteration. The same source and context must produce deterministic output.
+
+Policy uses the restricted `POLICY_PREDICATE` profile. Request mode evaluates a boolean through the FreeMarker engine. Object mode parses the documented FreeMarker predicate subset into a typed database-neutral AST; it does not depend on FreeMarker internal AST classes and never renders SQL. Maintain shared conformance fixtures so request evaluation and object compilation agree on operators, built-ins, missing values, and types. The public syntax remains canonical in [Expressions](/versions/v0/manuals/expressions) and [Policy predicates](/versions/v0/manuals/manifests/v0-policy#available-predicates).
 
 ## Database foundation
 

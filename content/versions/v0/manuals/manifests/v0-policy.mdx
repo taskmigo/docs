@@ -49,7 +49,7 @@ spec:
   target:
     api: /api/v1/projects/**
 
-  statement: '{{ contains .Principal.roles "project-reader" }}'
+  statement: '${Principal.roles?seq_contains("project-reader")}'
 ```
 
 This separate Policy denies suspended users even when another Policy grants access:
@@ -68,7 +68,7 @@ spec:
   target:
     api: /api/v1/projects/**
 
-  statement: '{{ contains .Principal.groups "suspended" }}'
+  statement: '${Principal.groups?seq_contains("suspended")}'
 ```
 
 ## Object mode
@@ -90,18 +90,18 @@ spec:
 
   statement:
     and:
-      - '{{ in .Resource.status "active" "pending" }}'
-      - '{{ isNull .Resource.deletedAt }}'
+      - '${["active", "pending"]?seq_contains(Resource.status)}'
+      - '${!(Resource.deletedAt??)}'
 
       - or:
-          - '{{ eq .Resource.visibility "public" }}'
-          - '{{ eq .Resource.ownerUsername .Principal.username }}'
-          - '{{ contains .Principal.groups .Resource.groupId }}'
+          - '${Resource.visibility == "public"}'
+          - '${Resource.ownerUsername == Principal.username}'
+          - '${Principal.groups?seq_contains(Resource.groupId)}'
 
       - not:
           and:
-            - '{{ eq .Resource.region "EU" }}'
-            - '{{ contains .Principal.roles "contractor" }}'
+            - '${Resource.region == "EU"}'
+            - '${Principal.roles?seq_contains("contractor")}'
 ```
 
 ## Fields
@@ -171,7 +171,7 @@ A `PolicyStatement` is either one predicate Expression or exactly one boolean gr
     Expression: {
       type: 'string',
       description:
-        'Calls one available predicate function and produces a boolean request condition or database-capable object condition.',
+        'Contains one supported FreeMarker predicate and produces a boolean request condition or database-capable object condition.',
     },
     and: {
       type: 'PolicyStatement[]',
@@ -193,41 +193,39 @@ A `PolicyStatement` is either one predicate Expression or exactly one boolean gr
 
 There is no implicit `and`. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
 
-## Available predicate functions
+## Available predicates
 
-Policy statements use the regular Go `text/template` `{{ ... }}` action syntax, but permit only the functions below. Request mode evaluates them against request context. Object mode compiles them to the equivalent parameterized PostgreSQL operation.
+Each statement is exactly one FreeMarker interpolation containing one supported predicate. Request mode evaluates it as a boolean. Object mode parses the same restricted syntax into a typed predicate and then compiles it to a parameterized PostgreSQL operation.
 
-| Function     | Arguments            | Object-mode PostgreSQL equivalent                              |
-| ------------ | -------------------- | -------------------------------------------------------------- | --- | ---------------------------- |
-| `eq`         | `left right`         | `left = :right`                                                |
-| `ne`         | `left right`         | `left <> :right`                                               |
-| `lt`         | `left right`         | `left < :right`                                                |
-| `le`         | `left right`         | `left <= :right`                                               |
-| `gt`         | `left right`         | `left > :right`                                                |
-| `ge`         | `left right`         | `left >= :right`                                               |
-| `in`         | `value candidate...` | `value = ANY(:candidates)`                                     |
-| `notIn`      | `value candidate...` | `value <> ALL(:candidates)`                                    |
-| `contains`   | `collection value`   | `value = ANY(:collection)` or the registered column equivalent |
-| `startsWith` | `value prefix`       | `value LIKE escape(:prefix)                                    |     | '%' ESCAPE '\\'`             |
-| `endsWith`   | `value suffix`       | `value LIKE '%'                                                |     | escape(:suffix) ESCAPE '\\'` |
-| `isNull`     | `value`              | `value IS NULL`                                                |
-| `isNotNull`  | `value`              | `value IS NOT NULL`                                            |
+| FreeMarker predicate                | Object-mode PostgreSQL equivalent                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `left == right`                     | `left = :right`                                                                |
+| `left != right`                     | `left <> :right`                                                               |
+| `left < right`                      | `left < :right`                                                                |
+| `left <= right`                     | `left <= :right`                                                               |
+| `left > right`                      | `left > :right`                                                                |
+| `left >= right`                     | `left >= :right`                                                               |
+| `candidates?seq_contains(value)`    | `value = ANY(:candidates)`                                                     |
+| `!(candidates?seq_contains(value))` | `value <> ALL(:candidates)`                                                    |
+| `collection?seq_contains(value)`    | `value = ANY(:collection)` or the registered column equivalent                 |
+| `value?starts_with(prefix)`         | Prefix `LIKE` with an escaped literal parameter and explicit escape character. |
+| `value?ends_with(suffix)`           | Suffix `LIKE` with an escaped literal parameter and explicit escape character. |
+| `value??`                           | `value IS NOT NULL`                                                            |
+| `!(value??)`                        | `value IS NULL`                                                                |
 
-Use `isNull` and `isNotNull` for null checks; `eq` and `ne` do not accept `null`. Adapters treat prefix and suffix arguments as literals, not wildcard patterns.
+Equality and ordering do not accept a missing value; use `??` for null checks. Prefix and suffix arguments are literals, not wildcard patterns. Every Principal, Request, and literal operand becomes a bound parameter. A collection predicate targeting a Resource field requires a registered database equivalent.
 
-Every dynamic operand becomes a bound parameter. The shown names are explanatory rather than literal SQL placeholders. `contains` may target a Principal/Request collection parameter or a Resource collection with a registered database mapping; snapshot validation rejects it when no equivalent exists.
-
-Policy Expressions cannot use output formatting, pipelines, variables, condition blocks, iteration, arbitrary functions, I/O, or side effects. Taskmigo parses the Expression for the selected mode; object mode builds a parameterized predicate and never renders an Expression into raw SQL.
+Policy Expressions do not support rendered text, FreeMarker directives, assignments, arithmetic, method calls, arbitrary built-ins, I/O, or side effects. Boolean composition remains visible in the YAML `and`, `or`, and `not` nodes. Object mode never renders an Expression into SQL text.
 
 ## Available values
 
-| Value                 | Mode                   | Meaning                                                                                     |
-| --------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
-| `.Principal.username` | `request` and `object` | Authenticated username.                                                                     |
-| `.Principal.roles`    | `request` and `object` | Roles assigned directly or inherited through Groups.                                        |
-| `.Principal.groups`   | `request` and `object` | Groups containing the authenticated user.                                                   |
-| `.Request.<field>`    | `request` and `object` | Validated request value explicitly exposed by every API matched by the glob.                |
-| `.Resource.<field>`   | `object` only          | Logical response record field exposed as policy-queryable by every API matched by the glob. |
+| Value                | Mode                   | Meaning                                                                                     |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `Principal.username` | `request` and `object` | Authenticated username.                                                                     |
+| `Principal.roles`    | `request` and `object` | Roles assigned directly or inherited through Groups.                                        |
+| `Principal.groups`   | `request` and `object` | Groups containing the authenticated user.                                                   |
+| `Request.<field>`    | `request` and `object` | Validated request value explicitly exposed by every API matched by the glob.                |
+| `Resource.<field>`   | `object` only          | Logical response record field exposed as policy-queryable by every API matched by the glob. |
 
 Names and paths are case-sensitive. A request value is available only when every API matched by the glob declares a compatible validated type. In object mode, each Resource value must also have a compatible database mapping across those APIs.
 
@@ -254,7 +252,7 @@ WHERE visibility = $1
 
 ## Database filtering contract
 
-This contract applies only to object mode. Every `.Resource.*` field must be backed by a database field or a computed field with a database translation. Every `.Request.*` and `.Principal.*` value becomes a query parameter.
+This contract applies only to object mode. Every `Resource.*` field must be backed by a database field or a computed field with a database translation. Every `Request.*` and `Principal.*` value becomes a query parameter.
 
 When one glob matches multiple APIs, all of them must expose compatible types and database mappings for every value used by the statement. An unsupported function, unavailable value, type mismatch, missing database translation, or compilation failure makes the Policy invalid for the affected Site snapshot.
 

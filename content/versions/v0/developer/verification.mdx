@@ -57,6 +57,19 @@ cd console
 
 Review the test output to confirm the PostgreSQL Testcontainer ran. A skipped container is incomplete verification; the delivery gate must include an environment that executes the integration suite.
 
+## FreeMarker Expression verification
+
+| Test group           | Required evidence                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Syntax compatibility | Interpolation, operators, built-ins, directives, bracket access, missing values, and source locations match the pinned FreeMarker version.         |
+| Typed results        | A sole interpolation preserves string, number, boolean, list, and map results; rendered templates return text only; incompatible field types fail. |
+| Profile isolation    | Each field sees only its declared roots, functions, directives, and built-ins. Policy rejects every construct outside its predicate subset.        |
+| Sandbox              | `?api`, Java members, static/class models, `#include`, `#import`, reflection, and unknown functions fail without exposing data.                    |
+| Limits               | Oversized source, nesting, iteration, sequence, or rendered output fails deterministically with a safe diagnostic.                                 |
+| Predicate parity     | Every Policy fixture produces the same boolean in request evaluation and the same meaning in the database-neutral object predicate.                |
+
+Run the compatibility suite whenever the pinned FreeMarker version changes. A version upgrade is a contract change when parsing, missing-value behavior, built-ins, numeric behavior, or diagnostics differ.
+
 ## Debugging and operational entry points
 
 | Symptom                                  | Inspect first                                                                                                  |

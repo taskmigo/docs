@@ -11,14 +11,14 @@ Policy applies only to registered APIs. A Policy is globally registered, targets
 
 ```text
 com.taskmigo.console.policy/
-├── package-info.java                         # allowedDependencies = {"access", "resource"}
+├── package-info.java                         # allowedDependencies = {"access", "expression", "resource"}
 ├── ApiPolicyAuthorizer.java                  # called before an API handler
 ├── ApiPolicyContract.java                    # feature-owned API metadata SPI
 ├── ObjectPolicyFilterCompiler.java           # called by object query builders
 └── internal/
     ├── application/{PolicySnapshotContributor,PolicySelectionService}.java
     ├── application/ApiPolicyContractRegistry.java
-    ├── domain/expression/{PolicyExpressionParser,PredicateNode,PredicateTypeChecker}.java
+    ├── domain/expression/{PolicyPredicateParser,PredicateNode,PredicateTypeChecker}.java
     ├── domain/target/ApiPathGlob.java
     ├── domain/evaluation/{RequestPolicyEvaluator,ObjectPolicyCombiner}.java
     ├── persistence/attachment/
@@ -59,13 +59,13 @@ public interface ObjectPolicyFilterCompiler {
 }
 ```
 
-Every feature exposing a Policy-aware API registers one `ApiPolicyContract` bean. The contract supplies the normalized registered path, validated `.Request.*` names/types, and—when the API returns queryable objects—the logical `.Resource.*` types and their `ResourceQueryMapping`. `ApiPolicyContractRegistry` rejects duplicate paths and gives snapshot compilation a deterministic API catalog. Spring MVC route discovery alone is insufficient because handler metadata cannot describe database translations.
+Every feature exposing a Policy-aware API registers one `ApiPolicyContract` bean. The contract supplies the normalized registered path, validated `Request.*` names/types, and—when the API returns queryable objects—the logical `Resource.*` types and their `ResourceQueryMapping`. `ApiPolicyContractRegistry` rejects duplicate paths and gives snapshot compilation a deterministic API catalog. Spring MVC route discovery alone is insufficient because handler metadata cannot describe database translations.
 
 `RequestDecision` is either allowed or denied with a non-sensitive audit reason. `CompiledObjectFilter` is a typed adapter-neutral predicate plus bound parameters, never raw SQL.
 
 ## Predicate representation
 
-Policy Expressions use the restricted Go `text/template` action syntax but are not rendered into text. `PolicyExpressionParser` accepts exactly one approved predicate function per Expression and produces a typed tree:
+Policy Expressions use one interpolation from the restricted FreeMarker predicate profile. `PolicyPredicateParser` accepts the documented comparison, membership, string, and missing-value forms and produces a typed tree without using FreeMarker's internal AST classes:
 
 ```java
 sealed interface PredicateNode
@@ -76,7 +76,7 @@ sealed interface ValueNode
     permits LiteralValue, PrincipalValue, RequestValue, ResourceValue {}
 ```
 
-The type checker validates arity, operand type, null semantics, collection element type, and mode availability. `.Resource.*` is valid only in object mode. Request mode requires `effect`; object mode rejects it.
+The type checker validates operand type, missing-value semantics, collection element type, allowed built-ins, and mode availability. `Resource.*` is valid only in object mode. Request mode requires `effect`; object mode rejects it.
 
 ## Request and object phases
 

@@ -33,28 +33,28 @@ spec:
     validate-employee:
       action: employee.validate
       input:
-        employeeId: '{{ input.employeeId }}'
+        employeeId: '${input.employeeId}'
       timeout: 30s
       retry:
         attempts: 3
         delay: 5s
       navigation:
-        - when: '{{ eq step.output.valid true }}'
+        - when: '${step.output.valid}'
           goto: confirm
         - goto: rejected
     confirm:
       ui:
         component: employee-confirmation
         props:
-          employee: '{{ steps.validate-employee.output.employee }}'
+          employee: '${steps["validate-employee"].output.employee}'
       navigation:
-        - when: '{{ eq step.output.approved true }}'
+        - when: '${step.output.approved}'
           goto: provision
         - goto: rejected
     provision:
       action: employee.provision
       input:
-        employeeId: '{{ input.employeeId }}'
+        employeeId: '${input.employeeId}'
     rejected:
       fail:
         message: Employee onboarding was rejected
@@ -180,7 +180,7 @@ A step declares exactly one of `action`, `ui`, or `fail`.
 load-user:
   action: user.load
   input:
-    id: '{{ input.userId }}'
+    id: '${input.userId}'
   timeout: 30s
   retry:
     attempts: 3
@@ -197,7 +197,7 @@ approve:
   ui:
     component: approval-form
     props:
-      request: '{{ steps.load-request.output }}'
+      request: '${steps["load-request"].output}'
 ```
 
 The Component must appear in `imports`. Entering the step persists the execution as `WAITING`; submitted interaction data becomes the step output before navigation runs. User waiting time is not part of action `timeout`.
@@ -216,21 +216,21 @@ Entering the step terminates the execution as `FAILED`.
 
 Workflow fields marked as Expression-capable use [Expressions](/versions/v0/manuals/expressions) with these additional values:
 
-| Value               | Meaning                                            |
-| ------------------- | -------------------------------------------------- |
-| `input.<name>`      | Workflow input captured at execution start.        |
-| `steps.<id>.output` | Persisted output of a completed or continued step. |
-| `steps.<id>.status` | Persisted status of that step.                     |
-| `step.input`        | Current step input.                                |
-| `step.output`       | Current step output during navigation.             |
+| Value                  | Meaning                                            |
+| ---------------------- | -------------------------------------------------- |
+| `input.<name>`         | Workflow input captured at execution start.        |
+| `steps["<id>"].output` | Persisted output of a completed or continued step. |
+| `steps["<id>"].status` | Persisted status of that step.                     |
+| `step.input`           | Current step input.                                |
+| `step.output`          | Current step output during navigation.             |
 
 ## Navigation
 
 ```yaml
 navigation:
-  - when: '{{ eq step.output.status "approved" }}'
+  - when: '${step.output.status == "approved"}'
     goto: approved
-  - when: '{{ eq step.output.status "needs-review" }}'
+  - when: '${step.output.status == "needs-review"}'
     goto: review
   - goto: rejected
 ```

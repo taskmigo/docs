@@ -23,11 +23,11 @@ spec:
 ```
 
 ```yaml
-label: '{{ Trans "applications.home.label" }}'
-description: '{{ Trans "applications.home.welcome" .User.Name }}'
+label: '${Trans("applications.home.label")}'
+description: '${Trans("applications.home.welcome", User.Name)}'
 ```
 
-_`.User` is illustrative context data, not a global Taskmigo value._
+_`User` is illustrative context data, not a global Taskmigo value._
 
 Translation resources are selected by locale and are not imported. See [Reference ability](/versions/v0/manuals/resources#reference-ability).
 
@@ -53,7 +53,7 @@ Resources with the same normalized locale merge into one effective catalog. Nest
 ## Trans
 
 ```text
-{{ Trans "key" ...values }}
+Trans("key"[, value...])
 ```
 
 Values fill formatting placeholders from left to right:
@@ -62,7 +62,7 @@ Values fill formatting placeholders from left to right:
 orders:
   summary: Order %s belongs to %s.
 
-{{ Trans "orders.summary" .Order.Number .User.Name }}
+${Trans("orders.summary", Order.Number, User.Name)}
 ```
 
 Missing or incompatible placeholder values cause a runtime error.
@@ -72,7 +72,7 @@ Missing or incompatible placeholder values cause a runtime error.
 `TransN` selects a plural form using the active locale's [Unicode CLDR plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
 
 ```text
-{{ TransN "key" count ...values }}
+TransN("key", count[, value...])
 ```
 
 ```yaml
@@ -81,7 +81,7 @@ items:
     one: You have %d item, %s.
     other: You have %d items, %s.
 
-{{ TransN "items.count" .Cart.Count .User.Name }}
+${TransN("items.count", Cart.Count, User.Name)}
 ```
 
 Plural objects use CLDR categories `zero`, `one`, `two`, `few`, `many`, and `other`. Always define `other`.

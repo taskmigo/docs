@@ -81,9 +81,9 @@ Common behavior should be a stable contract, not a convenience folder.
 | DTOs/value objects   | Java records where immutable                    | Validate at creation/boundary; avoid untyped `Map` past parsing boundaries.           |
 | Persistence          | Flyway schema + JPA/JDBC validation             | Never use Hibernate DDL generation; migrations and integration tests change together. |
 | Cross-module calls   | Public root interface or event                  | Never import another module's `internal` package or repository.                       |
-| Framework mapping    | Configuration/persistence/web adapter           | Keep Spring/Nimbus/JPA types out of core domain contracts where practical.            |
+| Framework mapping    | Configuration/persistence/web adapter           | Keep Spring, Nimbus, JPA, and FreeMarker types out of core domain contracts.          |
 
-If two capabilities need a common primitive, first decide whether one capability should own and expose it. Create a shared foundation only for truly technical, stable code such as correlation IDs or a generic outbox primitive, and protect the allowed contents with architecture tests. Shared code must not contain business endpoints, domain repositories, or feature-specific DTOs.
+If two capabilities need a common primitive, first decide whether one capability should own and expose it. Create a shared foundation only for truly technical, stable code such as the `expression` engine, correlation IDs, or a generic outbox primitive, and protect the allowed contents with architecture tests. Shared code must not contain business endpoints, domain repositories, or feature-specific DTOs. Taskmigo functions such as `Trans` remain owned by their business capability and register through the public Expression SPI.
 
 ## Recommended implementation order
 
@@ -91,14 +91,15 @@ The order below produces usable vertical slices and avoids building Policy or Wo
 
 1. Resource identity, immutable revisions, Flyway schema, and CRUD API.
 2. Tag creation and deterministic reference parsing/selection.
-3. Versioned Manifest contracts for Site, Application, Page, Component, and Translation.
-4. Resource graph resolution and diagnostics.
-5. Snapshot compilation, persistence, atomic activation, and runtime acquisition.
-6. Page/Application runtime using only compiled snapshots.
-7. Role/Group domain and effective-role resolution in `access`.
-8. Policy parser, snapshot contributor, request authorization, then object-query adapter.
-9. Workflow definition compiler and persistence state machine.
-10. Workflow worker, outbox, Actions, UI interaction, and operational recovery.
+3. FreeMarker Expression foundation, profiles, Taskmigo functions, and security/conformance tests.
+4. Versioned Manifest contracts for Site, Application, Page, Component, and Translation.
+5. Resource graph resolution and diagnostics.
+6. Snapshot compilation, persistence, atomic activation, and runtime acquisition.
+7. Page/Application runtime using only compiled snapshots.
+8. Role/Group domain and effective-role resolution in `access`.
+9. Policy predicate parser, snapshot contributor, request authorization, then object-query adapter.
+10. Workflow definition compiler and persistence state machine.
+11. Workflow worker, outbox, Actions, UI interaction, and operational recovery.
 
 Each step should include its migration, source code, tests, Manual updates, and a runnable acceptance scenario. Do not create all database tables first and postpone behavior; unused schema quickly diverges from the actual model.
 

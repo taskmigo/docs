@@ -5,7 +5,7 @@ description: Define a typed, reusable UI template for Pages.
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
-A `v0/component` packages a component tree once so any Page can import and render it. Declare the values each Page may provide in `spec.props`, then read those values from `spec.template` through `{{ props.<name> }}`.
+A `v0/component` packages a component tree once so any Page can import and render it. Declare the values each Page may provide in `spec.props`, then read those values from `spec.template` through `${props.<name>}`.
 
 A Component may import other Components. Every reusable Component used in `spec.template` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports.
 
@@ -38,7 +38,7 @@ spec:
       - component: Typography
         props:
           variant: h1
-        children: '{{ props.title }}'
+        children: '${props.title}'
 ```
 
 ## Fields
