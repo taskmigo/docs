@@ -1,0 +1,219 @@
+---
+title: API development
+description: Implement the Taskmigo HTTP API from the OpenAPI 3.2.0 contract.
+---
+
+The canonical machine-readable HTTP contract is `public/openapi/v0/openapi.yaml`. Use the [interactive Scalar API Reference](/api-reference) to browse operations, schemas, examples, and request/response contracts. The viewer loads the same OpenAPI 3.2.0 document that is reviewed in the repository, so the rendered reference and implementation contract cannot drift into separate sources of truth.
+
+## API principles
+
+The HTTP layer is an adapter over application services. Controllers do not own Resource revision rules, candidate compilation, snapshot activation, or database transactions.
+
+The API uses `/api/v0` as the HTTP contract namespace. Resource kinds remain independently versioned. A manifest kind such as `v0/page` is decomposed into `{kindVersion}/{kindName}` in URLs, so the Resource `v0/page` named `home` is addressed as:
+
+```text
+/api/v0/resources/v0/page/home
+```
+
+This avoids encoded-slash behavior while preserving the exact internal identity `(v0/page, home)`.
+
+All responses except raw manifest input are JSON. Errors use `application/problem+json` with a stable Taskmigo `code` in addition to standard Problem Details fields.
+
+All endpoints require bearer authentication. Do not hard-code product Roles in controllers. Authentication belongs to `access`; operation authorization remains a replaceable policy decision so Policy can own it when that capability enters delivery.
+
+## Endpoint surface
+
+The first API contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins, and the current runtime pointer.
+
+There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the first contract. Those operations require product semantics that are not yet defined.
+
+## Resource writes
+
+Use `PUT /api/v0/resources/{kindVersion}/{kindName}/{name}` because the client identifies the logical Resource being written. The body is the complete manifest source using `application/yaml` or `text/yaml`.
+
+### Optimistic concurrency
+
+Never implement last-write-wins for Resource authoring.
+
+A Resource GET/PUT returns a strong `ETag` representing the exact current revision.
+
+Creation uses:
+
+```http
+If-None-Match: *
+```
+
+Update uses:
+
+```http
+If-Match: "<current-revision-id>"
+```
+
+Missing required preconditions map to `428 Precondition Required`. A stale `If-Match` or an existing Resource with `If-None-Match: *` maps to `412 Precondition Failed`. A durable invariant conflict unrelated to the HTTP precondition maps to `409 Conflict`.
+
+The application service performs the authoritative compare/write in the same transaction that inserts the immutable revision and advances the current pointer. A controller-side read/check is never sufficient for concurrency safety.
+
+### Idempotent source writes
+
+Canonicalize source and compare its checksum with the current revision. If the submitted source is already current, return the existing revision with `200` instead of inserting duplicate immutable history.
+
+A newly created Resource returns `201`. A changed existing Resource returns `200`.
+
+The response includes the committed Resource/revision and, when authoring schedules Site evaluation, a candidate reference. A successful Resource write means authoring state is durable; it does not mean runtime activation succeeded.
+
+## Async activation contract
+
+Resource save and runtime activation are separate operations.
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant API
+  participant Resource
+  participant Candidate
+  participant Runtime
+
+  Client->>API: PUT Resource + precondition
+  API->>Resource: save(command)
+  Resource-->>API: committed revision + candidateId
+  API-->>Client: 200/201
+  Candidate-->>Candidate: resolve + validate + compile
+  Candidate->>Runtime: CAS activate valid snapshot
+  Client->>API: GET candidate
+  API-->>Client: queued/running/invalid/activated/failed
+```
+
+Do not hold the HTTP request open while the candidate compiles. Do not return `202` for the Resource write itself: the Resource mutation is complete when the authoring transaction commits. The asynchronous part is represented explicitly by `candidate`.
+
+Candidate states are `queued`, `running`, `invalid`, `valid`, `activated`, and `failed`. `invalid` represents deterministic product/source diagnostics. `failed` represents pipeline or infrastructure failure.
+
+Diagnostics are ordered by `sequence` and contain a stable `code`, source `path`, optional Resource/revision identity, optional line/column, and a safe message. Never expose secrets, Expression context values, SQL errors, stack traces, or internal exception class names.
+
+## Tags
+
+Tags are immutable. `POST .../tags` creates one `(kind, name, tag) -> revisionId` association.
+
+Retrying the same tag-to-revision association returns `200` with the existing association. Reusing an existing tag for another revision returns `409`. A revision that belongs to another Resource is rejected; the database composite foreign key remains the final safety boundary.
+
+Do not implement PATCH or PUT for moving tags.
+
+## Pagination
+
+List endpoints use opaque cursor pagination.
+
+```json
+{
+  "items": [],
+  "page": {
+    "nextCursor": null,
+    "hasMore": false
+  }
+}
+```
+
+`limit` defaults to 50 and is capped at 200. Cursors are implementation-owned opaque tokens. Clients must not parse or construct them.
+
+Pagination order must be deterministic and include a unique tie-breaker. Do not expose raw database offsets as cursors when concurrent inserts can cause duplicates or skips.
+
+## Problem Details
+
+Use Spring `ProblemDetail` as the transport model while keeping application failures framework-neutral.
+
+Every API problem includes a stable `code`:
+
+```json
+{
+  "type": "/problems/resource-precondition-failed",
+  "title": "Resource precondition failed",
+  "status": 412,
+  "detail": "The Resource has changed since it was read.",
+  "code": "RESOURCE_PRECONDITION_FAILED"
+}
+```
+
+Use `violations[]` for multiple request-field/source-envelope errors. Candidate diagnostics are not embedded into generic Problem Details; they remain candidate resources because graph validation is asynchronous authoring feedback.
+
+Stable error categories for this slice include `REQUEST_INVALID`, `AUTHENTICATION_REQUIRED`, `ACCESS_DENIED`, `RESOURCE_NOT_FOUND`, `RESOURCE_ALREADY_EXISTS`, `RESOURCE_PRECONDITION_REQUIRED`, `RESOURCE_PRECONDITION_FAILED`, `RESOURCE_SOURCE_INVALID`, `RESOURCE_KIND_UNSUPPORTED`, `TAG_CONFLICT`, `REVISION_NOT_FOUND`, `CANDIDATE_NOT_FOUND`, `SNAPSHOT_NOT_FOUND`, and `RUNTIME_NOT_ACTIVE`.
+
+Do not use human-readable exception messages as the machine contract.
+
+## Spring implementation
+
+Keep HTTP adapters inside the owning Resource capability:
+
+```text
+resource/internal/web/
+├── ResourceController.java
+├── ResourceRevisionController.java
+├── ResourceTagController.java
+├── SiteCandidateController.java
+├── SiteSnapshotController.java
+├── SiteRuntimeController.java
+├── dto/
+│   ├── request/
+│   └── response/
+└── ResourceProblemHandler.java
+```
+
+Controllers depend on application/query ports, never repositories.
+
+Suggested application boundaries:
+
+```java
+ResourceCommandService.save(SaveResourceCommand command)
+ResourceQueryService.get(ResourceIdentity identity)
+ResourceQueryService.list(ResourceFilter filter, CursorPageRequest page)
+ResourceRevisionQueryService.list(ResourceIdentity identity, CursorPageRequest page)
+ResourceRevisionQueryService.get(ResourceIdentity identity, UUID revisionId)
+ResourceTagService.create(CreateResourceTagCommand command)
+ResourceTagQueryService.list(ResourceIdentity identity, CursorPageRequest page)
+SiteCandidateQueryService.get(UUID candidateId)
+SiteCandidateQueryService.list(CandidateFilter filter, CursorPageRequest page)
+SiteDiagnosticQueryService.list(UUID candidateId, CursorPageRequest page)
+SiteSnapshotQueryService.get(UUID snapshotId)
+SiteSnapshotQueryService.list(CursorPageRequest page)
+SiteSnapshotQueryService.listResources(UUID snapshotId, CursorPageRequest page)
+SiteRuntimeQueryService.getActive()
+```
+
+Do not make controller DTOs the domain model. Mapping is explicit at the web boundary.
+
+## Manifest source parsing
+
+The controller treats request content as source text. It does not deserialize the manifest into controller-specific DTOs.
+
+Pass media type and source text into the Resource application boundary. Parsing, identity verification, canonicalization, checksum generation, contract dispatch, and revision persistence remain Resource responsibilities.
+
+The identity encoded in the manifest must match the Resource identity in the URL. A mismatch is rejected and must never silently rename or re-key the Resource.
+
+## Authorization boundary
+
+The first implementation authenticates bearer JWTs through the existing access/security stack.
+
+Do not scatter Role-name checks through controllers. Keep an operation-level seam such as:
+
+```java
+ResourceAuthorization.authorize(ResourceOperation operation, ResourceIdentity identity, Principal principal)
+```
+
+Until Policy is implemented, the concrete rule follows the current access contract, but the controller shape must not prevent Policy from later supplying the decision. Query authorization must happen before pagination when object filtering becomes applicable.
+
+## OpenAPI implementation rule
+
+`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for this API slice. Scalar is only the viewer; it must never become a second source of API definitions.
+
+When changing an endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
+
+Do not generate the OpenAPI file from Spring annotations as the source of truth. Code generation may consume the file, but the reviewed contract remains design-first.
+
+## API tests
+
+Contract tests parse and validate `public/openapi/v0/openapi.yaml` as OpenAPI 3.2.0 and fail on invalid references, duplicate `operationId`, invalid schemas, or unsupported contract syntax.
+
+Web integration tests use the real Spring security/filter/controller stack and prove authentication/authorization responses, content negotiation, ETag/Location headers, precondition behavior, status mappings, Problem Details codes, cursor validation, manifest URL identity mismatch, and no-op writes.
+
+PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, and cursor ordering remains deterministic under concurrent inserts.
+
+## Definition of done
+
+An API change is complete only when the OpenAPI contract, Spring adapter, application service, persistence/concurrency semantics, security boundary, Problem Details mapping, contract tests, integration tests, Scalar rendering, and Developer documentation agree.
