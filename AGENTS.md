@@ -9,6 +9,13 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 - Do not invent behavior, infer current behavior from planned work, or present an RFC as supported behavior. Ask for clarification when the contract is ambiguous or contradictory.
 - Keep product-specific rules in the documentation, not in this file, so there is only one maintained source of truth.
 
+## Repository checkout
+
+- Always create or use a local checkout of the target repository and branch before modifying repository content. Do this even when the requested edit appears small or the GitHub connector can edit the file directly.
+- Read `AGENTS.md` from that local checkout before making changes. Repository instructions from the working tree take precedence over remotely fetched copies.
+- Make and verify changes in the local checkout. Use the GitHub integration for remote repository operations such as reading remote state and publishing the verified result; do not use remote file editing as a substitute for the local working tree.
+- If a checkout cannot be created, troubleshoot the environment first. Do not silently fall back to editing through GitHub or to remote verification.
+
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
@@ -67,9 +74,11 @@ read [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md). Apply any matching environment
 workaround first so known setup failures do not interrupt or invalidate the
 verification run.
 
+Verification must run **locally in the working checkout** before any commit or push. GitHub Actions, remote CI, or another external runner may provide additional confirmation, but they never replace the required local verification gates. Do not create or modify CI workflows merely to obtain verification for a change that has not passed locally.
+
 Complete this sequence from the repository root before publishing:
 
-1. Run every verification gate in this exact order:
+1. Run every verification gate locally in this exact order:
 
 ```bash
 npm run lint:check
@@ -78,10 +87,11 @@ npm run types:check
 npm run build
 ```
 
-2. Fix every failure and restart at `npm run lint:check` after any change. `npm run lint:fix` can fix some lint issues, but review its changes and manually fix diagnostics that remain. Use `npm run format:fix` for formatting failures; fix type-check and build failures manually.
-3. Commit only after all four gates pass.
+2. Fix every failure and restart locally at `npm run lint:check` after any change. `npm run lint:fix` can fix some lint issues, but review its changes and manually fix diagnostics that remain. Use `npm run format:fix` for formatting failures; fix type-check and build failures manually.
+3. Commit only after all four local gates pass.
 4. Push the verified commit to GitHub.
+5. Treat GitHub Actions as post-push confirmation only. A passing remote workflow does not make up for missing or failed local verification.
 
-Keep commit history concise. By default, make at most one commit and one push per completed round of work. Finish the requested changes and verification before committing; do not create incremental commits for individual files, formatting fixes, or failed verification attempts. Create multiple commits only when the user explicitly requests them or when independently reviewable changes must remain separate, and explain the split before committing.
+Keep commit history concise. By default, make at most one commit and one push per completed round of work. Finish the requested changes and local verification before committing; do not create incremental commits for individual files, formatting fixes, or failed verification attempts. Create multiple commits only when the user explicitly requests them or when independently reviewable changes must remain separate, and explain the split before committing.
 
-If a required check cannot run or cannot pass, stop before commit and push, then report the blocker accurately instead of claiming the check passed.
+If a local checkout cannot be created or a required local check cannot run or pass, stop before commit and push, then report the blocker accurately instead of editing through the GitHub contents API, using GitHub Actions or another remote runner as a substitute, or claiming the check passed.
