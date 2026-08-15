@@ -19,7 +19,7 @@ children:
   - component: Typography
     props:
       variant: p
-    children: '{{ Trans "pages.index.introduction" }}'
+    children: '${Trans("pages.index.introduction")}'
 ```
 
 ## Fields
@@ -32,11 +32,12 @@ children:
       description: 'Selects the Stack renderer; casing must match exactly.',
     },
     props: {
-      type: 'Record<`data-${string}`, unknown>',
+      type: 'Dictionary',
       description: 'Data attributes passed to Stack. Every key must begin with `data-`.',
     },
     children: {
       type: <FieldType supportsExpression={true}>ReactNode</FieldType>,
+      typeDescriptionLink: '/versions/v0/manuals/manifests/v0-page#component-nodes',
       required: true,
       description: 'Content arranged by Stack in source order.',
     },

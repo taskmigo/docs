@@ -14,24 +14,24 @@ imports:
   - page/index
 spec:
   icon: https://example.com/images/home.png
-  label: '{{ Trans "applications.home.label" }}'
-  description: '{{ Trans "applications.home.description" }}'
+  label: '${Trans("applications.home.label")}'
+  description: '${Trans("applications.home.description")}'
   path: /home
   routes:
-    - page: page/index
+    - page: index
       path: /
 ```
 
-This exposes `page/index` at `<host>/home/`.
+This exposes the imported Page `index` at `<host>/home/`.
 
 ## Fields
 
 <TypeTable
   type={{
     'spec.icon': {
-      type: 'URL',
+      type: 'string',
       required: true,
-      description: 'Image shown for the application; must include a scheme and host.',
+      description: 'Image URL shown for the application; must include a scheme and host.',
     },
     'spec.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
@@ -43,17 +43,25 @@ This exposes `page/index` at `<host>/home/`.
       required: true,
       description: 'Summary shown with the application.',
     },
-    'spec.path': { type: 'AbsolutePath', required: true, description: 'URL prefix shared by its routes.' },
-    'spec.routes': { type: 'Route[]', required: true, description: 'Maps imported Pages below the application path.' },
-    'spec.routes[].page': {
-      type: 'PageReference',
+    'spec.path': {
+      type: 'string',
       required: true,
-      description: 'Selects the imported Page exposed by this route.',
+      description: 'Absolute URL path used as the prefix shared by its routes.',
+    },
+    'spec.routes': {
+      type: 'object[]',
+      required: true,
+      description: 'Maps imported Pages below the application path.',
+    },
+    'spec.routes[].page': {
+      type: 'string',
+      required: true,
+      description: 'Name of an imported Page exposed by this route.',
     },
     'spec.routes[].path': {
-      type: 'AbsolutePath',
+      type: 'string',
       required: true,
-      description: 'Appends a path below the application prefix.',
+      description: 'Absolute URL path appended below the application prefix.',
     },
   }}
 />
@@ -67,4 +75,4 @@ This exposes `page/index` at `<host>/home/`.
 
 `/` is the Application index. Every routed Page must appear in `imports`; importing one alone does not expose a route. `imports` and `spec.routes` cannot be empty, and route paths must be unique.
 
-See [Resource model](/versions/v0/resources#references) for reference rules.
+See [Resource model](/versions/v0/manuals/resources#references) for reference rules.

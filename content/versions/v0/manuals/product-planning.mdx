@@ -1,0 +1,25 @@
+---
+title: Product planning
+description: Evaluate Taskmigo capabilities, dependencies, and delivery risk.
+---
+
+Use capability status before treating a documented contract as committed runtime behavior.
+
+| Status        | Planning meaning                                            | Expected evidence                                                             |
+| ------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Defined       | The public contract is documented.                          | Canonical fields, validation rules, and runtime behavior.                     |
+| RFC           | The proposal is detailed but not implemented.               | Contract, examples, open decisions, and explicit RFC label.                   |
+| Planned       | The capability is named but not specified.                  | No delivery assumption until its contract is designed.                        |
+| Open decision | A required semantic or implementation choice is unresolved. | Decision owner and acceptance criteria should be established before delivery. |
+
+## Impact map
+
+| Change area                     | Review together                                                        |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| Resource identity or references | Imports, revision selection, snapshot resolution, package behavior.    |
+| Application or Page routing     | Application paths, imported Pages, route uniqueness, active snapshots. |
+| Component or UI contract        | Component props, Page nodes, Expressions, reusable templates.          |
+| Workflow RFC                    | Actions, persistence, retries, UI interaction, revision pinning.       |
+| Policy RFC                      | API contracts, Roles and Groups, request decisions, database adapters. |
+
+Start roadmap review with [Product status](/versions/v0/manuals/status), then follow the linked canonical page. For engineering constraints and unresolved architectural decisions, use the [Developer documentation](/versions/v0/developer).

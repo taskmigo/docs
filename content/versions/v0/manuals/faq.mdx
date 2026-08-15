@@ -1,0 +1,41 @@
+---
+title: FAQ
+description: Resolve common Taskmigo questions quickly.
+---
+
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+<Accordions type='single'>
+  <Accordion title='What identifies a resource?' id='resource-identity'>
+    `(kind, metadata.name)`. See [Resource model](/versions/v0/manuals/resources#identity-and-revisions).
+  </Accordion>
+  <Accordion title='How do I pin an imported resource version?' id='import-version'>
+    Use `<kind>/<name>`, then optionally append a tag constraint, such as `component/header@1.2.0` or `component/header@^1.2.0`. See
+    [References](/versions/v0/manuals/resources#references).
+  </Accordion>
+  <Accordion title='How do I reuse one Component across Pages?' id='reuse-component'>
+    Import it from each Page and pass Page-specific `props`. See
+    [Component](/versions/v0/manuals/manifests/v0-component#use-the-component-in-a-page).
+  </Accordion>
+  <Accordion title='Where can I use an Expression?' id='expression-scope'>
+    Fields marked with the Expression tag in their Type Table. See [Expressions](/versions/v0/manuals/expressions).
+  </Accordion>
+  <Accordion title='Where is a Page route defined?' id='page-route'>
+    In its Application. See [Paths and routes](/versions/v0/manuals/manifests/v0-application#paths-and-routes).
+  </Accordion>
+  <Accordion title='Why did my change not become active?' id='invalid-change'>
+    See [Runtime lifecycle](/versions/v0/manuals/runtime).
+  </Accordion>
+  <Accordion title='What happens to a running Workflow after an update?' id='workflow-version-pinning'>
+    See [Execution and revision pinning](/versions/v0/manuals/manifests/v0-workflow#execution-and-revision-pinning).
+  </Accordion>
+  <Accordion title='Which contracts can I use now?' id='defined-kinds'>
+    See [Product status](/versions/v0/manuals/status).
+  </Accordion>
+  <Accordion title='Where should QC or QA start?' id='quality-assurance'>
+    Use the boundary-based scenarios in [Quality assurance](/versions/v0/manuals/quality-assurance), then derive field cases from the canonical manifest page.
+  </Accordion>
+  <Accordion title='Where can developers find implementation details?' id='developer-documentation'>
+    Use [Developer documentation](/versions/v0/developer) for architecture, resource compilation, Policy, Workflow, and quality engineering.
+  </Accordion>
+</Accordions>

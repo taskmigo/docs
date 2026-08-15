@@ -5,8 +5,8 @@ description: Define durable workflows with actions, UI steps, navigation, and fa
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 
-<Callout title='RFC: not a supported manifest contract' type='warn'>
-  This contract may change before adoption. Check [Product status](/versions/v0/status) before relying on it.
+<Callout title='RFC — not implemented' type='warning'>
+  This contract may change before adoption. Check [Product status](/versions/v0/manuals/status) before relying on it.
 </Callout>
 
 A Workflow is a durable execution graph. It can run built-in actions, wait for user interaction, and choose the next step from persisted data.
@@ -33,28 +33,28 @@ spec:
     validate-employee:
       action: employee.validate
       input:
-        employeeId: '{{ input.employeeId }}'
+        employeeId: '${input.employeeId}'
       timeout: 30s
       retry:
         attempts: 3
         delay: 5s
       navigation:
-        - when: '{{ eq step.output.valid true }}'
+        - when: '${step.output.valid}'
           goto: confirm
         - goto: rejected
     confirm:
       ui:
-        component: component/employee-confirmation
+        component: employee-confirmation
         props:
-          employee: '{{ steps.validate-employee.output.employee }}'
+          employee: '${steps["validate-employee"].output.employee}'
       navigation:
-        - when: '{{ eq step.output.approved true }}'
+        - when: '${step.output.approved}'
           goto: provision
         - goto: rejected
     provision:
       action: employee.provision
       input:
-        employeeId: '{{ input.employeeId }}'
+        employeeId: '${input.employeeId}'
     rejected:
       fail:
         message: Employee onboarding was rejected
@@ -66,7 +66,11 @@ spec:
 
 <TypeTable
   type={{
-    'spec.meta': { type: 'object', required: true, description: 'Information used to present the Workflow.' },
+    'spec.meta': {
+      type: 'object',
+      required: true,
+      description: 'Groups the information used to present the Workflow.',
+    },
     'spec.meta.title': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
@@ -78,15 +82,15 @@ spec:
       description: 'Summary shown with the Workflow.',
     },
     'spec.inputs': {
-      type: 'map<string, InputDefinition>',
+      type: 'Dictionary<InputDefinition>',
       required: false,
-      description: 'Values accepted when an execution starts.',
+      description: 'Maps each user-defined input name to the definition documented below.',
     },
     'spec.start': { type: 'string', required: true, description: 'Identifies the first step to schedule.' },
     'spec.steps': {
-      type: 'map<string, StepDefinition>',
+      type: 'Dictionary<StepDefinition>',
       required: true,
-      description: 'Defines executable steps by stable identifier.',
+      description: 'Maps each stable step identifier to the step definition documented below.',
     },
   }}
 />
@@ -100,10 +104,13 @@ spec:
       required: true,
       description: 'Constrains values accepted for this input.',
     },
-    required: { type: 'boolean', required: true, description: 'Controls whether callers may omit the input.' },
+    required: {
+      type: 'boolean',
+      required: true,
+      description: 'Controls whether callers may omit the input.',
+    },
     default: {
       type: 'string | number | boolean',
-      required: false,
       description: 'Supplies a value when an optional input is omitted.',
     },
   }}
@@ -113,13 +120,67 @@ spec:
 
 A step declares exactly one of `action`, `ui`, or `fail`.
 
+<TypeTable
+  type={{
+    action: {
+      type: 'string',
+      description: 'Selects one Action Registry entry; mutually exclusive with `ui` and `fail`.',
+    },
+    input: {
+      type: 'Dictionary',
+      description: 'Supplies named values validated by the selected Action contract.',
+    },
+    timeout: { type: 'string', description: 'Limits one Action attempt using a duration such as `30s`.' },
+    retry: { type: 'object', description: 'Configures retry behavior for an Action step.' },
+    'retry.attempts': {
+      type: 'number',
+      description: 'Limits the total number of Action attempts; must be a positive integer.',
+    },
+    'retry.delay': {
+      type: 'string',
+      description: 'Waits this duration between Action attempts, such as `5s`.',
+    },
+    continueOnError: {
+      type: 'boolean',
+      description: 'Continues to navigation after Action attempts are exhausted.',
+    },
+    ui: {
+      type: 'object',
+      description: 'Waits for interaction; mutually exclusive with `action` and `fail`.',
+    },
+    'ui.component': { type: 'string', description: 'Selects an imported Component by name.' },
+    'ui.props': {
+      type: 'Dictionary',
+      description: 'Supplies named values validated by the selected Component contract.',
+    },
+    fail: {
+      type: 'object',
+      description: 'Terminates execution as failed; mutually exclusive with `action` and `ui`.',
+    },
+    'fail.message': { type: 'string', description: 'Records the failure message.' },
+    navigation: {
+      type: 'object[]',
+      description: 'Tests routes in order and selects the first matching destination.',
+    },
+    'navigation[].when': {
+      type: <FieldType supportsExpression={true}>boolean</FieldType>,
+      description: 'Controls whether this route matches; omission defines a fallback.',
+    },
+    'navigation[].goto': {
+      type: 'string',
+      required: true,
+      description: 'Selects the next stable step identifier.',
+    },
+  }}
+/>
+
 ### Action
 
 ```yaml
 load-user:
   action: user.load
   input:
-    id: '{{ input.userId }}'
+    id: '${input.userId}'
   timeout: 30s
   retry:
     attempts: 3
@@ -134,9 +195,9 @@ load-user:
 ```yaml
 approve:
   ui:
-    component: component/approval-form
+    component: approval-form
     props:
-      request: '{{ steps.load-request.output }}'
+      request: '${steps["load-request"].output}'
 ```
 
 The Component must appear in `imports`. Entering the step persists the execution as `WAITING`; submitted interaction data becomes the step output before navigation runs. User waiting time is not part of action `timeout`.
@@ -153,23 +214,23 @@ Entering the step terminates the execution as `FAILED`.
 
 ## Expressions and data flow
 
-Workflow fields marked as Expression-capable use [Expressions](/versions/v0/expressions) with these additional values:
+Workflow fields marked as Expression-capable use [Expressions](/versions/v0/manuals/expressions) with these additional values:
 
-| Value               | Meaning                                            |
-| ------------------- | -------------------------------------------------- |
-| `input.<name>`      | Workflow input captured at execution start.        |
-| `steps.<id>.output` | Persisted output of a completed or continued step. |
-| `steps.<id>.status` | Persisted status of that step.                     |
-| `step.input`        | Current step input.                                |
-| `step.output`       | Current step output during navigation.             |
+| Value                  | Meaning                                            |
+| ---------------------- | -------------------------------------------------- |
+| `input.<name>`         | Workflow input captured at execution start.        |
+| `steps["<id>"].output` | Persisted output of a completed or continued step. |
+| `steps["<id>"].status` | Persisted status of that step.                     |
+| `step.input`           | Current step input.                                |
+| `step.output`          | Current step output during navigation.             |
 
 ## Navigation
 
 ```yaml
 navigation:
-  - when: '{{ eq step.output.status "approved" }}'
+  - when: '${step.output.status == "approved"}'
     goto: approved
-  - when: '{{ eq step.output.status "needs-review" }}'
+  - when: '${step.output.status == "needs-review"}'
     goto: review
   - goto: rejected
 ```
@@ -193,7 +254,7 @@ flowchart TD
 
 ## Execution and revision pinning
 
-Starting an execution pins its Site snapshot, Workflow revision, and imported dependencies. Later changes affect new executions only. See [Runtime lifecycle](/versions/v0/runtime#workflow-execution).
+Starting an execution pins its Site snapshot, Workflow revision, and imported dependencies. Later changes affect new executions only. See [Runtime lifecycle](/versions/v0/manuals/runtime#workflow-execution).
 
 ## Page integration
 
@@ -203,7 +264,7 @@ imports:
   - workflow/access-review@1.0.0
 ```
 
-A Page imports Workflows that its users may discover and start. Workflow-to-Workflow imports are not supported. See [Reference ability](/versions/v0/resources#reference-ability).
+A Page imports Workflows that its users may discover and start. Workflow-to-Workflow imports are not supported. See [Reference ability](/versions/v0/manuals/resources#reference-ability).
 
 ## Validation
 

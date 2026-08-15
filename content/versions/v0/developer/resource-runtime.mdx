@@ -1,0 +1,161 @@
+---
+title: Resource and runtime
+description: Implement immutable resources, dependency resolution, snapshot compilation, activation, and runtime acquisition.
+---
+
+This page is the canonical engineering design for the Resource control plane and the immutable snapshot read model consumed at runtime.
+
+The `resource` capability owns authoring resources, immutable revisions, tags, validation, dependency resolution, snapshot compilation, diagnostics, and atomic activation. Do not distribute these responsibilities across the `system` module.
+
+## Target package structure
+
+```text
+com.taskmigo.console.resource/
+├── package-info.java                    # allowedDependencies = {"expression"}
+├── ActiveSiteSnapshotProvider.java       # public runtime port
+├── ManifestContract.java                 # public resource-kind extension SPI
+├── ManifestValidationContext.java
+├── NormalizedResource.java
+├── SnapshotCompilationContext.java
+├── SnapshotContributor.java              # public compiler extension port
+├── SiteSnapshotActivated.java            # public event
+└── internal/
+    ├── application/
+    │   ├── resource/ResourceCommandService.java
+    │   ├── resource/ResourceQueryService.java
+    │   ├── tag/ResourceTagService.java
+    │   └── pipeline/SiteCandidatePipeline.java
+    ├── domain/
+    │   ├── model/{ResourceIdentity,ResourceRevision,ResourceTag}.java
+    │   ├── reference/{ResourceReference,ResourceReferenceParser,RevisionSelector}.java
+    │   ├── contract/{ManifestContractRegistry,V0SiteManifestContract}.java
+    │   ├── graph/{ResolvedResourceGraph,ResourceGraphResolver}.java
+    │   └── snapshot/{CompiledSiteSnapshot,SiteSnapshotCompiler}.java
+    ├── persistence/
+    │   ├── resource/
+    │   ├── candidate/
+    │   └── snapshot/
+    ├── web/resource/
+    └── configuration/ResourceConfiguration.java
+```
+
+The public root contains only types another capability legitimately consumes. Everything else remains internal to `resource`.
+
+## Core types and ports
+
+Use value types at boundaries rather than passing raw strings and maps through the pipeline:
+
+```java
+public record ResourceIdentity(ResourceKind kind, String name) {}
+
+public record ResourceReference(
+    ResourceIdentity identity,
+    Optional<TagConstraint> tagConstraint) {}
+
+public record ResourceRevision(
+    UUID id,
+    ResourceIdentity identity,
+    ApiVersion apiVersion,
+    JsonNode manifest,
+    String checksum,
+    Instant createdAt,
+    String createdBy) {}
+
+public interface ManifestContract {
+  ApiVersion apiVersion();
+  ResourceKind kind();
+  ValidationResult validate(ResourceRevision revision, ManifestValidationContext context);
+  NormalizedResource normalize(ResourceRevision revision, ManifestValidationContext context);
+}
+
+public interface SnapshotContributor {
+  String key();
+  ContributionResult compile(SnapshotCompilationContext context);
+}
+
+public interface ActiveSiteSnapshotProvider {
+  AcquiredSiteSnapshot acquire();
+}
+```
+
+`ManifestContractRegistry` is keyed by `(apiVersion, kind)` and fails startup on duplicate registrations. Each contract implementation owns kind-specific validation and normalization. The pipeline owns ordering and cross-resource validation; individual contracts must not activate state or query the current snapshot.
+
+The first defined contracts are `V0SiteManifestContract`, `V0ApplicationManifestContract`, `V0PageManifestContract`, `V0ComponentManifestContract`, and `V0TranslationManifestContract`. Keep them under `resource.internal.domain.contract.v0`. `V0PolicyManifestContract` and `V0WorkflowManifestContract` live in their owning RFC modules and implement the public `ManifestContract` SPI.
+
+`SnapshotContributor` is the inversion point for future modules such as Policy and Workflow. Those modules depend on the public `resource` contract and register a contributor bean; `resource` never imports their internal classes.
+
+## Application services and method boundaries
+
+| Class / method to create                                          | Responsibility                                                                                                                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ResourceCommandService.save(SaveResourceCommand)`                | Parse identity, store one immutable revision, update the current-revision pointer, and enqueue affected-Site evaluation in one transaction.         |
+| `ResourceCommandService.delete(ResourceIdentity, Actor)`          | Do not implement until public deletion semantics are resolved. Any future implementation must preserve revisions pinned by snapshots or executions. |
+| `ResourceTagService.create(ResourceIdentity, SemVer, RevisionId)` | Create one immutable tag association after verifying that the revision belongs to the identity.                                                     |
+| `ResourceReferenceParser.parse(String)`                           | Parse `<kind>/<name>[@constraint]`; return a typed result or source-aware diagnostic.                                                               |
+| `RevisionSelector.select(ResourceReference)`                      | Select current revision or highest matching immutable tag; never fallback after selection.                                                          |
+| `ResourceGraphResolver.resolve(ResourceIdentity site)`            | Traverse allowed dependencies, detect cycles, reuse shared nodes, and return exact revision selections plus diagnostics.                            |
+| `ManifestContractRegistry.contractFor(ApiVersion, ResourceKind)`  | Return the one contract registered for the pair or a deterministic unsupported-contract diagnostic.                                                 |
+| `SiteCandidatePipeline.evaluate(CandidateId)`                     | Coordinate resolution, validation, contributor compilation, snapshot persistence, diagnostics, and activation.                                      |
+| `SiteSnapshotCompiler.compile(ResolvedResourceGraph)`             | Create the immutable core runtime artifact and merge successful contributor artifacts.                                                              |
+| `ActiveSiteSnapshotProvider.acquire()`                            | Return an immutable snapshot handle for one runtime operation; the handle remains valid after later activation.                                     |
+
+## Candidate flow and transaction boundaries
+
+Saving and compiling must not be one long transaction:
+
+1. **Authoring transaction:** insert the immutable revision, update `resource.current_revision_id`, and insert a queued candidate/recovery record. Commit before compilation.
+2. **Evaluation outside a transaction:** resolve, validate, and compile using an explicitly identified candidate version. Persist diagnostics when validation fails.
+3. **Snapshot transaction:** insert immutable snapshot metadata, revision pins, and artifacts.
+4. **Activation transaction:** compare the expected runtime version, replace the active snapshot reference, increment its version, and publish/record `SiteSnapshotActivated` atomically.
+
+A process crash before activation leaves the previous snapshot active. A crash after snapshot persistence but before activation may leave an unreferenced snapshot, which cleanup can remove after a retention window. A stale activation conflict reevaluates or terminates; it does not overwrite newer state.
+
+## Resolution and validation order
+
+Resolution starts from the single logical Site. Resource identity is `(kind, metadata.name)`; `apiVersion` selects the contract for a revision and is not part of identity. Unconstrained references select the current revision. Exact, caret, and tilde references select the highest matching tag.
+
+Validate in this order so one root error does not create dozens of misleading diagnostics:
+
+1. YAML syntax and source locations;
+2. `apiVersion`, `kind`, metadata, and kind-local fields;
+3. Expression syntax, allowed functions/context, and result type;
+4. reference parsing and selected-revision existence;
+5. reference-ability and cycle rules;
+6. cross-resource rules such as Site cardinality and route uniqueness;
+7. compiler capabilities, including Policy database translations;
+8. snapshot contributor validation.
+
+The same revisions, tags, contracts, and adapter capabilities must produce the same graph, diagnostics, and compiled checksum regardless of database row order.
+
+## Resource database schema
+
+Add one Flyway migration per coherent schema change. The following is the target logical schema; names may change only if all owning types and this document change together.
+
+| Table                       | Key columns                                                                                              | Purpose and ownership                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `resource`                  | `(kind, name)` PK; `current_revision_id`; timestamps                                                     | Mutable identity row and current pointer. A partial unique index where `kind = 'site'` enforces one Site. |
+| `resource_revision`         | `id` UUID PK; `(kind, name)` FK; `api_version`; `manifest` JSONB; `checksum`; `created_by`; `created_at` | Immutable source revision. Updates are prohibited.                                                        |
+| `resource_tag`              | `(kind, name, tag)` PK; `revision_id` FK; `created_at`                                                   | Immutable semantic-version association. Revision must belong to the same identity.                        |
+| `site_candidate`            | `id` UUID PK; `source_version`; `status`; `expected_runtime_version`; timestamps                         | Queued/running/valid/invalid/activated evaluation and concurrency token.                                  |
+| `site_candidate_diagnostic` | `(candidate_id, sequence)` PK; resource/revision; `code`; `path`; line/column; `message`                 | Ordered, source-aware validation output. Never stores sensitive values.                                   |
+| `site_snapshot`             | `id` UUID PK; `site_revision_id`; `checksum`; `compiler_version`; `created_at`                           | Immutable snapshot identity and format/version metadata.                                                  |
+| `site_snapshot_resource`    | `(snapshot_id, kind, name)` PK; `revision_id` FK                                                         | Exact revision pins used by the snapshot.                                                                 |
+| `site_snapshot_artifact`    | `(snapshot_id, artifact_key)` PK; `format`; `content` JSONB or binary                                    | Partitioned normalized runtime and contributor artifacts.                                                 |
+| `site_runtime_state`        | singleton PK/check; `site_name`; `active_snapshot_id`; `version`; `activated_at`                         | The one atomically replaceable active pointer.                                                            |
+
+Use foreign keys for ownership and deletion safety. Revisions and snapshots referenced by `site_snapshot_resource`, active runtime state, or Workflow execution cannot be physically deleted. Cleanup operates only on provably unreachable candidates and snapshots.
+
+## Resource verification
+
+Create focused unit tests beside each parser, selector, contract, and graph algorithm. Add PostgreSQL integration tests for revision immutability, tag selection, constraints, candidate persistence, compare-and-swap activation, and cleanup reachability.
+
+The acceptance suite must demonstrate:
+
+- valid `Site → Application → Page` compilation and activation;
+- invalid direct and transitive changes while the previous snapshot continues serving;
+- dependency recovery through the same pipeline;
+- exact, caret, tilde, missing, duplicate, disallowed, cyclic, and diamond references;
+- deterministic output after shuffled database ordering;
+- stale/new candidate races;
+- package-level atomicity;
+- historical validation for every supported `apiVersion`.

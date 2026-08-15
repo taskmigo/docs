@@ -1,0 +1,28 @@
+---
+title: Product status
+description: Distinguish defined contracts, RFCs, planned work, and open decisions.
+---
+
+| Status  | Capability                                                   | Contract scope                                                        |
+| ------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Defined | [Resource model](/versions/v0/manuals/resources)             | Identity, revisions, tags, references, and snapshots.                 |
+| Defined | [Expressions](/versions/v0/manuals/expressions)              | Dynamic values, functions, and context data.                          |
+| Defined | [Site](/versions/v0/manuals/manifests/v0-site)               | Applications and shared branding.                                     |
+| Defined | [Application](/versions/v0/manuals/manifests/v0-application) | Paths and Page routes.                                                |
+| Defined | [Page](/versions/v0/manuals/manifests/v0-page)               | Declarative UI trees.                                                 |
+| Defined | [Component](/versions/v0/manuals/manifests/v0-component)     | Typed reusable UI templates.                                          |
+| Defined | [Translation](/versions/v0/manuals/manifests/v0-translation) | Locale catalogs and pluralization.                                    |
+| RFC     | [Workflow](/versions/v0/manuals/manifests/v0-workflow)       | Actions, UI steps, navigation, and durable execution.                 |
+| RFC     | [Policy](/versions/v0/manuals/manifests/v0-policy)           | Role-attached API authorization and database-backed object filtering. |
+| Planned | `entity`, `query`, `action`, `theme`, `navigation`           | No public contract yet.                                               |
+
+“Defined” means the documentation defines the intended public contract; it does not independently guarantee that every contract is implemented. RFC capabilities are explicitly unavailable in the current runtime.
+
+## Known limitations and open decisions
+
+- Multi-tenancy is not available.
+- Page UI currently includes only [`Stack`](/versions/v0/manuals/ui-components/stack) and [`Typography`](/versions/v0/manuals/ui-components/typography), with their minimum props.
+- Missing-translation-key behavior and translation override precedence are not defined.
+- Snapshot artifact encoding, cache strategy, and retention are not finalized.
+- Public revision-tag API paths, authorization, and deletion policy are not defined.
+- The API and management surface used to attach registered Policies to Roles are not defined.

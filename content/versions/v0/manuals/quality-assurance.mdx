@@ -1,0 +1,31 @@
+---
+title: Quality assurance
+description: Derive QC and QA scenarios from Taskmigo contracts.
+---
+
+Test Taskmigo at the boundary where a decision becomes observable. Do not treat saving, activation, API authorization, object filtering, and Workflow execution as one undifferentiated operation.
+
+## Test model
+
+| Boundary            | Positive scenario                                                                                | Negative scenario                                                                     | Observable result                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Manifest schema     | Required fields and types are valid.                                                             | A required field is missing or has the wrong type.                                    | Validation result identifies the manifest path.                 |
+| Resource resolution | Every import resolves to an allowed revision.                                                    | A reference is missing, duplicated, disallowed, or has no matching tag.               | Candidate activation fails; current snapshot stays active.      |
+| Site snapshot       | The complete graph is valid.                                                                     | Any reachable resource or cross-resource rule is invalid.                             | Activation is atomic; no partial update is served.              |
+| Expression          | FreeMarker syntax, context value, function or built-in, and result type are valid for the field. | Syntax or a value/function/built-in is unavailable, or the result has the wrong type. | Validation or runtime evaluation fails at the documented phase. |
+| Policy RFC          | API glob, Role attachment, mode, and statement produce a grant/filter.                           | Request has no grant, a denial matches, or object filter cannot compile.              | Request returns `403` or object query remains fail-closed.      |
+| Workflow RFC        | Step transition is persisted and navigation resolves.                                            | Retry is exhausted, navigation has no match, or interaction is invalid.               | Execution reaches the documented persisted state.               |
+
+## High-value regression journeys
+
+1. Activate a valid `Site → Application → Page` graph and verify the routed Page.
+2. Save an invalid dependency change and verify that the previous snapshot still serves users.
+3. Restore the missing dependency and verify recovery through the same validation pipeline.
+4. Change an Expression context or result type and verify that the correct phase reports the failure.
+5. For RFC testing, verify Policy deny precedence and Workflow revision pinning independently from manifest schema validation.
+
+## Test data and assertions
+
+Use explicit resource identities and revisions in fixtures. Assert both the requested outcome and the safety invariant: no partial activation, no unfiltered Policy fallback, and no running Workflow switching revisions mid-execution.
+
+The [manifest reference](/versions/v0/manuals/manifests) is the source for field cases. [Product status](/versions/v0/manuals/status) determines whether a scenario describes a defined contract, an RFC, or planned work.

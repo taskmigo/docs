@@ -4,16 +4,16 @@ Repository-wide instructions for AI agents working on the Taskmigo documentation
 
 ## Source of truth
 
-- Use the content on the current branch under `content/versions/v0/` as the product contract. The deployed site and generated `llms.txt` routes may lag behind unpublished changes.
-- Read the pages relevant to the task. For cross-cutting changes, also review `resources.mdx`, `runtime.mdx`, `architecture.mdx`, `status.mdx`, `faq.mdx`, and the affected files under `manifests/`.
+- Use the content on the current branch under `content/versions/v0/manuals/` as the product contract. The deployed site and generated `llms.txt` routes may lag behind unpublished changes.
+- Read the pages relevant to the task. For cross-cutting changes, also review `manuals/resources.mdx`, `manuals/runtime.mdx`, `manuals/status.mdx`, the affected files under `manuals/manifests/`, and the implementation consequences under `developer/`.
 - Do not invent behavior, infer current behavior from planned work, or present an RFC as supported behavior. Ask for clarification when the contract is ambiguous or contradictory.
 - Keep product-specific rules in the documentation, not in this file, so there is only one maintained source of truth.
 
 ## Authoring
 
 - Write public documentation in English for Taskmigo users. Avoid implementation details unless they are part of the public contract.
-- Write for product users completing a task and developers implementing or integrating the contract. Structure the reading path as outcome, smallest useful example, contract, failure states, and next step.
-- The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/...`.
+- Manuals serve product users, manifest developers, QC/QA, and product managers. Developer documentation serves engineers building Taskmigo, from new team members to architects. Keep `content/versions/v0/developer/index.mdx` as a short routing page; split detailed engineering content by stable responsibility and reader task, not by every heading. Each package, class, function, database, transaction, or verification rule has one canonical page and is linked rather than repeated. Do not reference active PRs, branches, commits, or implementation history in the system design. Structure reference pages as outcome, smallest useful example, contract, failure states, and next step.
+- The version context is already established by the page location. Avoid redundant prose such as “in v0”; preserve required identifiers and routes such as `v0/site` and `/versions/v0/manuals/...`.
 - Distinguish current behavior, limitations, known issues, planned work, open decisions, and RFCs explicitly.
 - Follow existing Fumadocs and MDX patterns. Prefer suitable `fumadocs-ui` components over raw HTML.
 - Prefer concrete outcomes and examples over abstract descriptions. Define unavoidable terms on first use and do not assume that product users know React, graph, database, or runtime terminology.
@@ -35,7 +35,7 @@ Use components only when they improve navigation, comparison, sequence, or empha
 - **Inline TOC:** Long overview or index pages with many peer sections.
 - **Steps:** Procedures and lifecycle sequences where order is meaningful.
 - **Tabs:** Equivalent alternatives such as package managers or platforms; never split one sequential procedure across tabs.
-- **Type Table:** Use the `TypeTable` component for `Fields` sections and UI component prop references. Keep validation rules in prose when needed. The `type` column should describe only the data type; the `description` should explain purpose, behavior, or constraints without repeating the name or type. For Expression-capable fields, wrap the underlying type in `FieldType` with `supportsExpression={true}` (for example, `<FieldType supportsExpression={true}>string</FieldType>`). Do not spell the type as `Expression`, `Expression<T>`, or a union including `Expression`. Treat the table as the source of truth for type, required state, and Expression support; do not restate those facts in nearby prose or validation lists.
+- **Type Table:** Use `TypeTable` for `Fields` sections and UI component prop references. A page may use multiple tables when they follow the reading flow: keep top-level fields together, link standalone named types with `typeDescriptionLink`, then place each named type's complete table in its linked section. Do not duplicate the same field across summary and detail tables. The `type` column contains the actual data shape only: primitive types, literal unions, arrays, objects, dictionaries, or named structured contracts. Put semantic formats and validation constraints such as URL, absolute path, duration, integer, or locale tag in the description; do not invent type aliases for them. A parent may use `object` or `object[]` when its nested fields are listed in the same table. Use `Dictionary` for untyped dynamic keys and `Dictionary<T>` when every value has type `T`; do not write `Dictionary<unknown>` or add `typeDescriptionLink` to a Dictionary. Define `T` in the table or the immediately following linked section. Keep longer semantics, examples, and lifecycle behavior after the relevant table. Do not create a section for information that fits clearly in a type description; a section must add a substantial contract, table, example, lifecycle, or decision rule. For Expression-capable fields, wrap the underlying type in `FieldType` with `supportsExpression={true}` (for example, `<FieldType supportsExpression={true}>string</FieldType>`). Do not spell the type as `Expression`, `Expression<T>`, or a union including `Expression`. Treat the tables together as the source of truth for type, required state, and Expression support; do not restate those facts in nearby prose or validation lists.
 - **Cards:** Landing-page navigation or a small set of useful next steps.
 - **Callouts:** Notes, tips, warnings, and safety-critical constraints; keep the primary contract in normal prose.
 
@@ -55,7 +55,7 @@ Before adding a visual component, ask what question it answers:
 ## Change checklist
 
 - For a user-facing contract change, update every affected canonical page, example, cross-link, and FAQ entry.
-- Record limitations, known issues, RFCs, and unresolved decisions in `content/versions/v0/status.mdx`.
+- Record limitations, known issues, RFCs, and unresolved decisions in `content/versions/v0/manuals/status.mdx`.
 - Verify edited internal routes and fragments, changed external links, and inbound references to renamed headings or IDs.
 - Update the nearest `meta.json` when adding, removing, or reordering pages.
 - Do not hand-edit generated output. Preserve unrelated changes and keep the diff scoped to the request.

@@ -1,0 +1,17 @@
+{
+  "title": "Manuals",
+  "pages": [
+    "index",
+    "getting-started",
+    "how-taskmigo-works",
+    "manifests",
+    "ui-components",
+    "expressions",
+    "resources",
+    "runtime",
+    "quality-assurance",
+    "product-planning",
+    "faq",
+    "status"
+  ]
+}

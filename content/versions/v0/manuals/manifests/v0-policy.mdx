@@ -1,0 +1,265 @@
+---
+title: Policy
+description: 'RFC: authorize API access and filter the records an API may return.'
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+<Callout title='RFC — not implemented' type='warning'>
+  This page proposes the Policy contract. It is not available in the current runtime.
+</Callout>
+
+## Purpose
+
+One Policy manifest defines one statement for APIs whose registered paths match its glob. Its `mode` selects one authorization phase:
+
+| Mode      | Purpose                                                        | `spec.effect`                                       |
+| --------- | -------------------------------------------------------------- | --------------------------------------------------- |
+| `request` | Allow or deny an incoming API request before its handler runs. | Required: `allow` or `deny`.                        |
+| `object`  | Filter which objects an allowed API request may return.        | Forbidden; matching statements grant object scopes. |
+
+A Policy does not control response fields, Page routes, or UI visibility.
+
+Registering a Policy does not grant it to every user. The Policy must also be attached to a Role assigned directly to the user or inherited through a Group.
+
+```mermaid
+flowchart TD
+  request["Incoming API request"] --> select["Select Policies: path glob + effective Roles"]
+  select --> gate["Request mode: deny wins; allow required"]
+  gate --> filter["Object mode: build OR database predicate"]
+  filter --> handler["API handler and object query"]
+  handler --> response["Filtered API response"]
+```
+
+## Request mode
+
+Request grants and denials use separate manifests. This grant lets project readers call matching APIs:
+
+```yaml
+apiVersion: v0
+kind: policy
+metadata:
+  name: allow-project-readers
+
+spec:
+  name: Allow project readers
+  mode: request
+  effect: allow
+
+  target:
+    api: /api/v1/projects/**
+
+  statement: '${Principal.roles?seq_contains("project-reader")}'
+```
+
+This separate Policy denies suspended users even when another Policy grants access:
+
+```yaml
+apiVersion: v0
+kind: policy
+metadata:
+  name: deny-suspended-project-users
+
+spec:
+  name: Deny suspended project users
+  mode: request
+  effect: deny
+
+  target:
+    api: /api/v1/projects/**
+
+  statement: '${Principal.groups?seq_contains("suspended")}'
+```
+
+## Object mode
+
+This Policy permits matching APIs to return active or pending Projects that are public, owned by the current user, or assigned to one of the user's Groups. It excludes EU Projects from contractors.
+
+```yaml
+apiVersion: v0
+kind: policy
+metadata:
+  name: read-accessible-projects
+
+spec:
+  name: Read accessible projects
+  mode: object
+
+  target:
+    api: /api/v1/projects/**
+
+  statement:
+    and:
+      - '${["active", "pending"]?seq_contains(Resource.status)}'
+      - '${!(Resource.deletedAt??)}'
+
+      - or:
+          - '${Resource.visibility == "public"}'
+          - '${Resource.ownerUsername == Principal.username}'
+          - '${Principal.groups?seq_contains(Resource.groupId)}'
+
+      - not:
+          and:
+            - '${Resource.region == "EU"}'
+            - '${Principal.roles?seq_contains("contractor")}'
+```
+
+## Fields
+
+<TypeTable
+  type={{
+    kind: { type: '"policy"', required: true, description: 'Selects the global Policy contract.' },
+    'metadata.name': {
+      type: 'string',
+      required: true,
+      description: 'Provides the stable Policy key used by Role attachments and audit records.',
+    },
+    'spec.name': {
+      type: 'string',
+      required: true,
+      description: 'Provides the human-readable name shown in management and audit views.',
+    },
+    'spec.mode': {
+      type: '"request" | "object"',
+      required: true,
+      description: 'Selects incoming request authorization or response object filtering.',
+    },
+    'spec.effect': {
+      type: '"allow" | "deny"',
+      description: 'Makes a request-mode decision; required in request mode and forbidden in object mode.',
+    },
+    'spec.target': {
+      type: 'object',
+      required: true,
+      description: 'Groups the API selection fields.',
+    },
+    'spec.target.api': {
+      type: 'string',
+      required: true,
+      description: 'Matches normalized registered API paths using the absolute glob syntax documented below.',
+    },
+    'spec.statement': {
+      type: 'PolicyStatement',
+      typeDescriptionLink: '#statements',
+      required: true,
+      description: 'Defines a runtime request condition or a database-capable object filter, depending on the mode.',
+    },
+  }}
+/>
+
+One manifest has no `rules` collection or response `fields`. `metadata.name` is the stable key, while `spec.name` is the display name.
+
+## API path glob
+
+`spec.target.api` matches the normalized path of a registered API. It does not match an API name, raw request URL, query string, fragment, or HTTP method.
+
+| Pattern            | Matches                                      |
+| ------------------ | -------------------------------------------- |
+| `/api/v1/projects` | Only that exact registered path.             |
+| `/api/v1/*`        | Exactly one path segment below `/api/v1`.    |
+| `/api/v1/**`       | `/api/v1` and any number of nested segments. |
+| `/**`              | Every registered API path.                   |
+
+The glob must begin with `/`. Only `*` and `**` are special; regex, `?`, and character classes are not supported. Because the target does not include an HTTP method, a matching Policy applies to every method registered at that path.
+
+## Statements
+
+A `PolicyStatement` is either one predicate Expression or exactly one boolean group:
+
+<TypeTable
+  type={{
+    Expression: {
+      type: 'string',
+      description:
+        'Contains one supported FreeMarker predicate and produces a boolean request condition or database-capable object condition.',
+    },
+    and: {
+      type: 'PolicyStatement[]',
+      typeDescriptionLink: '#statements',
+      description: 'Matches only when every child statement matches.',
+    },
+    or: {
+      type: 'PolicyStatement[]',
+      typeDescriptionLink: '#statements',
+      description: 'Matches when at least one child statement matches.',
+    },
+    not: {
+      type: 'PolicyStatement',
+      typeDescriptionLink: '#statements',
+      description: 'Negates one child statement or boolean group.',
+    },
+  }}
+/>
+
+There is no implicit `and`. Boolean composition belongs in the YAML `and`, `or`, and `not` nodes rather than inside an Expression.
+
+## Available predicates
+
+Each statement is exactly one FreeMarker interpolation containing one supported predicate. Request mode evaluates it as a boolean. Object mode parses the same restricted syntax into a typed predicate and then compiles it to a parameterized PostgreSQL operation.
+
+| FreeMarker predicate                | Object-mode PostgreSQL equivalent                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `left == right`                     | `left = :right`                                                                |
+| `left != right`                     | `left <> :right`                                                               |
+| `left < right`                      | `left < :right`                                                                |
+| `left <= right`                     | `left <= :right`                                                               |
+| `left > right`                      | `left > :right`                                                                |
+| `left >= right`                     | `left >= :right`                                                               |
+| `candidates?seq_contains(value)`    | `value = ANY(:candidates)`                                                     |
+| `!(candidates?seq_contains(value))` | `value <> ALL(:candidates)`                                                    |
+| `collection?seq_contains(value)`    | `value = ANY(:collection)` or the registered column equivalent                 |
+| `value?starts_with(prefix)`         | Prefix `LIKE` with an escaped literal parameter and explicit escape character. |
+| `value?ends_with(suffix)`           | Suffix `LIKE` with an escaped literal parameter and explicit escape character. |
+| `value??`                           | `value IS NOT NULL`                                                            |
+| `!(value??)`                        | `value IS NULL`                                                                |
+
+Equality and ordering do not accept a missing value; use `??` for null checks. Prefix and suffix arguments are literals, not wildcard patterns. Every Principal, Request, and literal operand becomes a bound parameter. A collection predicate targeting a Resource field requires a registered database equivalent.
+
+Policy Expressions do not support rendered text, FreeMarker directives, assignments, arithmetic, method calls, arbitrary built-ins, I/O, or side effects. Boolean composition remains visible in the YAML `and`, `or`, and `not` nodes. Object mode never renders an Expression into SQL text.
+
+## Available values
+
+| Value                | Mode                   | Meaning                                                                                     |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `Principal.username` | `request` and `object` | Authenticated username.                                                                     |
+| `Principal.roles`    | `request` and `object` | Roles assigned directly or inherited through Groups.                                        |
+| `Principal.groups`   | `request` and `object` | Groups containing the authenticated user.                                                   |
+| `Request.<field>`    | `request` and `object` | Validated request value explicitly exposed by every API matched by the glob.                |
+| `Resource.<field>`   | `object` only          | Logical response record field exposed as policy-queryable by every API matched by the glob. |
+
+Names and paths are case-sensitive. A request value is available only when every API matched by the glob declares a compatible validated type. In object mode, each Resource value must also have a compatible database mapping across those APIs.
+
+## Evaluation
+
+Taskmigo first keeps only Policies whose API glob matches the normalized registered path and that are attached to the Principal's effective Roles. It then applies this decision table:
+
+| Phase     | Applicable result                  | Runtime action                                                       |
+| --------- | ---------------------------------- | -------------------------------------------------------------------- |
+| `request` | Any `deny` statement is `true`     | Return `403`; `deny` takes precedence.                               |
+| `request` | No denial and an `allow` is `true` | Continue to the API handler.                                         |
+| `request` | No matching grant                  | Return `403`.                                                        |
+| `object`  | One or more Policies               | Compile statements, combine them with `OR`, and apply the DB filter. |
+| `object`  | No Policy                          | Apply a false predicate and return no policy-queryable objects.      |
+
+Both phases are fail-closed. An object Policy whose statement matches nothing contributes no objects and never makes the query unfiltered. The database filter runs before counting, ordering, pagination, and serialization.
+
+For example, if the user receives `read-public-projects` and `read-owned-projects`, the resulting predicate is equivalent to:
+
+```sql
+WHERE visibility = $1
+   OR owner_username = :principal_username
+```
+
+## Database filtering contract
+
+This contract applies only to object mode. Every `Resource.*` field must be backed by a database field or a computed field with a database translation. Every `Request.*` and `Principal.*` value becomes a query parameter.
+
+When one glob matches multiple APIs, all of them must expose compatible types and database mappings for every value used by the statement. An unsupported function, unavailable value, type mismatch, missing database translation, or compilation failure makes the Policy invalid for the affected Site snapshot.
+
+Taskmigo never fetches candidate records and filters them in application memory. It never falls back to an unfiltered query. Request-mode statements are evaluated before the handler and do not produce database filters.
+
+## Global registration
+
+Policies do not participate in `imports`, and no manifest may import `policy`. Registering or changing a Policy rebuilds affected Site snapshots. Each snapshot pins the Policy revision, matched API contracts, and Role attachment used for evaluation.
+
+The Role attachment API and management surface remain an open decision; the attachment is not declared inside the Policy manifest.
