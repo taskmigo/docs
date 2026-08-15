@@ -9,7 +9,7 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 ```mermaid
 flowchart TD
-  change["Resource change"] --> resolve["Resolve affected Site graph"]
+  change["Resource change"] --> resolve["Resolve affected Site graph\n+ graph checksums"]
   recovery["Dependency recovery"] --> queue["Recovery queue"]
   queue --> resolve
   resolve --> validate{"Candidate valid?"}
@@ -27,7 +27,7 @@ Create, update, delete, restore, package import, and dependency recovery all use
 
 ### Resolve the affected Site
 
-Taskmigo resolves a complete candidate graph. Translation changes also affect Sites using the corresponding locale catalog. Under the Policy RFC, Policy revisions, matched API contracts, and Role attachments affect Sites that pin them. See [Resource resolution](/versions/v0/manuals/resources#resolution).
+Taskmigo resolves a complete candidate graph and calculates a deterministic graph checksum for every selected node. A child revision change propagates through the graph checksums of its affected ancestors, so the root Site graph changes even when the Site's own revision does not. Translation changes also affect Sites using the corresponding locale catalog. Under the Policy RFC, Policy revisions, matched API contracts, and Role attachments affect Sites that pin them. See [Resource resolution](/versions/v0/manuals/resources#resolution).
 
   </Step>
   <Step>
@@ -41,7 +41,7 @@ Each revision is validated against its `apiVersion` and `kind`, followed by depe
 
 ### Build and activate
 
-A valid candidate becomes an immutable snapshot containing the selected revisions and normalized runtime model, then replaces the active snapshot atomically.
+A valid candidate becomes an immutable snapshot containing the exact selected revisions, their resolved graph checksums, and the normalized runtime model. Its root graph checksum identifies the complete resolved Resource state compiled by that snapshot. The snapshot then replaces the active snapshot atomically.
 
   </Step>
 </Steps>
@@ -69,8 +69,8 @@ Existing executions keep their pinned Workflow and dependencies; newer snapshots
 
 ## Dependency recovery
 
-Dependency changes queue affected Sites for reevaluation. Candidates run one at a time through the lifecycle above, preventing conflicting activations. Intermediate revisions are not guaranteed to activate, and recovery has no fixed completion time.
+Dependency changes queue affected Sites for reevaluation. A dependency revision change can therefore create a new Site snapshot without creating a new Site, Application, or Page revision: the resolved graph checksums propagate the change while authored ancestor revisions remain immutable. Candidates run one at a time through the lifecycle above, preventing conflicting activations. Intermediate revisions are not guaranteed to activate, and recovery has no fixed completion time.
 
 ## Package import
 
-A package is validated as one candidate before activation. A failed import cannot partially change runtime state. Exported revision IDs, resolution results, and revision tags are not imported as manifest state.
+A package is validated as one candidate before activation. A failed import cannot partially change runtime state. Exported revision IDs, resolution results, graph checksums, and revision tags are not imported as manifest state.

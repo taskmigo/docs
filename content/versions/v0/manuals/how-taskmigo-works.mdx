@@ -13,14 +13,17 @@ flowchart LR
   snapshot --> user["Serve users"]
 ```
 
-| Concept    | What it means to you                                                     |
-| ---------- | ------------------------------------------------------------------------ |
-| Resource   | One versioned definition, such as a Site, Page, or Component.            |
-| Import     | A declared dependency between resources.                                 |
-| Revision   | An immutable saved version of a resource.                                |
-| Snapshot   | A validated, immutable set of exact revisions serving a Site.            |
-| Diagnostic | A validation problem that prevents a candidate snapshot from activating. |
+| Concept        | What it means to you                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| Resource       | One versioned definition, such as a Site, Page, or Component.                              |
+| Import         | A declared dependency between resources.                                                   |
+| Revision       | An immutable saved version of one Resource's authored source.                              |
+| Graph checksum | An identity for one resolved revision together with its exact resolved dependencies.        |
+| Snapshot       | A validated, immutable resolved graph and compiled runtime model serving a Site.            |
+| Diagnostic     | A validation problem that prevents a candidate snapshot from activating.                   |
 
 Saving a resource does not guarantee activation. Taskmigo first resolves its dependencies and validates the complete candidate. A valid candidate replaces the active snapshot atomically; an invalid candidate preserves the current working version.
+
+Changing a dependency does not manufacture new revisions for its importers. Instead, the dependency's new revision changes the resolved graph checksum of each affected ancestor. This propagation reaches the Site root and allows Taskmigo to build a new snapshot while unchanged Site, Application, or Page source keeps the same revision ID.
 
 For authoring rules, see the [resource model](/versions/v0/manuals/resources). For activation and recovery behavior, see the [runtime lifecycle](/versions/v0/manuals/runtime). Taskmigo contributors can find architecture, code ownership, and implementation guides in [Developer](/versions/v0/developer).
