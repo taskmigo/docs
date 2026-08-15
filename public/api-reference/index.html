@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Taskmigo API Reference</title>
+  </head>
+  <body>
+    <div id="scalar-api-reference"></div>
+    <script type="module">
+      import { createApiReference } from 'https://cdn.jsdelivr.net/npm/@scalar/api-reference/+esm';
+
+      createApiReference('#scalar-api-reference', {
+        url: '../openapi/v0/openapi.yaml',
+        theme: 'default',
+        layout: 'modern',
+      });
+    </script>
+  </body>
+</html>

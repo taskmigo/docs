@@ -1,9 +1,9 @@
 ---
 title: Developer
-description: Choose the shortest path into Taskmigo architecture, code, runtime, and verification.
+description: Choose the shortest path into Taskmigo implementation, API, architecture, code, runtime, and verification.
 ---
 
-This section is for engineers building Taskmigo—from a new team member locating code to an architect reviewing cross-module behavior. Start with the page that matches the task; each engineering rule has one canonical home.
+This section is the engineering handbook for building Taskmigo. Start with [Development instructions](/versions/v0/developer/development-instructions), then open the subsystem page for the implementation detail you need.
 
 <Callout title='System design and product availability' type='info'>
   Developer pages define the target implementation. [Product status](/versions/v0/manuals/status) tells you whether a
@@ -28,6 +28,21 @@ The Resource control plane validates a complete dependency graph and activates o
 
 <Cards>
   <Card
+    title='Implement Taskmigo'
+    href='/versions/v0/developer/development-instructions'
+    description='Detailed implementation phases, technical boundaries, tests, and definition of done.'
+  />
+  <Card
+    title='Implement the HTTP API'
+    href='/versions/v0/developer/api'
+    description='OpenAPI 3.2.0 contract, endpoints, concurrency, Problem Details, Spring adapters, and API tests.'
+  />
+  <Card
+    title='Explore the API'
+    href='/api-reference/'
+    description='Interactive Scalar viewer rendered directly from the canonical OpenAPI 3.2.0 document.'
+  />
+  <Card
     title='Understand the system'
     href='/versions/v0/developer/architecture'
     description='Module boundaries, dependency rules, request flows, invariants, and implementation order.'
@@ -40,7 +55,7 @@ The Resource control plane validates a complete dependency graph and activates o
   <Card
     title='Develop the database'
     href='/versions/v0/developer/database'
-    description='Schema ownership, migrations, constraints, transactions, concurrency, indexing, retention, and PostgreSQL verification.'
+    description='Schema, constraints, transactions, concurrency, retention, and PostgreSQL verification.'
   />
   <Card
     title='Build resources and runtime'
@@ -63,15 +78,3 @@ The Resource control plane validates a complete dependency graph and activates o
     description='Local gates, test layers, failure injection, acceptance evidence, and debugging entry points.'
   />
 </Cards>
-
-## Design maturity
-
-| Area                                        | Design status | Canonical guide                                                 |
-| ------------------------------------------- | ------------- | --------------------------------------------------------------- |
-| Console, identity, OAuth/OIDC, JWT, signing | Defined       | [Codebase map](/versions/v0/developer/codebase)                 |
-| Database architecture and schema evolution  | Defined       | [Database](/versions/v0/developer/database)                     |
-| Resources, tags, compilation, snapshots     | Defined       | [Resource and runtime](/versions/v0/developer/resource-runtime) |
-| API authorization and object filtering      | RFC           | [Policy](/versions/v0/developer/policy)                         |
-| Durable Workflow execution                  | RFC           | [Workflow](/versions/v0/developer/workflow)                     |
-
-**Defined** means the engineering contract is decided. **RFC** means the design is implementable but may change through documented open decisions. Neither means the capability is already available.
