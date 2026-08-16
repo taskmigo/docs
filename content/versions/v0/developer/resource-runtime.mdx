@@ -273,13 +273,13 @@ stateDiagram-v2
   ReloadRequired --> Bootstrap: full document reload
 ```
 
-| Event | Snapshot | Locale |
-| --- | --- | --- |
-| Client navigation | Keep binding value | Keep binding value |
-| Another tab changes profile language | Keep binding value | Keep binding value |
-| Explicit language change in this tab | Keep snapshot unless product rule changes | Replace locale consistently |
-| Full reload | Acquire current active snapshot | Read current profile default |
-| Binding expired/revoked/incompatible | Require reload | Rebootstrap |
+| Event                                | Snapshot                                  | Locale                       |
+| ------------------------------------ | ----------------------------------------- | ---------------------------- |
+| Client navigation                    | Keep binding value                        | Keep binding value           |
+| Another tab changes profile language | Keep binding value                        | Keep binding value           |
+| Explicit language change in this tab | Keep snapshot unless product rule changes | Replace locale consistently  |
+| Full reload                          | Acquire current active snapshot           | Read current profile default |
+| Binding expired/revoked/incompatible | Require reload                            | Rebootstrap                  |
 
 ## Binding validation
 
@@ -320,13 +320,13 @@ The exact TTL/revocation design is open. Implement cleanup behind a policy bound
 
 Runtime binding freezes **presentation**, not authority.
 
-| Data | Binding behavior |
-| --- | --- |
-| Snapshot / UI graph | Pinned |
-| Locale | Pinned |
-| Future timezone / SSR theme | Candidate for pinning |
-| Permission revocation | Do not assume pinned |
-| Account disabled state | Do not assume pinned |
+| Data                        | Binding behavior                    |
+| --------------------------- | ----------------------------------- |
+| Snapshot / UI graph         | Pinned                              |
+| Locale                      | Pinned                              |
+| Future timezone / SSR theme | Candidate for pinning               |
+| Permission revocation       | Do not assume pinned                |
+| Account disabled state      | Do not assume pinned                |
 | Subscription/business state | Owning capability decides freshness |
 
 Do not cache an authorization grant merely because the Page itself comes from an older snapshot.
@@ -363,17 +363,17 @@ The same revisions, tags, contracts, and adapter capabilities must produce the s
 
 ## Resource database schema
 
-| Table | Runtime role |
-| --- | --- |
-| `resource` | Mutable logical identity and current authoring pointer. |
-| `resource_revision` | Immutable authored source. |
-| `resource_tag` | Immutable revision selectors. |
-| `site_candidate` | One evaluation attempt. |
-| `site_candidate_diagnostic` | Durable candidate validation output. |
-| `site_snapshot` | Immutable compiled runtime identity. |
-| `site_snapshot_resource` | Exact revision + graph identity pins. |
-| `site_snapshot_artifact` | Route/Page/Component/Translation runtime artifacts. |
-| `site_runtime_state` | Current snapshot pointer consulted by bootstrap only. |
+| Table                       | Runtime role                                            |
+| --------------------------- | ------------------------------------------------------- |
+| `resource`                  | Mutable logical identity and current authoring pointer. |
+| `resource_revision`         | Immutable authored source.                              |
+| `resource_tag`              | Immutable revision selectors.                           |
+| `site_candidate`            | One evaluation attempt.                                 |
+| `site_candidate_diagnostic` | Durable candidate validation output.                    |
+| `site_snapshot`             | Immutable compiled runtime identity.                    |
+| `site_snapshot_resource`    | Exact revision + graph identity pins.                   |
+| `site_snapshot_artifact`    | Route/Page/Component/Translation runtime artifacts.     |
+| `site_runtime_state`        | Current snapshot pointer consulted by bootstrap only.   |
 
 No `runtime_binding` table is required by the current contract. Do not add one until the binding representation and retention/revocation strategy are decided. A signed stateless binding may need no per-tab durable row.
 
