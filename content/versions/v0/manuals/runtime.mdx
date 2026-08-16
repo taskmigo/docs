@@ -50,21 +50,34 @@ Diagnostics identify the error, manifest path, and source location when availabl
 
 ## Server-side rendering
 
+Next.js is an SSR consumer of the compiled runtime, not a Resource compiler. Given an incoming pathname such as `/home/settings`, it needs two logical results from the acquired snapshot:
+
+1. **Route result** — the matched Application and Page plus Site/Application metadata required by the rendered layout.
+2. **Render result** — Page metadata and body, reusable Component definitions required by that Page, and resolved Translation/Expression values required to produce the React tree.
+
+Next.js does not parse manifests, traverse imports, select revisions, resolve tags, or reconstruct the Resource graph. Revision IDs and graph checksums remain runtime integrity and inspection metadata rather than inputs the React renderer must compose itself.
+
 For v0, Expressions execute only in the Taskmigo backend. A server-side rendering operation acquires one active snapshot and keeps that immutable snapshot for route resolution, Page/Component lookup, Translation lookup, and Expression evaluation.
 
 ```mermaid
 flowchart LR
-  request["Next.js SSR request"] --> acquire["Acquire active snapshot"]
-  acquire --> route["Resolve Application + Page route"]
-  route --> render["Load compiled Page + Components"]
-  render --> expression["Evaluate Expressions in backend"]
-  expression --> model["Return resolved render model"]
+  request["Next.js SSR request\npathname + request context"] --> acquire["Acquire active snapshot"]
+  acquire --> route["Match compiled route index\nApplication + Page"]
+  route --> render["Load Page + required Components"]
+  render --> expression["Resolve Translation + Expressions\nin backend"]
+  expression --> model["Return self-contained render model"]
   model --> next["React / Next.js SSR"]
 ```
 
-Next.js receives resolved values in the render model. It does not receive Expression source or an Expression program that the browser must execute. Frontend-only Expression context is outside the v0 contract.
+The HTTP serving contract should make the happy path one backend round trip from Next.js: the request supplies the pathname and supported server request context, and the backend returns the self-contained render model needed for that SSR response. The logical route and render results do not imply separate HTTP requests.
+
+The render model contains only data required by the matched request. It is not required to expose the complete Site snapshot or one payload per Resource. Reusable Components may remain deduplicated within the model instead of being expanded at every use, as long as the model is self-contained for the Page.
+
+Next.js receives resolved Expression values. It does not receive Expression source or an Expression program that the browser must execute. Frontend-only Expression context is outside the v0 contract.
 
 A snapshot activation that happens after acquisition does not change the in-flight SSR operation. Route selection, Component structure, Translation values, and evaluated Expression results therefore always come from one consistent snapshot.
+
+Compiled route indexes and render artifacts may be cached by immutable snapshot identity, but cache partitioning, transport schema, and the concrete serving endpoint remain open design decisions. The correctness contract is independent of those optimizations: one SSR operation resolves entirely against one acquired snapshot and does not fall back to mutable current Resource pointers.
 
 ## Workflow execution
 
