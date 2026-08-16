@@ -77,111 +77,140 @@ Snapshot pinning is a UI/runtime-consistency rule, not permission caching.
 
 ## End-to-end UI rendering
 
-The serving path is optimized around one rule: **one Taskmigo backend request must provide all render-critical data for one route on the happy path**. Next.js must not reconstruct the UI by calling Resource, revision, Component, Translation, or Expression endpoints one by one.
+The current OpenAPI exposes authoring and inspection APIs, not a render API. That distinction matters because the inspection surface can describe runtime state but cannot efficiently produce a Page for React/Next.js.
+
+### What the current APIs can do
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant B as Browser
   participant N as Next.js
-  participant R as Taskmigo runtime boundary
-  participant Bind as Runtime binding
+  participant API as Current Taskmigo OpenAPI
+
+  B->>N: GET /requested-path
+  N->>API: GET /api/v0/site/runtime
+  API-->>N: activeSnapshotId
+  N->>API: GET /api/v0/site/snapshots/{snapshotId}
+  API-->>N: snapshot metadata
+  N->>API: GET /api/v0/site/snapshots/{snapshotId}/resources
+  API-->>N: exact Resource revision pins
+
+  loop For every pinned Resource needed to reconstruct the route
+    N->>API: GET /api/v0/resources/{kind}/{name}/revisions/{revisionId}
+    API-->>N: authored manifest source + revision metadata
+  end
+
+  Note over N,API: Still missing a compiled, self-contained render model
+  Note over N,API: Frontend would need to parse manifests, traverse imports and rebuild runtime semantics
+```
+
+This is an inspection flow, not the rendering flow. It has at least three backend round trips before any Resource source is fetched, then one more request per revision. It also exposes authored source rather than the compiled runtime model that the frontend needs. **Next.js must not use this chain to render UI.**
+
+The individual endpoints remain useful for authoring tools, diagnostics, admin inspection, and debugging:
+
+| Purpose                                | API                                                          |
+| -------------------------------------- | ------------------------------------------------------------ |
+| Read the active runtime pointer        | `GET /api/v0/site/runtime`                                   |
+| Read snapshot metadata                 | `GET /api/v0/site/snapshots/{snapshotId}`                    |
+| Read exact Resource pins in a snapshot | `GET /api/v0/site/snapshots/{snapshotId}/resources`          |
+| Read one immutable authored revision   | `GET /api/v0/resources/{kind}/{name}/revisions/{revisionId}` |
+| Read current authoring state           | `GET /api/v0/resources/{kind}/{name}`                        |
+
+### API required for React / Next.js rendering
+
+The serving boundary must collapse snapshot selection, route matching, compiled artifact lookup, Translation resolution, and backend Expression evaluation into **one Taskmigo request per render/navigation**.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as Browser
+  participant N as Next.js
+  participant S as Serving API (endpoint not finalized)
+  participant Bind as RuntimeBindingService
   participant Snap as Snapshot read model
-  participant Eval as Render evaluation
+  participant Eval as Runtime evaluation
 
   rect rgb(245, 245, 245)
-    Note over B,Eval: Initial full document load
+    Note over B,Eval: Initial SSR
     B->>N: GET /requested-path
-    N->>R: Bootstrap + render requested path
-    Note right of N: One frontend-to-backend HTTP call
+    N->>S: SERVING API: pathname=/requested-path, no binding
+    Note right of N: Exactly 1 Next.js -> Taskmigo HTTP call
 
-    R->>Bind: Resolve presentation defaults + acquire active snapshot
-    Bind->>Snap: Acquire exact active snapshot
-    Snap-->>Bind: Immutable snapshot + compiled artifacts
-    Bind-->>R: New opaque binding + bound context
+    S->>Bind: Bootstrap browser application instance
+    Bind->>Snap: Read active snapshot once
+    Snap-->>Bind: Exact immutable snapshot
+    Bind-->>S: New opaque runtime binding
 
-    par Route and compiled UI lookup
-      R->>Snap: Read route index + Application + Page + required Components
-      Snap-->>R: Compiled render inputs
-    and Runtime value evaluation
-      R->>Eval: Evaluate Translation + Expressions + current authoritative inputs
-      Eval-->>R: Resolved render values
+    par Compiled UI lookup
+      S->>Snap: Match Application + Page and load required Components
+      Snap-->>S: Route-scoped compiled artifacts
+    and Runtime values
+      S->>Eval: Resolve Translation + backend Expressions
+      Eval-->>S: Resolved values
     end
 
-    R-->>N: Binding + self-contained render model
+    S-->>N: binding + self-contained render model
     N-->>B: SSR HTML + hydration data + opaque binding
-    Note over B,N: Hydration needs no additional Taskmigo fetch for the same Page
+    Note over B,N: 0 extra Taskmigo requests for hydration of this Page
   end
 
   rect rgb(245, 245, 245)
-    Note over B,Eval: Client-side navigation in the same browser application instance
-    B->>N: Navigate to /next-path with existing binding
-    N->>R: Render /next-path with existing binding
-    Note right of N: Again: one frontend-to-backend HTTP call
+    Note over B,Eval: Client-side navigation in the same tab
+    B->>N: Navigate /next-path with existing binding
+    N->>S: SERVING API: pathname=/next-path, binding=B1
+    Note right of N: Exactly 1 Next.js -> Taskmigo HTTP call
 
-    R->>Bind: Validate binding
-    Bind->>Snap: Acquire the exact bound snapshot
+    S->>Bind: Validate B1
+    Bind->>Snap: Acquire exact snapshot pinned by B1
     Snap-->>Bind: Same immutable snapshot
-    Bind-->>R: Valid bound context
+    Bind-->>S: Valid bound context
 
-    par Route and compiled UI lookup
-      R->>Snap: Read next route + Page + required Components
-      Snap-->>R: Compiled render inputs
-    and Runtime value evaluation
-      R->>Eval: Resolve Translation + Expressions + current authoritative inputs
-      Eval-->>R: Resolved render values
+    par Compiled UI lookup
+      S->>Snap: Match next Page + required Components
+      Snap-->>S: Route-scoped compiled artifacts
+    and Runtime values
+      S->>Eval: Resolve Translation + backend Expressions
+      Eval-->>S: Resolved values
     end
 
-    R-->>N: Self-contained render model
+    S-->>N: self-contained render model
     N-->>B: RSC / rendered navigation response
   end
 ```
 
-The arrows between Next.js and the Taskmigo runtime boundary are the network-sensitive part of this flow. Reads between runtime services, the snapshot read model, caches, databases, and Expression/Translation evaluation are backend implementation work and must not become a serial HTTP waterfall.
+The serving endpoint is intentionally shown as **not finalized** because it is not present in the current OpenAPI contract. The important contract is the shape of the interaction: initial SSR sends the requested pathname without a binding; subsequent navigation sends the pathname plus the existing opaque binding. Both operations return everything required to render that route in one backend response.
 
 ### Round-trip budget
 
-For render-critical data, the target happy path is:
-
 | Operation                      | Browser → Next.js | Next.js → Taskmigo | Extra Taskmigo fetch after response |
-| ------------------------------ | ----------------- | ------------------ | ----------------------------------- |
-| Full load                      | 1                 | 1                  | 0                                   |
-| Navigation within the same tab | 1                 | 1                  | 0                                   |
+| ------------------------------ | ----------------: | -----------------: | ----------------------------------: |
+| Full load                      |                 1 |                  1 |                                   0 |
+| Navigation within the same tab |                 1 |                  1 |                                   0 |
 
-This does not prohibit later requests caused by user actions, live data, or another capability's freshness rules. It means the Page shell itself must not require additional network calls merely to discover its Application, Page, reusable Components, translations, or backend Expression values.
+A future serving API must therefore replace the inspection chain above rather than wrap it. The backend can still perform multiple internal cache/database reads, but those reads must stay behind the serving boundary and must not become frontend-visible HTTP calls.
 
-### Backend hot-path rules
+### Backend hot path
 
 ```mermaid
 flowchart LR
-  request["One render request"] --> binding["Validate / create binding"]
+  request["One serving request"] --> binding["Create or validate runtime binding"]
   binding --> snapshot["Acquire one exact snapshot"]
   snapshot --> cache{"Compiled artifact cached?"}
-  cache -->|"Yes"| artifacts["Route + UI artifact bundle"]
+  cache -->|"Yes"| artifacts["Route-scoped UI artifact bundle"]
   cache -->|"No"| store["Load immutable snapshot artifacts"]
   store --> artifacts
-  artifacts --> parallel["Parallel / batched runtime resolution"]
+  artifacts --> parallel["Batch / parallel runtime resolution"]
   parallel --> translation["Translation"]
   parallel --> expressions["Expressions"]
-  parallel --> authority["Required fresh authoritative inputs"]
+  parallel --> authority["Fresh authoritative inputs"]
   translation --> model["Self-contained render model"]
   expressions --> model
   authority --> model
   model --> response["One response to Next.js"]
 ```
 
-Keep the hot path predictable:
-
-- compile route indexes, Page trees, reusable Component definitions, and other static render structure when the snapshot is created rather than rebuilding them per request;
-- cache by immutable snapshot identity because snapshot content cannot change underneath the cache entry;
-- acquire the snapshot once, then reuse that exact handle for every lookup in the render operation;
-- batch or parallelize independent backend reads where correctness permits it instead of creating a serial dependency chain;
-- keep the response self-contained but scoped to the matched route—do not ship the whole Site when one Page only needs a subset of artifacts;
-- deduplicate reusable Components and repeated static values inside the render payload;
-- keep authorization and mutable business state as fresh as their owning capability requires; snapshot caching must not silently turn into permission caching;
-- use compression and normal HTTP caching semantics for transport where appropriate, while treating the runtime binding as opaque application state.
-
-The exact serving endpoint, request/response DTO, binding encoding, cache topology, and artifact partitioning remain open decisions. These performance rules constrain the future design without prematurely selecting its transport shape.
+Keep this path predictable: compile static route/UI structure when the snapshot is created, cache by immutable snapshot identity, acquire the snapshot once per render operation, batch or parallelize independent backend work, scope the payload to the matched route, deduplicate reusable Components, and keep authorization/business-state freshness independent from snapshot caching.
 
 ## Why locale is part of the binding
 
