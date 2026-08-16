@@ -5,78 +5,55 @@ description: Implement Resource compilation, snapshot activation, and browser ru
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-This page is the canonical engineering design for the Resource control plane and the runtime read model consumed by Next.js.
+This page is the implementation guide for the Resource control plane and the runtime read model consumed by Next.js.
 
 <Callout title='Implementation target' type='info'>
-  A browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the same
-  snapshot and presentation context, while security and business state can still be evaluated using their own freshness
-  rules.
+  One browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the same
+  snapshot and presentation context until the tab explicitly rebinds or performs a full reload.
 </Callout>
 
-## Architecture at a glance
+## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Authoring[Authoring / control plane]
+  subgraph Authoring[Authoring]
     save["Save Resource"] --> revision["Immutable revision"]
-    revision --> graph["Resolve graph + graph checksums"]
-    graph --> compile["Compile snapshot artifacts"]
+    revision --> graph["Resolve graph"]
+    graph --> checksum["Propagate graph checksums"]
+    checksum --> compile["Compile snapshot"]
     compile --> activate["Activate snapshot"]
   end
 
-  subgraph Runtime[Runtime / serving plane]
-    bootstrap["Bootstrap app instance"] --> binding["Runtime binding"]
+  subgraph Serving[Serving]
+    bootstrap["Bootstrap tab"] --> binding["Runtime binding"]
     binding --> route["Resolve route"]
-    route --> page["Load Page + Components"]
-    page --> expression["Evaluate Translation + Expressions"]
-    expression --> model["Self-contained render model"]
+    route --> render["Page + Components"]
+    render --> expression["Translation + Expressions"]
+    expression --> model["Render model"]
   end
 
-  activate -->|"used by new bootstrap"| bootstrap
+  activate -->|"new tabs only"| bootstrap
 ```
 
-The two planes share immutable snapshots. Runtime never reconstructs a snapshot from mutable current Resource pointers.
+Runtime uses immutable snapshots. It never rebuilds a runtime view from mutable current Resource pointers.
 
-## Target package structure
+## Runtime package
 
 ```text
 com.taskmigo.console.resource/
-├── package-info.java
 ├── ActiveSiteSnapshotProvider.java
 ├── RuntimeBindingService.java
 ├── RuntimeRenderService.java
-├── ManifestContract.java
-├── ManifestValidationContext.java
-├── NormalizedResource.java
-├── SnapshotCompilationContext.java
-├── SnapshotContributor.java
-├── SiteSnapshotActivated.java
 └── internal/
-    ├── application/
-    │   ├── resource/ResourceCommandService.java
-    │   ├── resource/ResourceQueryService.java
-    │   ├── tag/ResourceTagService.java
-    │   ├── pipeline/SiteCandidatePipeline.java
-    │   └── runtime/
-    │       ├── RuntimeBindingServiceImpl.java
-    │       └── RuntimeRenderServiceImpl.java
-    ├── domain/
-    │   ├── model/{ResourceIdentity,ResourceRevision,ResourceTag}.java
-    │   ├── reference/{ResourceReference,ResourceReferenceParser,RevisionSelector}.java
-    │   ├── contract/{ManifestContractRegistry,V0SiteManifestContract}.java
-    │   ├── graph/{ResolvedResourceGraph,ResourceGraphResolver}.java
-    │   └── snapshot/{CompiledSiteSnapshot,SiteSnapshotCompiler}.java
-    ├── persistence/
-    │   ├── resource/
-    │   ├── candidate/
-    │   └── snapshot/
-    ├── web/resource/
-    └── configuration/ResourceConfiguration.java
+    ├── application/runtime/
+    │   ├── RuntimeBindingServiceImpl.java
+    │   └── RuntimeRenderServiceImpl.java
+    └── persistence/snapshot/
 ```
 
-## Core runtime types
+Keep Resource authoring, graph resolution, compilation, and snapshot persistence in the existing Resource capability. Runtime binding is another read boundary over those immutable snapshots, not a second Resource model.
 
-Keep persistence IDs and mutable profile objects out of the browser contract.
+## Runtime contracts
 
 ```java
 public interface ActiveSiteSnapshotProvider {
@@ -104,80 +81,64 @@ public interface RuntimeRenderService {
 }
 ```
 
-`RuntimeBinding` is a server-side value. Its browser representation is opaque. Do not let frontend code construct a binding from `snapshotId`, locale, graph checksum, or other individual fields.
+`RuntimeBinding` is server-side. The browser receives only an opaque representation and must not construct bindings from snapshot IDs, locale values, checksums, or database keys.
 
-## Implement bootstrap
+## Bootstrap a tab
 
-A full document load starts a new browser application instance.
+A full document request creates a fresh application instance.
 
 <Steps>
   <Step>
 
 ### Read presentation defaults
 
-Resolve the user's current presentation defaults before creating the binding. Locale is required for the current design.
-
-```text
-User profile / request defaults
-          ↓
-PresentationContext(locale = ja-JP)
-```
-
-Do not pass the mutable profile object into the rendering pipeline.
+Resolve the current presentation defaults. Locale is required by the current contract. Do not pass a mutable user-profile object into the render pipeline.
 
   </Step>
   <Step>
 
-### Acquire the active snapshot once
+### Acquire the active snapshot
 
-`ActiveSiteSnapshotProvider.acquire()` reads the active pointer and immediately turns it into an immutable snapshot handle.
+Read `site_runtime_state.active_snapshot_id` once and acquire that immutable snapshot.
 
 ```mermaid
 sequenceDiagram
   participant Binding as RuntimeBindingService
   participant State as site_runtime_state
-  participant Snapshot as Snapshot store
+  participant Store as Snapshot store
 
   Binding->>State: read active_snapshot_id
   State-->>Binding: S42
-  Binding->>Snapshot: acquire S42
-  Snapshot-->>Binding: immutable handle S42
+  Binding->>Store: acquire S42
+  Store-->>Binding: immutable S42
 ```
 
-After this step, bootstrap does not read `site_runtime_state` again.
+After acquisition, bootstrap does not read the active pointer again.
 
   </Step>
   <Step>
 
-### Create and encode the binding
+### Create the runtime binding
 
-Combine the acquired snapshot, presentation context, and renderer compatibility into one binding, then encode it into an opaque browser value.
+Bind the snapshot, presentation context, and renderer compatibility, then encode the result as an opaque browser value.
 
 ```text
-S42
-+ locale ja-JP
-+ renderer compatibility
-        ↓
-RuntimeBinding B1
-        ↓
-opaque token for browser
+S42 + ja-JP + renderer compatibility -> B1
 ```
-
-The token may eventually be signed/stateless, server-side, or hybrid. Keep `RuntimeBindingService` independent from that choice.
 
   </Step>
   <Step>
 
 ### Render the initial Page
 
-Use the newly created binding for the first SSR render. The initial HTML and the opaque binding therefore describe the same runtime view.
+Use `B1` for the first SSR render so the HTML and the browser binding describe exactly the same runtime view.
 
   </Step>
 </Steps>
 
-## Implement client-side navigation
+## Navigate without changing version
 
-Client navigation must **validate the existing binding**, never bootstrap again.
+Client-side navigation validates the existing binding. It does not bootstrap again.
 
 ```mermaid
 sequenceDiagram
@@ -185,251 +146,152 @@ sequenceDiagram
   participant Next as Next.js
   participant Binding as RuntimeBindingService
   participant Render as RuntimeRenderService
-  participant Snapshot as Snapshot artifacts
+  participant Store as Snapshot store
 
-  Browser->>Next: navigate /settings + opaque B1
-  Next->>Binding: validate(B1, renderer)
-  Binding->>Snapshot: acquire bound snapshot S42
-  Snapshot-->>Binding: immutable S42
-  Binding-->>Next: RuntimeBinding(S42, ja-JP)
-  Next->>Render: render(binding, /settings, requestContext)
+  Browser->>Next: /settings + B1
+  Next->>Binding: validate B1
+  Binding->>Store: acquire bound S42
+  Store-->>Binding: immutable S42
+  Binding-->>Next: S42 + ja-JP
+  Next->>Render: render /settings
   Render-->>Next: self-contained render model
   Next-->>Browser: RSC / rendered response
 ```
 
-<Callout title='Never reacquire current runtime during navigation' type='warning'>
-  Do not call `ActiveSiteSnapshotProvider.acquire()` without the bound snapshot identity after binding validation. Doing so
-  can mix an old layout with a newly activated Page graph.
+<Callout title='Never reacquire the active snapshot during navigation' type='warning'>
+  After a binding is validated, every route, Page, Component, Translation, and Expression lookup must use its bound
+  snapshot. Silently switching to the newly active snapshot can create a UI that never existed as one valid version.
 </Callout>
 
-## Implement route and render resolution
-
-`RuntimeRenderService` performs the full serving operation using the validated binding.
+## Build one render model
 
 ```mermaid
 flowchart TD
-  input["RuntimeBinding + pathname"] --> route["Lookup pathname in compiled route index"]
-  route --> found{"Route found?"}
-  found -->|No| notfound["Return deterministic not-found"]
-  found -->|Yes| app["Load Application metadata"]
-  app --> page["Load compiled Page artifact"]
-  page --> deps["Load required reusable Components"]
-  deps --> trans["Select Translation catalog using binding locale"]
-  trans --> expr["Evaluate backend Expressions"]
-  expr --> output["Build self-contained RuntimeRenderModel"]
+  input["Binding + pathname"] --> route["Compiled route index"]
+  route --> found{"Matched?"}
+  found -->|"No"| notfound["Not found"]
+  found -->|"Yes"| page["Application + Page"]
+  page --> component["Required reusable Components"]
+  component --> translation["Translation catalog for bound locale"]
+  translation --> expression["Evaluate backend Expressions"]
+  expression --> model["Self-contained RuntimeRenderModel"]
 ```
 
-The render model contains only what the requested Page needs. It may deduplicate reusable Components, but Next.js must not need additional Resource/revision requests to complete the render.
+The model contains everything Next.js needs for that Page. Reusable Components may be deduplicated inside the payload, but rendering must not require a serial Resource-by-Resource HTTP chain.
 
-## Keep locale stable across tabs
-
-Profile language is a bootstrap default, not a live locale pointer.
+## Keep locale consistent across tabs
 
 ```mermaid
 sequenceDiagram
-  participant TabA as Tab A
-  participant TabB as Tab B
+  participant A as Tab A
+  participant B as Tab B
   participant Profile
   participant Runtime
 
-  TabA->>Runtime: bootstrap
-  Runtime-->>TabA: B1 = S42 + ja-JP
+  A->>Runtime: bootstrap
+  Runtime-->>A: B1 = S42 + ja-JP
+  B->>Runtime: bootstrap
+  Runtime-->>B: B2 = S42 + ja-JP
 
-  TabB->>Runtime: bootstrap
-  Runtime-->>TabB: B2 = S42 + ja-JP
+  B->>Profile: set language = en
+  Profile-->>B: saved
 
-  TabB->>Profile: change language to en
-  Profile-->>TabB: saved
+  A->>Runtime: navigate /orders + B1
+  Runtime-->>A: render S42 + ja-JP
 
-  TabA->>Runtime: navigate /orders + B1
-  Runtime-->>TabA: render with ja-JP
-
-  TabB->>Runtime: replace presentation binding
-  Runtime-->>TabB: B3 = S42 + en
+  B->>Runtime: explicit locale change
+  Runtime-->>B: B3 = S42 + en
 ```
 
-The important implementation rule is simple:
+`Trans` and `TransN` read `RuntimeBinding.presentation.locale`. They do not reread the mutable profile language on each navigation. The profile value is a bootstrap default, or an input to an explicit presentation rebind in that tab.
 
-```text
-Trans / TransN locale = RuntimeBinding.presentation.locale
-```
-
-not:
-
-```text
-Trans / TransN locale = UserProfile.currentLanguage on every request
-```
-
-An explicit language change replaces the binding for that tab and rerenders that tab consistently. It does not mutate bindings already running in other tabs.
-
-## Full reload versus client navigation
+## Binding lifecycle
 
 ```mermaid
 stateDiagram-v2
   [*] --> Bootstrap
-  Bootstrap --> Bound: create B1
-  Bound --> Bound: client navigation uses B1
+  Bootstrap --> Bound: create binding
+  Bound --> Bound: client navigation
   Bound --> Rebind: explicit presentation change
-  Rebind --> Bound: create replacement binding
-  Bound --> Bootstrap: full document reload
+  Rebind --> Bound: replacement binding
+  Bound --> Bootstrap: full reload
   Bound --> ReloadRequired: expired / revoked / incompatible
-  ReloadRequired --> Bootstrap: full document reload
+  ReloadRequired --> Bootstrap: full reload
 ```
 
-| Event                                | Snapshot                                  | Locale                       |
-| ------------------------------------ | ----------------------------------------- | ---------------------------- |
-| Client navigation                    | Keep binding value                        | Keep binding value           |
-| Another tab changes profile language | Keep binding value                        | Keep binding value           |
-| Explicit language change in this tab | Keep snapshot unless product rule changes | Replace locale consistently  |
-| Full reload                          | Acquire current active snapshot           | Read current profile default |
-| Binding expired/revoked/incompatible | Require reload                            | Rebootstrap                  |
+A full reload acquires the current active snapshot and current presentation defaults. Another tab changing the profile does not mutate this tab. A future expired, revoked, or incompatible binding must request a reload instead of silently switching runtime versions.
 
-## Binding validation
-
-Validation should produce a small explicit state machine instead of scattered checks.
+## Validate a binding
 
 ```mermaid
 flowchart TD
-  token["Opaque binding"] --> decode{"Decode + integrity valid?"}
-  decode -->|No| invalid["INVALID"]
-  decode -->|Yes| expiry{"Expired / revoked?"}
-  expiry -->|Yes| reload["RELOAD_REQUIRED"]
-  expiry -->|No| compat{"Renderer compatible?"}
-  compat -->|No| reload
-  compat -->|Yes| snapshot{"Bound snapshot retained?"}
-  snapshot -->|No| reload
-  snapshot -->|Yes| valid["VALID"]
+  token["Opaque binding"] --> integrity{"Integrity valid?"}
+  integrity -->|"No"| invalid["INVALID"]
+  integrity -->|"Yes"| lifetime{"Expired / revoked?"}
+  lifetime -->|"Yes"| reload["RELOAD_REQUIRED"]
+  lifetime -->|"No"| compatibility{"Renderer compatible?"}
+  compatibility -->|"No"| reload
+  compatibility -->|"Yes"| retained{"Snapshot retained?"}
+  retained -->|"No"| reload
+  retained -->|"Yes"| valid["VALID"]
 ```
 
-Do not silently replace an invalid binding with the current snapshot during a navigation request. That would recreate the mixed-version problem. Return an explicit reload-required result instead.
+Token encoding, TTL, revocation, and renderer-compatibility protocol remain open decisions. Keep those mechanics behind `RuntimeBindingService`.
 
-## Snapshot retention
-
-Runtime binding makes inactive snapshots temporarily serveable.
+## Retain old snapshots safely
 
 ```mermaid
 flowchart LR
-  active["S42 active"] --> activate["S50 activates"]
-  activate --> inactive["S42 inactive"]
-  inactive --> retained["Retain while bindings may reference S42"]
-  retained --> safe{"Retention window passed\n+ no durable references?"}
-  safe -->|No| retained
-  safe -->|Yes| cleanup["Cleanup S42"]
+  s42["S42 active"] --> s50["S50 activates"]
+  s50 --> old["S42 inactive but serveable"]
+  old --> retain["Retention policy"]
+  retain --> safe{"Safe to remove?"}
+  safe -->|"No"| retain
+  safe -->|"Yes"| cleanup["Delete S42 artifacts"]
 ```
 
-The exact TTL/revocation design is open. Implement cleanup behind a policy boundary so choosing signed tokens versus persisted leases does not force a Resource model rewrite.
+Do not add a `runtime_binding` table yet. A signed stateless token may not need one. Cleanup must remain compatible with whichever lease/token strategy is selected later.
 
-## Security boundary
+## Do not pin authority with presentation
 
-Runtime binding freezes **presentation**, not authority.
+```mermaid
+flowchart LR
+  binding["Runtime binding"] --> pinned["Pinned: snapshot, locale"]
+  binding --> future["Possible later: timezone, SSR theme"]
+  security["Authoritative state"] --> fresh["Own freshness rules"]
+  fresh --> permission["Permissions / account status"]
+  fresh --> business["Business / subscription state"]
+```
 
-| Data                        | Binding behavior                    |
-| --------------------------- | ----------------------------------- |
-| Snapshot / UI graph         | Pinned                              |
-| Locale                      | Pinned                              |
-| Future timezone / SSR theme | Candidate for pinning               |
-| Permission revocation       | Do not assume pinned                |
-| Account disabled state      | Do not assume pinned                |
-| Subscription/business state | Owning capability decides freshness |
+A bound UI version does not justify reusing stale authorization decisions.
 
-Do not cache an authorization grant merely because the Page itself comes from an older snapshot.
-
-## Candidate flow and transaction boundaries
+## Candidate and activation flow
 
 ```mermaid
 flowchart TD
-  save["Authoring transaction\nsave revision + move current pointer"] --> evaluate["Evaluation\nresolve + validate + compile"]
+  save["Authoring transaction"] --> evaluate["Resolve + validate + compile"]
   evaluate --> valid{"Valid?"}
-  valid -->|No| diagnostics["Persist diagnostics"]
-  valid -->|Yes| snapshot["Snapshot transaction\nmetadata + pins + artifacts"]
-  snapshot --> activation["Activation transaction\nCAS active pointer"]
+  valid -->|"No"| diagnostics["Persist diagnostics"]
+  valid -->|"Yes"| snapshot["Persist snapshot + pins + artifacts"]
+  snapshot --> activation["CAS active pointer"]
+  activation --> newbinding["Used by future bootstrap"]
 ```
 
-A crash before activation leaves the previous snapshot active. A crash after snapshot persistence but before activation may leave an unreferenced snapshot for later cleanup. A stale activation loses the compare-and-swap race.
+A crash before activation leaves the previous snapshot active. Activation changes new bindings only; existing valid bindings continue to use their immutable snapshot.
 
-Activation affects **new bindings**. Existing valid bindings continue to reference their immutable snapshot until reload or a future expiry/revocation rule requires replacement.
-
-## Resolution and validation order
-
-<Steps>
-  <Step>
-
-### Parse source
-
-Parse YAML and retain source locations.
-
-  </Step>
-  <Step>
-
-### Validate the local contract
-
-Validate `apiVersion`, `kind`, metadata, kind-local fields, and Expression syntax/result types.
-
-  </Step>
-  <Step>
-
-### Resolve references
-
-Parse references, select exact revisions, and validate reference-ability and cycles.
-
-  </Step>
-  <Step>
-
-### Validate the complete graph
-
-Validate cross-resource rules, compiler capabilities, and snapshot contributors.
-
-  </Step>
-  <Step>
-
-### Compile deterministically
-
-Calculate graph checksums bottom-up and compile runtime artifacts.
-
-  </Step>
-</Steps>
-
-The same revisions, tags, contracts, and adapter capabilities must produce the same graph, diagnostics, graph checksums, and compiled checksum regardless of database row or traversal order.
-
-## Resource database schema
-
-| Table                       | Runtime role                                            |
-| --------------------------- | ------------------------------------------------------- |
-| `resource`                  | Mutable logical identity and current authoring pointer. |
-| `resource_revision`         | Immutable authored source.                              |
-| `resource_tag`              | Immutable revision selectors.                           |
-| `site_candidate`            | One evaluation attempt.                                 |
-| `site_candidate_diagnostic` | Durable candidate validation output.                    |
-| `site_snapshot`             | Immutable compiled runtime identity.                    |
-| `site_snapshot_resource`    | Exact revision + graph identity pins.                   |
-| `site_snapshot_artifact`    | Route/Page/Component/Translation runtime artifacts.     |
-| `site_runtime_state`        | Current snapshot pointer consulted by bootstrap only.   |
-
-No `runtime_binding` table is required by the current contract. Do not add one until the binding representation and retention/revocation strategy are decided. A signed stateless binding may need no per-tab durable row.
-
-See [Database](/versions/v0/developer/database) for physical columns, constraints, transaction details, and cleanup reachability.
-
-## Verification scenarios
+## Verification
 
 ```mermaid
 flowchart LR
-  A["Tab A: S42 + ja-JP"] --> nav["Navigate after S50 activates"]
-  nav --> expect1["Still S42 + ja-JP"]
+  activation["S50 activates"] --> tabA["Tab A bound to S42"]
+  tabA --> nav["Navigate"]
+  nav --> same["Still S42"]
 
-  B["Tab B changes profile to en"] --> navA["Tab A navigates"]
-  navA --> expect2["Still ja-JP"]
+  language["Tab B profile -> en"] --> tabA2["Tab A bound ja-JP"]
+  tabA2 --> nav2["Navigate"]
+  nav2 --> sameLocale["Still ja-JP"]
 
-  reload["Tab A full reload"] --> expect3["Acquire active snapshot + current locale"]
+  reload["Tab A full reload"] --> latest["Current snapshot + current locale"]
 ```
 
-The acceptance suite must prove:
-
-- child revision changes propagate graph checksums without manufacturing ancestor revisions;
-- a new snapshot activates without changing existing runtime bindings;
-- client navigation uses the same bound snapshot after newer activation;
-- a bound locale survives profile-language changes from another tab;
-- an explicit language change replaces only the current tab's presentation binding;
-- full reload can adopt the latest active snapshot and current profile defaults;
-- invalid/expired/incompatible bindings require reload instead of silently switching versions;
-- runtime rendering never falls back to `resource.current_revision_id` after binding validation;
-- route resolution, Page/Component loading, Translation lookup, and Expression evaluation all use the same validated binding.
+The acceptance suite must prove snapshot stability after activation, locale stability after another tab changes the profile, explicit rebind isolation, full-reload adoption of current defaults, reload-required behavior for invalid bindings, and zero fallback to mutable Resource pointers after binding validation.
