@@ -5,7 +5,7 @@ description: Implement Resource compilation, snapshot activation, and browser ru
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-This page is the implementation guide for the Resource control plane and the runtime read model consumed by Next.js.
+This page is the implementation guide for the Resource control plane and the runtime read model consumed by Next.js. The proposed network-efficient serving model is developed separately in [Incremental Runtime Graph Delivery](/versions/v0/developer/incremental-runtime-graph); keep its open wire-protocol decisions behind the runtime boundaries described here.
 
 <Callout title='Implementation target' type='info'>
   One browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the
@@ -29,7 +29,7 @@ flowchart LR
     binding --> route["Resolve route"]
     route --> render["Page + Components"]
     render --> expression["Translation + Expressions"]
-    expression --> model["Render model"]
+    expression --> model["Renderer-consumable runtime payload"]
   end
 
   activate -->|"new app instances"| bootstrap
@@ -132,7 +132,7 @@ sequenceDiagram
   Store-->>Binding: immutable S42
   Binding-->>Next: valid B1 = S42 + ja-JP
   Next->>Render: render /settings with B1
-  Render-->>Next: self-contained render model
+  Render-->>Next: renderer-consumable runtime payload
   Next-->>Browser: RSC / rendered response
 ```
 
@@ -141,7 +141,7 @@ sequenceDiagram
   Silently switching to the newly active snapshot can create a UI that never existed as one valid version.
 </Callout>
 
-## Build one render model
+## Build one render operation
 
 ```mermaid
 flowchart TD
@@ -152,10 +152,10 @@ flowchart TD
   page --> component["Required reusable Components"]
   component --> translation["Catalog for bound locale"]
   translation --> expression["Evaluate backend Expressions"]
-  expression --> model["Self-contained RuntimeRenderModel"]
+  expression --> payload["Renderer-consumable runtime payload"]
 ```
 
-The model contains everything Next.js needs for that Page. Reusable Components may be deduplicated inside the payload, but rendering must not require a serial Resource-by-Resource HTTP chain.
+The operation must provide everything Next.js needs to render the requested Page without a serial Resource-by-Resource HTTP chain. The public serving payload is not finalized. In particular, it may use the progressive graph/delta design described in [Incremental Runtime Graph Delivery](/versions/v0/developer/incremental-runtime-graph) rather than retransmitting a complete Page model on every navigation.
 
 ## Keep locale consistent across tabs
 
