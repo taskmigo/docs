@@ -86,25 +86,20 @@ The binding belongs to the browser application instance, not the login session. 
 
 Consider a user whose profile language starts as Japanese:
 
-```text
-Tab 1 bootstrap -> snapshot S42 + locale ja-JP
-Tab 2 bootstrap -> snapshot S42 + locale ja-JP
+```mermaid
+flowchart LR
+  tab1["Tab 1 bootstrap"] --> tab1Binding["S42 + ja-JP"]
+  tab2["Tab 2 bootstrap"] --> tab2Binding["S42 + ja-JP"]
 ```
 
 The user changes their profile language to English in Tab 2. The profile default is now English, but Tab 1 already contains Japanese layout text. If Tab 1 reread the mutable profile during its next client navigation, the existing layout could remain Japanese while the newly rendered Page becomes English.
 
 Taskmigo avoids that mixed UI by separating **profile defaults** from the **active presentation context** of an application instance:
 
-```text
-User profile language
-        |
-        | used when bootstrapping or explicitly changing this tab
-        v
-Runtime binding locale
-        |
-        | source of truth for rendering this app instance
-        v
-Translation + Expression evaluation
+```mermaid
+flowchart TD
+  profile["User profile language"] -->|"Bootstrap or explicit language change"| locale["Runtime binding locale"]
+  locale -->|"Source of truth for this app instance"| evaluation["Translation + Expression evaluation"]
 ```
 
 Changing the profile does not silently mutate other running tabs. If the user explicitly changes language in the current tab, that tab may establish a new presentation binding and rerender consistently; the exact language-change transport is still an API design decision. Other tabs keep their captured locale until they explicitly change it, reload, or their binding is no longer valid.
