@@ -5,6 +5,7 @@
     "architecture",
     "development-instructions",
     "resource-runtime",
+    "incremental-runtime-graph",
     "api",
     "database",
     "codebase",
