@@ -352,14 +352,41 @@ Activation affects **new bindings**. Existing valid bindings continue to referen
 ## Resolution and validation order
 
 <Steps>
-  <Step>Parse YAML and retain source locations.</Step>
-  <Step>Validate `apiVersion`, `kind`, metadata, and kind-local fields.</Step>
-  <Step>Validate Expression syntax, allowed functions/context, and result type.</Step>
-  <Step>Parse references and select exact revisions.</Step>
-  <Step>Validate reference-ability and cycles.</Step>
-  <Step>Validate cross-resource rules such as Site cardinality and route uniqueness.</Step>
-  <Step>Validate compiler capabilities and snapshot contributors.</Step>
-  <Step>Calculate deterministic graph checksums bottom-up and compile artifacts.</Step>
+  <Step>
+
+### Parse source
+
+Parse YAML and retain source locations.
+
+  </Step>
+  <Step>
+
+### Validate the local contract
+
+Validate `apiVersion`, `kind`, metadata, kind-local fields, and Expression syntax/result types.
+
+  </Step>
+  <Step>
+
+### Resolve references
+
+Parse references, select exact revisions, and validate reference-ability and cycles.
+
+  </Step>
+  <Step>
+
+### Validate the complete graph
+
+Validate cross-resource rules, compiler capabilities, and snapshot contributors.
+
+  </Step>
+  <Step>
+
+### Compile deterministically
+
+Calculate graph checksums bottom-up and compile runtime artifacts.
+
+  </Step>
 </Steps>
 
 The same revisions, tags, contracts, and adapter capabilities must produce the same graph, diagnostics, graph checksums, and compiled checksum regardless of database row or traversal order.
