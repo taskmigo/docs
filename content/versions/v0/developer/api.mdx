@@ -23,9 +23,36 @@ All endpoints require bearer authentication. Do not hard-code product Roles in c
 
 ## Endpoint surface
 
-The first API contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins with resolved graph checksums, and the current runtime pointer.
+The current OpenAPI contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins with resolved graph checksums, and the current runtime pointer.
 
-There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the first contract. Those operations require product semantics that are not yet defined.
+This inspection surface is not sufficient for Next.js SSR rendering. A serving API still needs to expose the compiled runtime read model described below. Its concrete path and transport schema remain an open decision and must not be invented independently in implementation.
+
+There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the current contract. Those operations require product semantics that are not yet defined.
+
+## SSR serving contract
+
+Next.js must not reconstruct runtime state from Resource and revision endpoints. Given an incoming pathname, the serving boundary must resolve the request from one acquired immutable snapshot and return a self-contained render model.
+
+The logical route result contains:
+
+- the matched Application and Page;
+- Site/Application metadata required by the rendered layout;
+- a deterministic not-found outcome when the active snapshot has no matching route.
+
+The logical render result contains:
+
+- Page metadata and body;
+- every reusable Component definition required to render that Page, without requiring follow-up Resource requests;
+- Translation and Expression results required by the render;
+- immutable runtime identity sufficient for caching and diagnostics.
+
+These are logical parts of one serving operation, not a requirement for separate HTTP endpoints. The happy path should require one backend HTTP round trip from Next.js SSR. The backend may load multiple snapshot artifacts internally, but Next.js must not perform a serial Site → Application → Page → Component request chain.
+
+For v0, Expression evaluation is backend-only. The serving API returns resolved values and does not expose Expression source or a frontend Expression program.
+
+A serving operation acquires the active snapshot once. Route lookup, Page/Component loading, Translation lookup, and Expression evaluation all use that same handle even if another snapshot activates before the response completes. The serving path never falls back to mutable `resource.current_revision_id`.
+
+Compiled route indexes and render artifacts may be cached by immutable snapshot identity. Exact artifact partitioning, cache topology, and the public serving endpoint/schema are still open decisions; optimize them without weakening the one-snapshot or one-round-trip contracts.
 
 ## Resource writes
 
@@ -91,7 +118,7 @@ Diagnostics are ordered by `sequence` and contain a stable `code`, source `path`
 
 ## Checksum contract
 
-The API exposes three different immutable checksums and must not collapse them into one meaning:
+The API exposes distinct immutable checksums and must not collapse them into one meaning:
 
 | Field | Meaning | Changes when a child dependency changes? |
 | --- | --- | :---: |
@@ -191,6 +218,8 @@ SiteSnapshotQueryService.listResources(UUID snapshotId, CursorPageRequest page)
 SiteRuntimeQueryService.getActive()
 ```
 
+Do not add the unresolved SSR serving endpoint to this list until its OpenAPI transport contract is decided. The internal runtime boundary should nevertheless be able to acquire one snapshot and produce the logical route/render result without querying current authoring pointers.
+
 Do not make controller DTOs the domain model. Mapping is explicit at the web boundary.
 
 ## Manifest source parsing
@@ -215,9 +244,11 @@ Until Policy is implemented, the concrete rule follows the current access contra
 
 ## OpenAPI implementation rule
 
-`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for this API slice.
+`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for the currently defined API surface.
 
-When changing an endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
+When changing a defined endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
+
+Do not add a speculative SSR serving operation to OpenAPI until its concrete path, request context, response schema, and error semantics are decided. The runtime requirements in this guide constrain that future design.
 
 Do not generate the OpenAPI file from Spring annotations as the source of truth. Code generation may consume the file, but the reviewed contract remains design-first.
 
@@ -228,6 +259,8 @@ Contract tests parse and validate `public/openapi/v0/openapi.yaml` as OpenAPI 3.
 Web integration tests use the real Spring security/filter/controller stack and prove authentication/authorization responses, content negotiation, ETag/Location headers, precondition behavior, status mappings, Problem Details codes, cursor validation, manifest URL identity mismatch, no-op writes, and snapshot graph-checksum serialization.
 
 PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, dependency changes propagate graph checksums without creating ancestor revisions, and cursor ordering remains deterministic under concurrent inserts.
+
+When the SSR serving endpoint is defined, add contract/integration coverage proving one backend request returns a self-contained Page render model, does not query mutable current Resource pointers after snapshot acquisition, and remains internally consistent across concurrent snapshot activation.
 
 ## Definition of done
 
