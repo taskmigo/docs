@@ -1,103 +1,34 @@
 ---
 title: Database
-description: Implement persistence for the current planned delivery slice.
+description: Implement Resource authoring, candidate evaluation, immutable snapshots, activation, and runtime retention in PostgreSQL.
 ---
 
-This page is the canonical engineering design for Taskmigo persistence. The current planned slice covers **Resource model, Expressions, Site, Application, Page, Component, and Translation**, while preserving the existing Access/OAuth persistence already present in Console. Policy, Workflow, and later capabilities must build on these foundations without changing their historical meaning.
+This page is the canonical persistence design for the defined Resource/runtime foundation. Other capabilities own their own durable state; this page does not duplicate Access, Policy, or Workflow schemas.
 
-## Current planned delivery slice
-
-The database must support this flow:
+## Persistence model
 
 ```mermaid
-flowchart TD
-  author["Author manifest"] --> resource["Resource identity"]
-  resource --> revision["Immutable revision"]
-  revision --> resolve["Resolve imports and compile Expressions"]
-  resolve --> candidate["Evaluate Site candidate"]
-  candidate --> snapshot["Persist immutable Site snapshot"]
-  snapshot --> activate["Atomically activate snapshot"]
-  activate --> runtime["Application / Page / Component / Translation runtime"]
+flowchart LR
+  author["Authoring"] --> resource["Resource identity"]
+  resource --> revision["Immutable revisions + tags"]
+  revision --> candidate["Candidate + diagnostics"]
+  candidate --> snapshot["Immutable snapshot + exact pins + artifacts"]
+  snapshot --> active["Atomic active pointer"]
+  active --> binding["New runtime bindings"]
 ```
 
-`Site`, `Application`, `Page`, `Component`, and `Translation` do not map to five independent relational models. They are Resource kinds. The Resource model owns identity, revisions, tags, dependency resolution, candidates, snapshots, and activation. Expressions have no independent durable identity; their source stays inside the owning immutable manifest and compiled forms live inside snapshot artifacts or disposable caches.
+The database stores three different kinds of state:
 
-The planned database design therefore has three Resource/runtime layers in addition to the existing Access/OAuth tables:
+| Layer | Mutable? | Owns |
+| --- | --- | --- |
+| Authoring | Resource current pointer is mutable; revisions/tags are immutable. | User-authored source history and selectors. |
+| Compilation | Candidate status/diagnostics progress through one evaluation attempt. | Why committed source did or did not become runtime. |
+| Runtime | Snapshot content is immutable; one active pointer is mutable. | Exact compiled version and retained artifacts used for rendering. |
 
-1. **Authoring source** — mutable Resource identity plus immutable revisions and tags.
-2. **Compilation state** — Site candidates and ordered diagnostics.
-3. **Runtime state** — immutable snapshots, exact revision pins, compiled artifacts, and one atomic active pointer.
-
-## Full ERD
-
-The ERD below is the complete physical database shape for the existing Console persistence plus the current Planned delivery slice. Policy and Workflow are intentionally absent because they remain Proposal.
+## Resource/runtime ERD
 
 ```mermaid
 erDiagram
-  app_user {
-    varchar username PK
-    varchar password
-    boolean enabled
-  }
-
-  app_authority {
-    varchar username PK, FK
-    varchar authority PK
-  }
-
-  oauth2_registered_client {
-    varchar id PK
-    varchar client_id UK
-    varchar client_id_issued_at
-    varchar client_secret
-    varchar client_secret_expires_at
-    varchar client_name
-    varchar client_authentication_methods
-    varchar authorization_grant_types
-    varchar redirect_uris
-    varchar post_logout_redirect_uris
-    varchar scopes
-    text client_settings
-    text token_settings
-  }
-
-  oauth2_registered_client_state {
-    varchar registered_client_id PK, FK
-    boolean active
-    boolean manual_override
-    timestamptz updated_at
-  }
-
-  oauth2_authorization {
-    varchar id PK
-    varchar registered_client_id FK
-    varchar principal_name
-    varchar authorization_grant_type
-  }
-
-  oauth2_authorization_consent {
-    varchar registered_client_id PK, FK
-    varchar principal_name PK
-    varchar authorities
-  }
-
-  oauth2_client_deletion_confirmation {
-    uuid id PK
-    varchar registered_client_id
-    varchar token_hash UK
-    varchar requested_by
-    timestamptz expires_at
-    timestamptz used_at
-    timestamptz created_at
-  }
-
-  oauth2_signing_key {
-    varchar key_id PK
-    text jwk
-    boolean active
-    timestamptz created_at
-  }
-
   resource {
     varchar kind PK
     varchar name PK
@@ -128,8 +59,9 @@ erDiagram
 
   site_candidate {
     uuid id PK
-    bigint source_version
     varchar status
+    varchar trigger
+    bigint source_version
     bigint expected_runtime_version
     timestamptz queued_at
     timestamptz started_at
@@ -153,6 +85,7 @@ erDiagram
   site_snapshot {
     uuid id PK
     uuid site_revision_id FK
+    varchar graph_checksum
     varchar checksum
     varchar compiler_version
     timestamptz created_at
@@ -163,6 +96,7 @@ erDiagram
     varchar kind PK
     varchar name PK
     uuid revision_id FK
+    varchar graph_checksum
   }
 
   site_snapshot_artifact {
@@ -182,260 +116,100 @@ erDiagram
     timestamptz activated_at
   }
 
-  app_user ||--o{ app_authority : has
-
-  oauth2_registered_client ||--|| oauth2_registered_client_state : lifecycle
-  oauth2_registered_client ||--o{ oauth2_authorization : authorizes
-  oauth2_registered_client ||--o{ oauth2_authorization_consent : consents
-
   resource ||--o{ resource_revision : owns
   resource ||--o{ resource_tag : labels
   resource_revision ||--o{ resource_tag : selected_by
   resource_revision ||--o{ site_candidate_diagnostic : diagnosed
   resource_revision ||--o{ site_snapshot : roots
   resource_revision ||--o{ site_snapshot_resource : pinned_as
-
   site_candidate ||--o{ site_candidate_diagnostic : emits
-
   site_snapshot ||--|{ site_snapshot_resource : pins
   site_snapshot ||--|{ site_snapshot_artifact : contains
   site_snapshot ||--o| site_runtime_state : active_as
 ```
 
-Important relational constraints that Mermaid cannot express completely:
+## Identity constraints Mermaid cannot express
 
 - `resource_revision(kind, name)` references `resource(kind, name)`.
-- `resource_revision` also has `UNIQUE (id, kind, name)`.
-- `resource(current_revision_id, kind, name)` references `resource_revision(id, kind, name)`.
-- `resource_tag(revision_id, kind, name)` references `resource_revision(id, kind, name)`.
-- `site_snapshot_resource(revision_id, kind, name)` references `resource_revision(id, kind, name)`.
-- `site_snapshot.site_revision_id` references a `resource_revision`; the compiler additionally requires that revision's `kind = 'site'`.
-- `site_candidate_diagnostic.revision_id` is nullable because syntax/identity failures may happen before an exact revision is known.
-- `site_runtime_state` is a singleton row enforced by a fixed-key check such as `singleton_id = 1`.
+- `resource_revision` has `UNIQUE (id, kind, name)`.
+- `resource(current_revision_id, kind, name)` references `resource_revision(id, kind, name)` so one Resource cannot point at another Resource's revision.
+- `resource_tag(revision_id, kind, name)` and `site_snapshot_resource(revision_id, kind, name)` reference the same composite revision identity.
+- `site_snapshot.site_revision_id` references a Resource revision that the compiler has verified is `kind = 'site'`.
 - exactly one logical Site identity is enforced with a partial unique index over `resource` where `kind = 'site'`.
-- `site_snapshot_artifact` stores exactly one payload representation per row: JSONB or binary, enforced with a check constraint.
-- `oauth2_client_deletion_confirmation.registered_client_id` remains a logical association rather than a foreign key so confirmation history can survive permanent client deletion.
+- `site_runtime_state` is one fixed-key row such as `singleton_id = 1`.
+- `site_snapshot_artifact` stores exactly one payload representation per row: JSONB or binary.
 
-## Database contract
-
-Taskmigo uses PostgreSQL for durable Console state. Flyway owns schema evolution. Hibernate uses schema validation only and must never create or update production tables. `open-in-view` remains disabled.
-
-Taskmigo owns one configurable PostgreSQL schema, named `taskmigo` by default. Flyway schema, Hibernate default schema, JDBC `currentSchema`, and the database role `search_path` must agree.
-
-Do not create a generic Java `database` module. Resource persistence remains inside `resource/internal/persistence`; existing Access/OAuth persistence remains inside `access`; other capabilities consume their owning modules through public contracts rather than repositories.
-
-## Resource model
-
-Resource identity is `(kind, name)`. `apiVersion` belongs to a revision and is not part of identity.
+## Authoring model
 
 ### `resource`
 
-`resource` is the small mutable identity row.
+`resource` is the mutable identity row. Resource identity is `(kind, name)`; `apiVersion` belongs to each revision and is not part of identity.
 
-Required columns:
-
-- `kind` — Resource kind.
-- `name` — `metadata.name`.
-- `current_revision_id` — exact revision currently selected for unconstrained references.
-- `created_at` and `updated_at` — lifecycle timestamps.
-
-Primary key: `(kind, name)`.
-
-The row does not contain the manifest. Updating a Resource means creating a new immutable revision and moving `current_revision_id` in the same authoring transaction.
-
-PostgreSQL must enforce that at most one logical Resource with `kind = 'site'` exists. Use a partial unique index rather than an application-only check.
+`current_revision_id` selects the revision used by unconstrained references. The manifest itself does not live on this row.
 
 ### `resource_revision`
 
-`resource_revision` is immutable source history shared by Site, Application, Page, Component, and Translation.
+Every save that changes canonical authored source appends one immutable revision. Store:
 
-Required columns:
+- UUID `id`;
+- owning `(kind, name)`;
+- `api_version`;
+- complete canonical manifest as JSONB;
+- source `checksum`;
+- creator and timestamp.
 
-- `id` — UUID primary key.
-- `kind` and `name` — owning Resource identity.
-- `api_version` — contract version used to validate and compile this revision.
-- `manifest` — complete normalized-source document as JSONB.
-- `checksum` — deterministic SHA-256 checksum of the canonical stored source.
-- `created_by` and `created_at`.
-
-Add a foreign key from `(kind, name)` to `resource(kind, name)`.
-
-Also add a unique key on `(id, kind, name)`. This enables composite foreign keys that prove a revision pointer belongs to the same logical Resource instead of merely pointing to a valid UUID.
-
-Revision rows are append-only. Do not update an old manifest, `api_version`, or checksum to represent a new state.
-
-### Current revision integrity
-
-The current Resource pointer must be protected by a composite foreign key:
-
-```text
-resource(current_revision_id, kind, name)
-  -> resource_revision(id, kind, name)
-```
-
-This prevents `v0/page/home` from accidentally pointing at a revision of another Page or another Resource kind.
-
-The initial insert has a cyclic ownership problem: a Resource must exist before its revision can reference it, but the Resource's current pointer needs that revision. Handle this inside one transaction by inserting the Resource with a nullable current pointer, inserting the first revision, then setting the pointer before commit. Outside that transaction a committed Resource must always have a current revision.
+A dependency change does not mutate this row or change an unchanged importer's checksum.
 
 ### `resource_tag`
 
-Tags are immutable selectors over revisions.
+A tag is an immutable `(kind, name, tag) → revision_id` selector. Creating the same association may be idempotent; moving an existing tag to another revision is not allowed.
 
-Required columns:
+Site, Application, Page, Component, and Translation all use this same authoring model. Do not mirror their paths, UI nodes, props, or translation keys into mutable relational child tables.
 
-- `kind`, `name`, and `tag` — primary key.
-- `revision_id` — selected immutable revision.
-- `created_at` and creator/audit information when available.
+## Candidate model
 
-Protect tag ownership with:
+`site_candidate` represents one attempt to turn committed authoring state into a runtime snapshot. Persist explicit status rather than inferring it from nullable timestamps.
 
-```text
-resource_tag(revision_id, kind, name)
-  -> resource_revision(id, kind, name)
-```
+The defined statuses are `queued`, `running`, `invalid`, `valid`, `activated`, and `failed`. Store the trigger, the authoring/source version needed to identify what is being evaluated, and `expected_runtime_version` used by activation CAS.
 
-A tag is never moved. Creating another label for a newer revision creates another row.
+`site_candidate_diagnostic` stores ordered source-aware validation output. `revision_id` may be null when syntax/identity fails before an exact revision can be identified. Never persist secrets or Expression context values in diagnostics.
 
-## Planned manifest kinds
+Queue workers may use PostgreSQL `FOR UPDATE SKIP LOCKED` for candidate acquisition. That pattern is queue-specific, not a general consistency mechanism.
 
-### Site
+## Snapshot and activation
 
-Site is the root Resource for compilation. It does not receive a separate `site` source table; its manifest is a normal `resource_revision` with `kind = 'site'`.
+### Three different checksums
 
-A Site revision imports Applications. Saving any Resource that can affect the Site schedules candidate evaluation, but saving and compilation must not share one long transaction.
+| Column | Identity represented |
+| --- | --- |
+| `resource_revision.checksum` | Canonical authored source of one exact revision. |
+| `site_snapshot_resource.graph_checksum` | Resolved subgraph rooted at one exact pinned Resource revision. |
+| `site_snapshot.graph_checksum` | Complete resolved Site graph selected for the snapshot. |
+| `site_snapshot.checksum` | Compiled snapshot output produced from that resolved graph and compiler-relevant inputs. |
 
-### Application
-
-Application remains a Resource kind stored in `resource_revision`. Do not create an `application` relational table merely to mirror `spec.path`, routes, label, icon, or description.
-
-Application imports and route configuration are versioned contract data. They belong to the immutable manifest and the compiled snapshot artifact. Route uniqueness and path semantics are compiler invariants, not mutable database columns.
-
-### Page
-
-Page is stored only through the Resource model. Its declarative UI tree belongs inside the immutable manifest. Storing individual UI nodes as relational rows would couple database migrations to the Page DSL and make historical revisions depend on the current schema.
-
-The snapshot pins the exact Page revision selected through the owning Application. Runtime reads the compiled Page artifact from the acquired snapshot rather than querying the mutable current Resource pointer.
-
-### Component
-
-Reusable Component source follows the same rule as Page: one immutable Resource revision contains the complete prop contract and template.
-
-Do not normalize `spec.props`, template nodes, or Expression-bearing values into relational child tables. They are versioned contract data and are validated/compiled as one revision.
-
-### Translation
-
-Translation is also a Resource kind and uses the same `resource` + `resource_revision` model. Locale catalogs, plural forms, and translated strings stay in the immutable Translation manifest rather than becoming one relational row per key.
-
-Snapshot compilation pins the exact Translation revisions reachable from the Site graph and emits normalized locale artifacts. Runtime translation lookup reads those immutable artifacts instead of current authoring rows.
-
-### Expressions
-
-Expressions have no standalone table. Their source is embedded in whichever Resource field accepts Expression syntax. Compilation validates the source against its field contract/profile and stores the compiled or normalized representation inside the owning snapshot artifact.
-
-An optional compiled-expression cache may exist later, but it is disposable derived data keyed by immutable source checksum, compiler/profile version, and expected result type. Cache loss must not change correctness.
-
-## Site candidate persistence
-
-### `site_candidate`
-
-A candidate records one attempt to turn committed authoring state into a runtime snapshot.
-
-Required durable information:
-
-- UUID `id`.
-- status.
-- trigger/source version sufficient to identify the authoring state being evaluated.
-- `expected_runtime_version` captured before activation.
-- queued, started, completed, and updated timestamps as appropriate.
-
-Candidate status is explicit. Do not infer it from combinations of nullable timestamps.
-
-The first status set should cover queued, running, invalid, valid, activated, and terminal pipeline failure. Exact Java names may change with the state machine, but database values must be constrained and deterministic.
-
-### `site_candidate_diagnostic`
-
-Validation output is durable because an invalid candidate must be inspectable while the previous runtime snapshot remains active.
-
-Use `(candidate_id, sequence)` as the primary key. Store:
-
-- affected Resource identity and revision when known;
-- stable diagnostic `code`;
-- manifest `path`;
-- optional line and column;
-- safe user-facing message.
-
-Never persist secrets or Expression context values in diagnostics.
-
-### Candidate acquisition
-
-Multiple workers may compete for queued candidates. `FOR UPDATE SKIP LOCKED` is acceptable for this queue-like operation, but not as a general consistency strategy.
-
-The one-Site model allows queued work to be coalesced later, but the first implementation must favor correctness over aggressive coalescing. Never mutate a candidate already being evaluated just because a newer source revision appears.
-
-## Import and dependency persistence
-
-Do not create `resource_dependency` as mutable source of truth for the planned slice.
-
-Imports live inside each immutable manifest. Candidate evaluation parses those references, applies reference-ability rules, selects exact revisions, and builds a resolved graph.
-
-Authored revisions may contain unresolved or invalid imports; that is allowed because authoring history must survive validation failure. Only an accepted snapshot turns the resolved graph into durable runtime pins.
-
-If dependency parsing later becomes a proven bottleneck, a derived cache may be introduced. It must be keyed by immutable revision checksum and compiler version, and deleting it must never alter correctness.
-
-## Snapshot model
+A child revision can therefore create a new snapshot while `site_revision_id` remains unchanged: affected ancestor pins keep the same `revision_id` but receive new `graph_checksum` values.
 
 ### `site_snapshot`
 
-A snapshot is immutable runtime identity.
-
-Required columns:
-
-- UUID `id`.
-- exact root `site_revision_id`.
-- deterministic snapshot `checksum`.
-- `compiler_version`.
-- `created_at`.
-
-The root revision must reference an actual Site revision. Validate this in the compiler and protect the revision reference with a foreign key.
+Store immutable snapshot metadata: UUID, exact root `site_revision_id`, root `graph_checksum`, compiled-output `checksum`, `compiler_version`, and creation time.
 
 ### `site_snapshot_resource`
 
-This table is the durable exact dependency graph for runtime.
-
 Primary key: `(snapshot_id, kind, name)`.
 
-Each row stores the selected `revision_id`. Protect identity with a composite foreign key to `resource_revision(id, kind, name)`.
-
-A valid snapshot contains exactly the selected Site plus every reachable Application, Page, Component, and Translation revision required by that Site graph.
-
-Runtime and later durable executions must never re-resolve these rows against current Resource pointers.
+Each row pins both the exact `revision_id` and the resolved `graph_checksum` used by that snapshot. Runtime never re-resolves these pins against current Resource pointers.
 
 ### `site_snapshot_artifact`
 
-Compiled runtime data is partitioned by artifact key instead of being forced into one giant JSON document.
+Artifacts are partitioned by deterministic `artifact_key` instead of forcing the complete runtime into one giant JSON value. Store format/version, one payload representation, and an artifact checksum when independent integrity checks are useful.
 
-Primary key: `(snapshot_id, artifact_key)`.
-
-Store:
-
-- artifact `format` or format version;
-- JSONB or binary content depending on the artifact contract;
-- checksum when artifacts need independent integrity verification.
-
-Keep artifacts coarse enough to avoid thousands of tiny rows but separate enough that future contributors do not require rewriting the core snapshot format. Exact artifact partitioning remains a compiler decision and must be deterministic.
+Exact partitioning and artifact encoding remain compiler design decisions. Keep artifacts coarse enough to avoid thousands of tiny rows but separable enough that route/Page/component/translation runtime data does not require loading an unrelated whole-site payload.
 
 ### `site_runtime_state`
 
-Runtime activation is one small mutable pointer.
+The singleton runtime row contains `site_name`, `active_snapshot_id`, monotonic `version`, and `activated_at`.
 
-The table is a singleton row containing:
-
-- active `site_name`;
-- `active_snapshot_id`;
-- monotonic bigint `version`;
-- `activated_at`.
-
-Activation is compare-and-swap:
+Activation uses compare-and-swap:
 
 ```sql
 UPDATE site_runtime_state
@@ -445,117 +219,83 @@ SET active_snapshot_id = :snapshotId,
 WHERE version = :expectedVersion;
 ```
 
-Zero affected rows means the candidate is stale. It must not overwrite the newer runtime state.
+Zero updated rows means the candidate is stale and cannot overwrite newer runtime state.
 
-A runtime request acquires the active snapshot once and keeps that immutable handle for the complete operation. A later activation cannot change what that operation sees.
+The active pointer is used when **bootstrapping a new runtime binding**. Later navigation with a valid binding acquires its exact retained snapshot; it does not reread this pointer as a version selector.
 
 ## Transaction boundaries
 
-The planned slice uses four persistence boundaries.
+```mermaid
+flowchart LR
+  authoring["1. Authoring TX\nrevision + current pointer + queued candidate"] --> evaluation["2. Evaluation\noutside long TX"]
+  evaluation --> snapshot["3. Snapshot TX\nmetadata + pins + artifacts"]
+  snapshot --> activation["4. Activation TX\nCAS active pointer"]
+```
 
-### Authoring transaction
+1. **Authoring transaction:** create Resource when needed, append revision, advance current pointer, enqueue affected-Site candidate.
+2. **Candidate evaluation:** resolve, validate, calculate graph checksums, and compile without holding one long database transaction.
+3. **Snapshot transaction:** persist snapshot metadata, every exact revision/graph pin, and required artifacts atomically.
+4. **Activation transaction:** CAS the runtime version and swap the active snapshot. Stale activation loses.
 
-In one transaction:
-
-1. create the Resource identity when new;
-2. insert the immutable revision;
-3. move `current_revision_id`;
-4. enqueue Site candidate work when the change can affect the Site.
-
-Commit before graph resolution or compilation starts.
-
-### Candidate evaluation
-
-Resolve references, validate manifests and Expressions, and compile outside a long database transaction. The candidate being evaluated must identify the committed source state it represents.
-
-Invalid candidates persist diagnostics and leave the current runtime snapshot untouched.
-
-### Snapshot transaction
-
-Persist `site_snapshot`, every `site_snapshot_resource` pin, and all required `site_snapshot_artifact` rows atomically. A partial snapshot must never become activatable.
-
-### Activation transaction
-
-Compare `expected_runtime_version`, update the singleton active pointer, and record/publish the activation event atomically. Stale activation loses rather than replacing newer state.
-
-## Required indexes and constraints
-
-Start with indexes required by invariants and known access paths only.
-
-Required coverage includes:
-
-- `resource(kind, name)` primary lookup;
-- one-Site partial uniqueness;
-- revision lookup by Resource and creation order when history is listed;
-- tag selection by Resource identity and tag;
-- candidate pickup by status and queue order;
-- diagnostics by candidate and sequence;
-- snapshot pins by snapshot and Resource identity;
-- reverse revision reachability for deletion/cleanup checks;
-- singleton active snapshot acquisition.
-
-Do not create one index per column. Add an index only for a named invariant or query path, and verify performance-sensitive choices with PostgreSQL `EXPLAIN` against representative data.
+A crash after snapshot persistence but before activation may leave an inactive snapshot; it must never leave a partially activatable snapshot.
 
 ## JSONB boundary
 
-For the planned slice, JSONB is correct for complete versioned manifests and compiled artifact content. It is not the default for lifecycle or relational state.
+Use typed columns for identity, revision/snapshot IDs, `api_version`, source/graph/output checksums, status, timestamps, versions, and foreign keys.
 
-Keep these as typed columns: identity, revision IDs, `api_version`, checksums, status, timestamps, snapshot IDs, runtime version, and foreign keys.
+Use JSONB for complete immutable manifests and JSON-form snapshot artifacts. Do not promote Application routes, Page nodes, Component props, Translation keys, or Expression fragments into columns merely because they are fields in the current DSL.
 
-Do not promote Application paths, Page node props, Component prop definitions, Translation keys, or Expression source fragments into columns merely because they are currently useful fields. They remain part of versioned manifest contracts unless Taskmigo later needs a database-level invariant or hot query that cannot be served by compiled runtime artifacts.
+## Required index families
 
-## Deletion and cleanup
+Create indexes for named invariants/query paths only:
 
-Do not implement generic soft deletion for these tables.
+- Resource primary lookup and one-Site uniqueness;
+- revision history by Resource and creation order;
+- tag selection by Resource/tag;
+- candidate pickup by status/queue order;
+- diagnostics by candidate/sequence;
+- snapshot pins by snapshot/Resource identity;
+- reverse revision/snapshot reachability for cleanup;
+- active runtime singleton lookup.
 
-A revision cannot be physically removed while it is:
+Verify performance-sensitive indexes with PostgreSQL `EXPLAIN` against representative data rather than indexing every column.
 
-- the current revision of a Resource;
-- referenced by a tag;
-- pinned by any retained snapshot;
-- referenced by another future durable execution contract.
+## Runtime binding persistence
 
-An active snapshot cannot be deleted. An inactive snapshot can be cleaned only when no retained durable state references it and the retention policy permits deletion.
+Do **not** add a `runtime_binding` table yet. The binding may become a signed stateless token, a server-side lease, or a hybrid. Persistence choice, maximum lifetime, expiry, revocation, and renderer compatibility are open decisions.
 
-Candidate and diagnostic cleanup must be batched, indexed, idempotent, and safe when a row changes state between selection and deletion.
+Database cleanup must therefore depend on an explicit retention boundary that can later account for valid bindings without baking one premature token/lease design into the schema.
 
-Public Resource deletion semantics are still unresolved, so the first Resource implementation must not expose physical Resource deletion merely because foreign keys make it technically possible.
+## Retention and cleanup
 
-## Flyway implementation order
+A revision cannot be physically removed while it is current, tagged, pinned by a retained snapshot, or referenced by another durable capability. The active snapshot cannot be deleted.
 
-Implement persistence incrementally rather than creating all future tables at once.
+An inactive snapshot is removable only when retention says it is no longer serveable and no durable reference still requires it. Cleanup must be batched, indexed, idempotent, and race-safe.
 
-1. Resource identity, immutable revisions, current-pointer integrity, and tags.
-2. Site candidate queue and diagnostics.
-3. Immutable snapshot metadata and exact Resource pins.
+Public Resource deletion semantics remain open; do not expose physical deletion only because the foreign-key graph makes a delete technically possible.
+
+## Migration order
+
+1. Resource identity, immutable revisions, current-pointer integrity, tags.
+2. Candidate queue and diagnostics.
+3. Snapshot metadata with root graph checksum and exact Resource revision/graph pins.
 4. Snapshot artifacts and atomic runtime state.
-5. Cleanup indexes/queries only when their retention behavior is implemented.
+5. Retention/cleanup indexes and queries when their policy is defined.
 
-Each migration lands with the Java behavior and PostgreSQL integration tests that use it. Once a versioned migration has been applied to a shared or released environment, move forward with a new migration instead of rewriting history.
+Each migration lands with the Java behavior and PostgreSQL integration coverage that uses it.
 
 ## Verification
 
-Use real PostgreSQL through Testcontainers for persistence behavior. H2 or mocked repositories cannot verify the constraints and races this design depends on.
-
-The planned slice must prove:
+Use real PostgreSQL for constraints and races. The persistence suite must prove:
 
 - first Resource creation establishes a valid current revision atomically;
-- concurrent saves never corrupt the current pointer or cross-link revisions;
-- a tag cannot point to another Resource's revision;
-- only one Site identity can exist;
-- invalid Application/Page/Component/Translation imports produce diagnostics without replacing runtime;
-- invalid Expressions produce diagnostics without replacing runtime;
-- a valid `Site → Application → Page` graph activates successfully;
-- Page/Component/Translation exact revisions remain pinned after newer revisions become current;
-- cyclic and disallowed imports cannot create an active snapshot;
-- snapshot persistence is all-or-nothing;
-- stale candidate activation loses the compare-and-swap race;
-- runtime acquisition remains stable across a later activation;
-- cleanup cannot remove a current, tagged, pinned, or active record;
-- output is deterministic regardless of database row order.
-
-A database change in the planned slice is complete only when the schema, Resource-domain behavior, compiler selection, Expression compilation, transaction boundaries, cleanup reachability, and PostgreSQL integration tests agree.
-
-## Deferred persistence design
-
-Policy, Workflow, and later capabilities are intentionally outside this database slice. They must reuse Resource revision and snapshot pinning where applicable. Add new tables only when those capabilities introduce durable state that cannot be represented by the Resource source/snapshot model.
+- concurrent saves cannot cross-link or corrupt current pointers;
+- tags/pins cannot reference another Resource's revision;
+- only one Site identity exists;
+- child revision changes propagate graph checksums without creating ancestor revisions;
+- invalid candidates preserve the active snapshot;
+- snapshot metadata, revision/graph pins, and artifacts persist all-or-nothing;
+- stale activation loses CAS;
+- a bound snapshot remains readable after a newer snapshot activates while retention permits it;
+- cleanup cannot remove current, tagged, active, or otherwise retained state;
+- deterministic input produces deterministic graph/output identity regardless of row order.

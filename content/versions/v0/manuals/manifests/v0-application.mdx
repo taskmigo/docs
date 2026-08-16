@@ -1,9 +1,11 @@
 ---
 title: Application
-description: Group Pages under a shared URL path.
+description: Group Pages under one URL prefix and define their routes.
 ---
 
 import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+An Application owns one origin-relative URL prefix and maps imported Pages below it.
 
 ```yaml
 apiVersion: v0
@@ -22,7 +24,7 @@ spec:
       path: /
 ```
 
-This exposes the imported Page `index` at `<host>/home/`.
+This exposes Page `index` at `/home/` on the current host.
 
 ## Fields
 
@@ -31,7 +33,7 @@ This exposes the imported Page `index` at `<host>/home/`.
     'spec.icon': {
       type: 'string',
       required: true,
-      description: 'Image URL shown for the application; must include a scheme and host.',
+      description: 'Image URL shown for the Application; must include a scheme and host.',
     },
     'spec.label': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
@@ -41,17 +43,17 @@ This exposes the imported Page `index` at `<host>/home/`.
     'spec.description': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: 'Summary shown with the application.',
+      description: 'Summary shown with the Application.',
     },
     'spec.path': {
       type: 'string',
       required: true,
-      description: 'Absolute URL path used as the prefix shared by its routes.',
+      description: 'Origin-relative URL prefix for this Application, beginning with `/`, such as `/home`.',
     },
     'spec.routes': {
       type: 'object[]',
       required: true,
-      description: 'Maps imported Pages below the application path.',
+      description: 'Maps imported Pages below the Application prefix.',
     },
     'spec.routes[].page': {
       type: 'string',
@@ -61,18 +63,22 @@ This exposes the imported Page `index` at `<host>/home/`.
     'spec.routes[].path': {
       type: 'string',
       required: true,
-      description: 'Absolute URL path appended below the application prefix.',
+      description: 'Application-relative route path beginning with `/`; `/` is the Application index.',
     },
   }}
 />
 
 ## Paths and routes
 
-| Application path | Page path   | Result                 |
-| ---------------- | ----------- | ---------------------- |
-| `/home`          | `/`         | `<host>/home/`         |
-| `/home`          | `/settings` | `<host>/home/settings` |
+Taskmigo combines the Application prefix with the route path:
 
-`/` is the Application index. Every routed Page must appear in `imports`; importing one alone does not expose a route. `imports` and `spec.routes` cannot be empty, and route paths must be unique.
+| `spec.path` | `routes[].path` | Resulting URL path |
+| --- | --- | --- |
+| `/home` | `/` | `/home/` |
+| `/home` | `/settings` | `/home/settings` |
 
-See [Resource model](/versions/v0/manuals/resources#references) for reference rules.
+A route path is **not** an independent absolute URL. It is interpreted below `spec.path`.
+
+Every routed Page must appear in `imports`; importing a Page alone does not expose a route. `imports` and `spec.routes` cannot be empty, and the resulting routes must be unique.
+
+See [Resource references](/versions/v0/manuals/resources#references) for import syntax and revision selection.

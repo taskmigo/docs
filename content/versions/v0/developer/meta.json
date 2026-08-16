@@ -2,14 +2,14 @@
   "title": "Developer",
   "pages": [
     "index",
-    "development-instructions",
-    "api",
     "architecture",
-    "codebase",
-    "database",
+    "development-instructions",
     "resource-runtime",
+    "api",
+    "database",
+    "codebase",
+    "verification",
     "policy",
-    "workflow",
-    "verification"
+    "workflow"
   ]
 }

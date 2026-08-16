@@ -4,14 +4,14 @@
     "index",
     "getting-started",
     "how-taskmigo-works",
-    "manifests",
-    "ui-components",
-    "expressions",
     "resources",
+    "manifests",
+    "expressions",
+    "ui-components",
     "runtime",
+    "status",
     "quality-assurance",
     "product-planning",
-    "faq",
-    "status"
+    "faq"
   ]
 }

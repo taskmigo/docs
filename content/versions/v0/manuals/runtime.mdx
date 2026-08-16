@@ -1,165 +1,131 @@
 ---
 title: Runtime lifecycle
-description: Follow a resource change from validation to activation and a browser app from bootstrap to reload.
+description: Understand how saved Resources become an active snapshot and how a browser keeps one stable runtime version.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-## Resource change lifecycle
+Taskmigo keeps editable authoring state separate from the immutable runtime serving users.
+
+## From save to activation
 
 ```mermaid
 flowchart TD
-  change["Resource change"] --> resolve["Resolve affected Site graph\n+ graph checksums"]
-  recovery["Dependency recovery"] --> queue["Recovery queue"]
-  queue --> resolve
+  change["Resource change"] --> resolve["Resolve affected Site graph"]
+  recovery["Dependency recovery"] --> resolve
   resolve --> validate{"Candidate valid?"}
-  validate -->|Yes| build["Build immutable snapshot"]
+  validate -->|"No"| diagnostics["Store diagnostics"]
+  diagnostics --> keep["Keep current snapshot"]
+  validate -->|"Yes"| build["Compile immutable snapshot"]
   build --> activate["Activate atomically"]
-  validate -->|No| diagnostics["Store diagnostics"]
-  diagnostics --> retain["Keep current snapshot"]
-  activate --> serve["Serve new app instances"]
+  activate --> bootstrap["Available to new browser app instances"]
 ```
-
-Create, update, delete, restore, package import, and dependency recovery all use this lifecycle.
 
 <Steps>
   <Step>
 
-### Resolve the affected Site
+### Commit authoring state
 
-Taskmigo resolves a complete candidate graph and calculates a deterministic graph checksum for every selected node. A child revision change propagates through the graph checksums of its affected ancestors, so the root Site graph changes even when the Site's own revision does not. Translation changes also affect Sites using the corresponding locale catalog. Under the Policy RFC, Policy revisions, matched API contracts, and Role attachments affect Sites that pin them. See [Resource resolution](/versions/v0/manuals/resources#resolution).
-
-  </Step>
-  <Step>
-
-### Validate the candidate
-
-Each revision is validated against its `apiVersion` and `kind`, followed by dependency, graph, and security checks. Invalid candidates store diagnostics and leave the active snapshot unchanged.
+Saving a Resource creates or reuses an immutable revision and updates that Resource's current authoring pointer. The save can succeed even when the resulting Site cannot activate.
 
   </Step>
   <Step>
 
-### Build and activate
+### Resolve and validate the candidate
 
-A valid candidate becomes an immutable snapshot containing the exact selected revisions, their resolved graph checksums, and the normalized runtime model. Its root graph checksum identifies the complete resolved Resource state compiled by that snapshot. The snapshot then replaces the active snapshot atomically.
+Taskmigo selects exact revisions for the affected Site graph, validates Resource contracts and cross-Resource rules, and calculates resolved graph checksums. A dependency change can therefore change the Site graph without creating new revisions for unchanged ancestors.
 
-Activation changes which snapshot **new browser application instances** acquire. It does not silently move an application instance that is already running to the new snapshot.
+See [Resource model](/versions/v0/manuals/resources#resolved-graph-identity) for the checksum contract.
+
+  </Step>
+  <Step>
+
+### Compile and activate
+
+A valid candidate becomes an immutable snapshot containing exact Resource selections and compiled runtime data. Activation swaps the active snapshot atomically. An invalid candidate records diagnostics and leaves the previous snapshot active.
 
   </Step>
 </Steps>
 
-Diagnostics identify the error, manifest path, and source location when available without exposing credentials or data outside Taskmigo's schema.
+## Browser runtime binding
 
-## One browser app, one runtime binding
-
-A **browser application instance** is the running Taskmigo UI in one tab between its initial full document load and the next full reload. Taskmigo binds that instance to one stable runtime view so client-side navigation cannot mix versions or presentation settings.
-
-The binding contains, conceptually:
-
-| Bound value                | Why it stays stable                                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Snapshot                   | Routes, Pages, Components, and Translation catalogs must come from one immutable Resource graph.                               |
-| Locale                     | A tab must not switch language halfway through its UI because another tab changed the user's profile.                          |
-| Other presentation context | Future values such as timezone or SSR theme may be captured when changing them mid-instance would create a mixed presentation. |
-| Renderer compatibility     | A retained snapshot must be rendered only by a compatible runtime/artifact format.                                             |
-
-The concrete token format, expiry, revocation mechanism, and additional presentation fields are still design decisions. The important contract is the binding itself: subsequent navigation uses the captured runtime view instead of rereading mutable defaults.
-
-```mermaid
-flowchart TD
-  load["Full document load"] --> bootstrap["Read active snapshot\n+ profile presentation defaults"]
-  bootstrap --> binding["Create runtime binding\nSnapshot S42 + locale ja-JP"]
-  binding --> ssr["SSR initial Page"]
-  ssr --> nav1["Client navigation"]
-  nav1 --> same1["Render with S42 + ja-JP"]
-  same1 --> nav2["More client navigation"]
-  nav2 --> same2["Render with S42 + ja-JP"]
-  same2 --> reload["Full reload"]
-  reload --> bootstrap2["Acquire current snapshot\n+ current profile defaults"]
-```
-
-A newer snapshot can activate while the tab is open without changing that tab. Under normal operation, the tab adopts the newer snapshot on its next full reload. The runtime may later define expiry or emergency revocation so an unsafe or incompatible binding can require a reload; a binding must not be treated as an unbounded retention promise.
-
-The binding belongs to the browser application instance, not the login session. Two tabs opened at different times may therefore use different snapshots or locales without corrupting each other.
-
-## Why presentation context is captured
-
-Consider a user whose profile language starts as Japanese:
+Activation changes the snapshot used by **new browser application instances**. An already-running tab normally keeps the snapshot it acquired when that application instance was bootstrapped.
 
 ```mermaid
 flowchart LR
-  tab1["Tab 1 bootstrap"] --> tab1Binding["S42 + ja-JP"]
-  tab2["Tab 2 bootstrap"] --> tab2Binding["S42 + ja-JP"]
+  load["Full document load"] --> bootstrap["Acquire active snapshot + presentation defaults"]
+  bootstrap --> binding["Runtime binding"]
+  binding --> home["Render /home"]
+  home --> settings["Client navigation /settings"]
+  settings --> orders["Client navigation /orders"]
+  orders --> reload["Full reload"]
+  reload --> next["Acquire current snapshot + current defaults"]
 ```
 
-The user changes their profile language to English in Tab 2. The profile default is now English, but Tab 1 already contains Japanese layout text. If Tab 1 reread the mutable profile during its next client navigation, the existing layout could remain Japanese while the newly rendered Page becomes English.
+The binding belongs to the running application instance, not the login session. Two tabs can therefore use different snapshots without corrupting each other.
 
-Taskmigo avoids that mixed UI by separating **profile defaults** from the **active presentation context** of an application instance:
+### What remains stable?
+
+| Value | During client-side navigation | How it changes |
+| --- | --- | --- |
+| Site snapshot | Pinned to the binding. | Normally on full reload; future expiry/revocation may require reload. |
+| Locale | Pinned presentation context. | Explicit change in that tab or a new bootstrap. |
+| Future presentation values | Pinned only when the contract explicitly classifies them as presentation context. | Defined by that presentation feature. |
+| Authorization and business state | Not automatically pinned. | Follows the freshness rules of the owning capability. |
+
+Snapshot pinning is a UI/runtime-consistency rule, not permission caching.
+
+## Why locale is part of the binding
 
 ```mermaid
-flowchart TD
-  profile["User profile language"] -->|"Bootstrap or explicit language change"| locale["Runtime binding locale"]
-  locale -->|"Source of truth for this app instance"| evaluation["Translation + Expression evaluation"]
+sequenceDiagram
+  participant A as Tab A
+  participant B as Tab B
+  participant Profile
+  participant Runtime
+
+  A->>Runtime: bootstrap
+  Runtime-->>A: snapshot S42 + ja-JP
+  B->>Runtime: bootstrap
+  Runtime-->>B: snapshot S42 + ja-JP
+  B->>Profile: change default language to en
+  A->>Runtime: client navigation with existing binding
+  Runtime-->>A: still S42 + ja-JP
+  B->>Runtime: explicitly rebind locale
+  Runtime-->>B: S42 + en
 ```
 
-Changing the profile does not silently mutate other running tabs. If the user explicitly changes language in the current tab, that tab may establish a new presentation binding and rerender consistently; the exact language-change transport is still an API design decision. Other tabs keep their captured locale until they explicitly change it, reload, or their binding is no longer valid.
+The profile language is a default used during bootstrap or an explicit presentation change. It is not reread as the locale for every navigation. `Trans` and `TransN` therefore cannot switch one Page to a different language while the existing layout remains in the old language.
 
-The same rule should be applied deliberately to future presentation values: capture a value only when changing it between navigations would create an internally inconsistent UI. Security-sensitive or business-authoritative mutable state is not automatically frozen merely because presentation context is pinned.
+## Rendering behavior
 
-## Server-side rendering
-
-Next.js is an SSR consumer of the compiled runtime, not a Resource compiler. Given an incoming pathname such as `/home/settings`, it needs two logical results from the runtime binding:
-
-1. **Route result** — the matched Application and Page plus Site/Application metadata required by the rendered layout.
-2. **Render result** — Page metadata and body, reusable Component definitions required by that Page, and resolved Translation/Expression values required to produce the React tree.
-
-Next.js does not parse manifests, traverse imports, select revisions, resolve tags, or reconstruct the Resource graph. Revision IDs and graph checksums remain runtime integrity and inspection metadata rather than inputs the React renderer must compose itself.
-
-For v0, Expressions execute only in the Taskmigo backend. Expression evaluation uses the snapshot and presentation context captured by the runtime binding. In particular, `Trans` and `TransN` use the binding locale rather than rereading the user's mutable profile language on each navigation.
+For one render/navigation operation, Taskmigo resolves the route, Page, reusable Components, Translation values, and backend Expressions from the snapshot and presentation context carried by the binding.
 
 ```mermaid
 flowchart LR
-  request["Next.js SSR / navigation\npathname + runtime binding"] --> validate["Validate binding"]
-  validate --> route["Match route in bound snapshot\nApplication + Page"]
-  route --> render["Load Page + required Components"]
-  render --> expression["Resolve Translation + Expressions\nwith bound presentation context"]
-  expression --> model["Return self-contained render model"]
-  model --> next["React / Next.js render"]
+  request["Path + runtime binding"] --> route["Match Application + Page"]
+  route --> tree["Load Page + required Components"]
+  tree --> values["Resolve Translation + Expressions"]
+  values --> model["Self-contained render model"]
+  model --> render["React / Next.js render"]
 ```
 
-The initial full document load bootstraps a fresh binding from the active snapshot and current presentation defaults. Subsequent client-side navigation carries that binding back to the serving boundary. A request with a valid binding resolves exclusively against its bound snapshot and presentation context, regardless of which snapshot or profile defaults are current by then.
-
-The HTTP serving contract should make the happy path one backend round trip from Next.js: the request supplies the pathname, runtime binding when one already exists, and supported server request context; the backend returns the self-contained render model needed for that render. The logical route and render results do not imply separate HTTP requests.
-
-The render model contains only data required by the matched request. It is not required to expose the complete Site snapshot or one payload per Resource. Reusable Components may remain deduplicated within the model instead of being expanded at every use, as long as the model is self-contained for the Page.
-
-Next.js receives resolved Expression values. It does not receive Expression source or an Expression program that the browser must execute. Frontend-only Expression context is outside the v0 contract.
-
-Compiled route indexes and render artifacts may be cached by immutable snapshot identity. The runtime binding itself should be opaque to the browser so persistence IDs and future compatibility metadata do not become frontend protocol assumptions. Token representation, cache partitioning, transport schema, retention limits, and the concrete serving endpoint remain open design decisions.
-
-## Workflow execution
-
-```mermaid
-flowchart TD
-  snapshot["Active snapshot"] --> start["Start execution"]
-  start --> pin["Pin snapshot + revisions"]
-  pin --> run["Run step"]
-  run --> persist["Persist transition"]
-  persist --> state{"State"}
-  state -->|Runnable| run
-  state -->|Waiting| wait["WAITING for input"]
-  wait --> persist
-  state -->|Terminal| done["SUCCEEDED / FAILED"]
-```
-
-Transitions are persisted before dependent work is scheduled. Service restarts resume from persisted state, and waiting for input does not hold an HTTP request or worker.
-
-Existing executions keep their pinned Workflow and dependencies; newer snapshots affect new executions only. See [Workflow RFC](/versions/v0/manuals/manifests/v0-workflow#execution-and-revision-pinning) for step behavior.
+The frontend does not parse manifests, traverse imports, select revisions, or evaluate Expressions. The target serving contract is one backend round trip for the happy-path render; the concrete endpoint and binding token format remain open decisions. Implementation details belong in [Resource and runtime](/versions/v0/developer/resource-runtime) and [API development](/versions/v0/developer/api#ssr-serving-contract).
 
 ## Dependency recovery
 
-Dependency changes queue affected Sites for reevaluation. A dependency revision change can therefore create a new Site snapshot without creating a new Site, Application, or Page revision: the resolved graph checksums propagate the change while authored ancestor revisions remain immutable. Candidates run one at a time through the lifecycle above, preventing conflicting activations. Intermediate revisions are not guaranteed to activate, and recovery has no fixed completion time.
+Restoring or changing a dependency reevaluates affected Sites through the same candidate pipeline. Recovery does not create revisions for unchanged importers: resolved graph identity propagates the dependency change instead.
+
+Intermediate authoring revisions are not guaranteed to become active, and recovery has no fixed completion time.
 
 ## Package import
 
-A package is validated as one candidate before activation. A failed import cannot partially change runtime state. Exported revision IDs, resolution results, graph checksums, and revision tags are not imported as manifest state.
+A package import is validated as one candidate before activation. A failed import cannot partially replace runtime state. Revision IDs, resolved selections, graph checksums, and revision tags are runtime/authoring metadata and are not imported as manifest source.
+
+## Workflow execution
+
+<Callout title='Workflow is an RFC and is not implemented' type='warning'>
+  The behavior below belongs to the Workflow RFC and does not describe an available runtime capability.
+</Callout>
+
+A proposed Workflow execution pins the Site snapshot, Workflow revision, and selected dependencies when execution starts. Newer snapshots would affect new executions only. See [Workflow — execution and revision pinning](/versions/v0/manuals/manifests/v0-workflow#execution-and-revision-pinning).

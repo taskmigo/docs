@@ -1,19 +1,32 @@
 ---
 title: Taskmigo
-description: Documentation for Taskmigo users and developers.
+description: Define application UI as versioned resources and serve validated immutable runtime snapshots.
 ---
 
-Choose the documentation for what you want to do.
+Taskmigo lets teams describe an application with versioned YAML resources. The backend validates the complete Site, compiles an immutable snapshot, and serves that snapshot without rebuilding the application from mutable manifests on every request.
+
+```mermaid
+flowchart LR
+  author["Author YAML Resources"] --> validate["Resolve + validate"]
+  validate --> snapshot["Immutable Site snapshot"]
+  snapshot --> binding["Browser runtime binding"]
+  binding --> ui["Rendered application"]
+```
 
 <Cards>
   <Card
-    title='Manuals'
+    title='Learn and author Taskmigo'
     href='/versions/v0/manuals'
-    description='Build and operate Taskmigo Sites with manifests, Expressions, and UI components.'
+    description='Understand the product model, build a Site, author manifests, and inspect runtime behavior.'
   />
   <Card
-    title='Developer'
+    title='Implement Taskmigo'
     href='/versions/v0/developer'
-    description='Understand and implement Taskmigo through its architecture, code map, database design, and verification strategy.'
+    description='Use the target architecture, persistence, runtime, API, and verification handbook.'
   />
 </Cards>
+
+<Callout title='Contract status' type='info'>
+  Documentation maturity and delivery state are different. Check [Product status](/versions/v0/manuals/status) before
+  treating an RFC or planned capability as available runtime behavior.
+</Callout>

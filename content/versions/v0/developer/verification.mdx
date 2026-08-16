@@ -1,98 +1,135 @@
 ---
 title: Verification
-description: Run Taskmigo locally and prove architecture, persistence, security, and runtime behavior.
+description: Prove Taskmigo contracts at the boundaries where persistence, concurrency, compilation, security, and runtime consistency matter.
 ---
 
-Use this page before handing off application work. A passing unit suite alone is not enough when the change affects PostgreSQL, security chains, snapshot activation, or durable execution.
+This page defines **required evidence**, not a claim that a particular application repository or test class already exists. Add repository commands and concrete test locations when the implementation introduces them; do not document commands that cannot run.
 
-## Run and verify Taskmigo
+## Verification layers
 
-The application lives in `console/`. The repository root contains Compose and development examples.
+| Layer | Proves | Use real technology when… |
+| --- | --- | --- |
+| Unit | Parsers, value types, graph algorithms, contract validation, Expression profiles, local state machines. | No external semantics are under test. |
+| Architecture | Capability boundaries and forbidden internal/repository shortcuts. | Module/package rules are part of correctness. |
+| PostgreSQL integration | Flyway schema, constraints, JSONB, locks, CAS, queue acquisition, transaction rollback, cleanup races. | PostgreSQL semantics protect an invariant. |
+| Web/security integration | OpenAPI mapping, security chain, authorization boundary, ETag/preconditions, Problem Details. | HTTP/security behavior is part of the contract. |
+| Failure/concurrency | Crash boundaries, stale activation, duplicate work, race recovery. | Correctness depends on ordering or durable commit points. |
+| End to end | One complete product journey through authoring → candidate → snapshot → runtime. | Cross-boundary behavior must be accepted as one system. |
 
-```bash
-bash examples/docker-compose.sh up --build
+Do not substitute an in-memory database or mocked repository for a PostgreSQL constraint/race that the production design depends on.
+
+## Defined foundation acceptance journey
+
+```mermaid
+sequenceDiagram
+  participant Author
+  participant Resource
+  participant Candidate
+  participant DB
+  participant Runtime
+  participant Browser
+
+  Author->>Resource: save Site + Application + Page
+  Resource->>DB: commit revisions + current pointers + candidate
+  Candidate->>DB: persist snapshot + revision/graph pins + artifacts
+  Candidate->>DB: CAS activate snapshot S42
+  Browser->>Runtime: bootstrap
+  Runtime-->>Browser: binding B1 = S42 + locale
+  Author->>Resource: save newer Component revision
+  Candidate->>DB: activate S50
+  Browser->>Runtime: navigate with B1
+  Runtime-->>Browser: still render S42
+  Browser->>Runtime: full reload/bootstrap
+  Runtime-->>Browser: may acquire S50
 ```
 
-The sample starts PostgreSQL and Console on port `9000`. It creates the local bootstrap user `developer` and two environment-configured OAuth clients. The wrapper removes conflicting exported credentials before invoking Compose, so use it instead of calling Docker Compose directly when reproducing the documented sample.
+## Resource and graph identity
 
-Run without Compose only when Java 26 and PostgreSQL 18 are available:
+Use a `Site → Application → Page → Component` fixture and change only the Component.
 
-```bash
-cd console
-./gradlew bootRun
+The suite must prove:
+
+- only the changed Component receives a new authored revision;
+- unchanged Page/Application/Site revision IDs and source checksums remain stable;
+- the changed graph checksum propagates through each affected ancestor;
+- an unrelated graph branch keeps both its revision ID and graph checksum;
+- the root Site graph can produce a new snapshot while `siteRevisionId` stays unchanged;
+- snapshot pins persist the exact `revisionId + graphChecksum` pair for every selected Resource;
+- graph checksums are deterministic regardless of database row/traversal order.
+
+## Candidate and activation safety
+
+Inject or simulate failure at each durable boundary:
+
+```mermaid
+flowchart LR
+  save["Authoring TX"] --> eval["Candidate evaluation"]
+  eval --> snapshot["Snapshot TX"]
+  snapshot --> activate["Activation TX"]
 ```
 
-The repository acceptance gate is:
+Required outcomes:
 
-```bash
-cd console
-./gradlew test
-./gradlew build
-```
+- failure before authoring commit exposes no partial revision/candidate;
+- failure after authoring commit leaves recoverable queued work;
+- invalid candidate persists safe diagnostics and keeps the active snapshot;
+- failure after snapshot persistence but before activation may leave an inactive snapshot but never partial active state;
+- stale CAS activation loses to the newer runtime version.
 
-`./gradlew test` includes PostgreSQL integration tests when Docker is available. Do not interpret a Docker-disabled run as evidence that migrations, JDBC repositories, OAuth issuance, or deletion cascades work.
+## Runtime binding consistency
 
-## Verification strategy
+### Snapshot isolation
 
-The quality target is complete coverage of canonical behavior and failure boundaries, not 100% line coverage.
+1. Bootstrap Tab A on `S42`.
+2. Activate `S50`.
+3. Perform one or more client-side navigations from Tab A.
+4. Assert every route/Page/Component/Translation lookup still uses `S42`.
+5. Full reload and assert a new binding may adopt `S50`.
 
-| Test layer               | What it should prove                                                                  | Typical tools                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Unit                     | Parsers, mappings, domain transitions, service decisions, failure propagation.        | JUnit, AssertJ, Mockito only at true ports.                                   |
-| Architecture             | Modulith boundaries, forbidden internal imports, injection style, security ownership. | Spring Modulith verification and ArchUnit.                                    |
-| Persistence integration  | Flyway compatibility, JPA mappings, constraints, transactions, locks, cascades.       | PostgreSQL 18 Testcontainer.                                                  |
-| Web/security integration | Chain precedence, authentication, scopes/roles, Problem Details, no secret leakage.   | Spring Boot, MockMvc, Spring Security test.                                   |
-| Failure injection        | Process/transaction conflicts, duplicate delivery, compiler/adapter failure.          | Test seams such as `Clock`, factories, outbox worker, controlled concurrency. |
-| End to end               | One critical product journey across modules and durable boundaries.                   | Full application with PostgreSQL and real HTTP/security configuration.        |
+No lookup after binding validation may fall back to the mutable active pointer or `resource.current_revision_id`.
 
-Maintain `docs/UseCaseCoverage.md` as the source-to-test map: every new workflow is added to the inventory with the tests that prove it.
+### Locale isolation
 
-### Resource graph propagation
+1. Bootstrap Tabs A and B with `ja-JP`.
+2. Change the mutable profile default to `en` in Tab B.
+3. Navigate in Tab A and assert existing layout plus new Page remain `ja-JP`.
+4. Explicitly rebind Tab B to `en` and assert Tab A is unchanged.
 
-Treat revision identity and resolved graph identity as separate verification boundaries. The Resource/runtime suite must prove all of these together:
+### Binding failure states
 
-- changing only a child Resource creates a new child revision but does not create new revisions for unchanged importers;
-- the changed child's graph checksum propagates through every affected ancestor to the root Site graph checksum;
-- an unaffected branch keeps both its revision ID and graph checksum;
-- the same exact revision selections and dependency relationships produce the same graph checksums regardless of database row or traversal order;
-- a changed root Site graph can produce and activate a new snapshot while `siteRevisionId` remains unchanged;
-- the activated snapshot pins the exact revision ID and graph checksum for every compiled Resource selection.
+When expiry/revocation/renderer compatibility are implemented, cover `VALID`, `INVALID`, and `RELOAD_REQUIRED` paths without silently changing snapshot versions.
 
-Use a fixture such as `Site → Application → Page → Component`, change only the Component, and assert both sides of the invariant: ancestor revision IDs stay stable while Page/Application/Site graph checksums change.
+## Expression verification
 
-Before merging application work, at minimum:
+| Area | Required evidence |
+| --- | --- |
+| Syntax | Documented interpolation/operators/built-ins/directives compile against the pinned FreeMarker version. |
+| Typed result | Sole interpolation preserves the declared result type; rendered templates return text/nodes as allowed by the field. |
+| Context isolation | A field sees only its documented roots/functions; Workflow/Policy profiles stay unavailable outside those RFC capabilities. |
+| Sandbox | Java API/reflection/static/class/file/include/import access fails safely. |
+| Limits | Source/output/iteration/nesting limits fail deterministically without context leakage. |
+| Runtime presentation | `Trans`/`TransN` use the runtime-binding locale. |
 
-```bash
-cd console
-./gradlew test
-./gradlew build
-```
+A FreeMarker upgrade requires the compatibility suite because parsing, numeric behavior, missing-value behavior, built-ins, or diagnostics may change.
 
-Review the test output to confirm the PostgreSQL Testcontainer ran. A skipped container is incomplete verification; the delivery gate must include an environment that executes the integration suite.
+## API verification
 
-## FreeMarker Expression verification
+Against the canonical OpenAPI document, prove authentication/authorization, media types, ETag/precondition semantics, status/problem codes, no-op writes, immutable tags, cursor behavior, candidate diagnostics, and snapshot graph-checksum serialization.
 
-| Test group           | Required evidence                                                                                                                                  |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Syntax compatibility | Interpolation, operators, built-ins, directives, bracket access, missing values, and source locations match the pinned FreeMarker version.         |
-| Typed results        | A sole interpolation preserves string, number, boolean, list, and map results; rendered templates return text only; incompatible field types fail. |
-| Profile isolation    | Each field sees only its declared roots, functions, directives, and built-ins. Policy rejects every construct outside its predicate subset.        |
-| Sandbox              | `?api`, Java members, static/class models, `#include`, `#import`, reflection, and unknown functions fail without exposing data.                    |
-| Limits               | Oversized source, nesting, iteration, sequence, or rendered output fails deterministically with a safe diagnostic.                                 |
-| Predicate parity     | Every Policy fixture produces the same boolean in request evaluation and the same meaning in the database-neutral object predicate.                |
+When the SSR serving API is designed, add a contract test proving one happy-path backend request returns a self-contained render model for one validated runtime binding.
 
-Run the compatibility suite whenever the pinned FreeMarker version changes. A version upgrade is a contract change when parsing, missing-value behavior, built-ins, numeric behavior, or diagnostics differ.
+## Persistence verification
 
-## Debugging and operational entry points
+Use PostgreSQL integration coverage for composite revision ownership, one-Site uniqueness, immutable tags, candidate queue acquisition, snapshot all-or-nothing persistence, graph-checksum pins, activation CAS, exact-snapshot reacquisition, and retention/cleanup races.
 
-| Symptom                                  | Inspect first                                                                                                                                                  |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Application fails before serving         | Flyway output, validated configuration, bootstrap runners, client mapper, signing-key initialization.                                                          |
-| `/api/**` returns unexpected status      | Security chain match/order, JWT issuer/expiry, then controller `@PreAuthorize`.                                                                                |
-| OAuth client disappeared from token flow | `oauth2_registered_client_state.active`, configuration synchronization, manual override.                                                                       |
-| Client deletion rejected                 | Configured-client set, confirmation hash, expiry, requester, reuse and target client.                                                                          |
-| JWT remains valid after client deletion  | Expected self-contained JWT behavior; inspect `exp`, not the deleted client row.                                                                               |
-| Candidate does not activate              | Candidate correlation ID, exact revision selections, root graph checksum, resolution/validation diagnostics, compiler capability, activation version conflict. |
-| Workflow appears stuck                   | Execution version/status, current step, attempt/outbox rows, lease/worker telemetry.                                                                           |
+## RFC verification
 
-Candidate and Workflow logs should use correlation IDs and stable failure categories. Inputs, outputs, client secrets, passwords, raw confirmation tokens, private JWKs, and values outside Taskmigo's schema must not appear in logs or diagnostics.
+<Callout title='Keep RFC evidence separate from delivered acceptance' type='warning'>
+  Policy and Workflow test designs may be prepared now, but passing those tests does not make the capabilities available.
+</Callout>
+
+Policy RFC evidence focuses on fail-closed authorization and database predicate compilation. Workflow RFC evidence focuses on pinned execution definitions, durable state transitions, retries/idempotency, interaction races, and crash recovery.
+
+## Completion evidence
+
+A change is ready only when the applicable product behavior, architecture boundary, database/API schema, runtime invariant, real-technology integration tests, and repository verification gates agree. If one layer cannot be executed in the current environment, use another valid environment that runs the actual gate; do not reinterpret skipped evidence as a pass.

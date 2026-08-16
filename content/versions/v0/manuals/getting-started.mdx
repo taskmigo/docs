@@ -1,41 +1,136 @@
 ---
 title: Getting started
-description: Choose the shortest learning path for your role.
+description: Build the smallest routed Taskmigo Site and understand what happens after you save it.
 ---
 
-Taskmigo represents a product as versioned resources. A valid set of resources becomes an immutable Site snapshot; users interact with that snapshot while newer changes are validated separately.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-## Product users
-
-You use Applications and Pages exposed by an active Site. Depending on the product configuration, you may also start a Workflow or call an API protected by Policies.
-
-Start with [How Taskmigo works](/versions/v0/manuals/how-taskmigo-works), then use [Product status](/versions/v0/manuals/status) to distinguish available contracts from RFCs and planned capabilities.
-
-## Manifest developers
-
-Use this order when building a Site:
-
-1. Read the [resource model](/versions/v0/manuals/resources) for identity, revisions, imports, and tags.
-2. Choose a resource from the [manifest reference](/versions/v0/manuals/manifests).
-3. Compose `Site → Application → Page`, adding reusable Components and Translations as needed.
-4. Use [Expressions](/versions/v0/manuals/expressions) only in fields marked Expression-capable.
-5. Follow the [runtime lifecycle](/versions/v0/manuals/runtime) when a saved change does not become active.
+A minimal Taskmigo UI needs three Resources:
 
 ```mermaid
-flowchart TD
-  site["Site"] --> application["Application"]
-  application --> page["Page"]
-  page --> component["Component"]
-  page --> workflow["Workflow RFC"]
-  policy["Policy RFC"] --> api["API path"]
+flowchart LR
+  site["Site root"] --> application["Application /home"]
+  application --> page["Page index"]
+  page --> ui["Rendered component tree"]
 ```
 
-The minimum UI path is one Site importing one Application, which imports and routes one Page. Component reuse is optional. Workflow and Policy are RFCs and must not be treated as implemented behavior.
+<Steps>
+  <Step>
 
-## QC and QA
+### Create the Page
 
-Begin with [Quality assurance](/versions/v0/manuals/quality-assurance). It maps each contract boundary to observable scenarios and separates save-time validation, snapshot activation, request-time behavior, and Workflow execution.
+The Page owns metadata and the component tree. It does **not** own its URL.
 
-## Product managers
+```yaml
+apiVersion: v0
+kind: page
+metadata:
+  name: index
+spec:
+  meta:
+    title: Home
+    description: Home page
+  body:
+    - component: Typography
+      props:
+        variant: h1
+      children: Hello Taskmigo
+```
 
-Begin with [Product planning](/versions/v0/manuals/product-planning). Use it with [Product status](/versions/v0/manuals/status) to assess maturity, dependencies, limitations, and unresolved decisions without reading every field reference.
+  </Step>
+  <Step>
+
+### Route the Page from an Application
+
+The Application imports the Page and maps it below its own path.
+
+```yaml
+apiVersion: v0
+kind: application
+metadata:
+  name: home
+imports:
+  - page/index
+spec:
+  icon: https://example.com/home.png
+  label: Home
+  description: Home application
+  path: /home
+  routes:
+    - page: index
+      path: /
+```
+
+The resulting URL path is `/home/`.
+
+  </Step>
+  <Step>
+
+### Expose the Application from the Site
+
+The Site is the composition root. Importing an Application makes it available to the Site; listing it in `spec.applications` exposes it.
+
+```yaml
+apiVersion: v0
+kind: site
+metadata:
+  name: root
+imports:
+  - application/home
+spec:
+  brand:
+    label: Taskmigo
+    logo: ./logo.png
+    favicon: ./favicon.ico
+  applications:
+    - home
+```
+
+  </Step>
+  <Step>
+
+### Save and activate
+
+Saving creates immutable Resource revisions. Taskmigo then resolves the affected Site graph, validates it, compiles a candidate snapshot, and activates that snapshot only when the candidate is valid.
+
+```mermaid
+flowchart LR
+  save["Save Resources"] --> candidate["Resolve + validate candidate"]
+  candidate -->|"valid"| snapshot["Activate snapshot"]
+  candidate -->|"invalid"| diagnostics["Keep current snapshot + diagnostics"]
+```
+
+A successful save therefore does not guarantee that the change is already serving users. See [Runtime lifecycle](/versions/v0/manuals/runtime) when authoring state and runtime state differ.
+
+  </Step>
+</Steps>
+
+## Add capabilities when you need them
+
+<Cards>
+  <Card
+    title='Reuse UI'
+    href='/versions/v0/manuals/manifests/v0-component'
+    description='Move a shared component tree into an imported Component with typed props.'
+  />
+  <Card
+    title='Translate UI'
+    href='/versions/v0/manuals/manifests/v0-translation'
+    description='Create locale catalogs and resolve messages with Trans or TransN.'
+  />
+  <Card
+    title='Use dynamic values'
+    href='/versions/v0/manuals/expressions'
+    description='Use Expressions only in fields whose Type Table marks Expression support.'
+  />
+  <Card
+    title='Understand versioning'
+    href='/versions/v0/manuals/resources'
+    description='Learn identity, revisions, tags, imports, graph checksums, and snapshot selection.'
+  />
+</Cards>
+
+<Callout title='Workflow and Policy are RFCs' type='warning'>
+  Workflow and Policy documentation describes proposed contracts, not currently available runtime capabilities. Check
+  [Product status](/versions/v0/manuals/status) before relying on them.
+</Callout>

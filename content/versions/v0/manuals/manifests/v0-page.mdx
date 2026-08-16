@@ -1,24 +1,21 @@
 ---
 title: Page
-description: Define page metadata and a declarative component tree.
+description: Define Page metadata and a declarative component tree.
 ---
 
-A `v0/page` builds one user interface from an ordered tree of registered components. It owns the page title, description, and content; an Application decides where users can open it.
-
 import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+A Page owns what is rendered. Its importing Application owns where the Page is routed.
 
 ```yaml
 apiVersion: v0
 kind: page
-
 metadata:
   name: index
-
 spec:
   meta:
     title: '${Trans("pages.index.meta.title")}'
     description: '${Trans("pages.index.meta.description")}'
-
   body:
     - component: Stack
       props:
@@ -37,32 +34,32 @@ spec:
     'spec.meta': {
       type: 'object',
       required: true,
-      description: 'Groups the information used to present this Page.',
+      description: 'Groups metadata used to present this Page.',
     },
     'spec.meta.title': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: 'Name used to identify this Page.',
+      description: 'Page title.',
     },
     'spec.meta.description': {
       type: <FieldType supportsExpression={true}>string</FieldType>,
       required: true,
-      description: 'Short summary of this Page.',
+      description: 'Short Page summary.',
     },
     'spec.body': {
       type: 'ComponentNode[]',
       typeDescriptionLink: '#component-nodes',
       required: true,
-      description: 'Top-level component nodes rendered in source order.',
+      description: 'Top-level UI nodes rendered in source order.',
     },
   }}
 />
 
-A Page does not define a route. Route ownership belongs to the importing [Application](/versions/v0/manuals/manifests/v0-application).
+A Page does not define a route. See [Application paths and routes](/versions/v0/manuals/manifests/v0-application#paths-and-routes).
 
 ## Component nodes
 
-Every node names a registered component and provides the props and children accepted by that component:
+A component node selects one built-in UI Component or one imported reusable Component and supplies the values accepted by that component.
 
 ```yaml
 component: Stack
@@ -76,23 +73,25 @@ children: []
     component: {
       type: 'string',
       required: true,
-      description: 'Selects a built-in or imported reusable Component by its case-sensitive name.',
+      description: 'Case-sensitive built-in Component name or imported reusable Component name.',
     },
     props: {
       type: 'Dictionary',
-      description: 'Supplies named values validated by the selected component contract.',
+      description: 'Named values validated by the selected component contract.',
     },
     children: {
       type: <FieldType supportsExpression={true}>ReactNode</FieldType>,
       typeDescriptionLink: '#component-nodes',
-      description: 'Supplies content accepted by the selected component contract.',
+      description: 'Child text or component content accepted by the selected component contract.',
     },
   }}
 />
 
-Component names are case-sensitive: `Stack` and `stack` are different names. The initial contract defines [Stack](/versions/v0/manuals/ui-components/stack) for grouping content and [Typography](/versions/v0/manuals/ui-components/typography) for rendering text. Additional components and props may be added in future contract revisions.
+Built-in names are case-sensitive. The defined UI set currently contains [Stack](/versions/v0/manuals/ui-components/stack) and [Typography](/versions/v0/manuals/ui-components/typography); built-ins do not require imports.
 
-A Page can declare built-in components directly, as in the first example. Reuse is optional: import a [Component](/versions/v0/manuals/manifests/v0-component) only when multiple places should share the same component tree. Use its name as a node's `component` value and pass values declared by the Component through `props`:
+## Reuse a Component
+
+Import a reusable [Component](/versions/v0/manuals/manifests/v0-component), use its `metadata.name` as the node's `component`, and pass values through `props`.
 
 ```yaml
 imports:
@@ -105,14 +104,9 @@ spec:
         title: Hello World
 ```
 
-Every reusable Component used in `spec.body` must appear in `imports`; built-in components such as `Stack` and `Typography` do not require imports. Each node must satisfy the selected component's contract.
+Every reusable Component used by the Page must appear in `imports`. The selected Component validates required, optional, defaulted, and typed props.
 
-A Page may also import [Workflow](/versions/v0/manuals/manifests/v0-workflow) resources that users can discover and start from that Page:
-
-```yaml
-imports:
-  - component/header
-  - workflow/employee-onboarding
-```
-
-Importing a Workflow exposes it to Page runtime UI but does not itself grant permission to execute it. Pages do not embed Workflow steps in `spec.body`; interactive Workflow steps reuse Components imported by the Workflow itself. See [Reference ability](/versions/v0/manuals/resources#reference-ability) for the complete import matrix.
+<Callout title='Workflow integration is an RFC' type='warning'>
+  The proposed Workflow contract allows Pages to import Workflows that users can discover and start. That behavior is not
+  part of the currently available runtime. See [Workflow — Page integration](/versions/v0/manuals/manifests/v0-workflow#page-integration).
+</Callout>
