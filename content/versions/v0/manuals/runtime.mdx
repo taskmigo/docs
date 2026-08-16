@@ -143,10 +143,10 @@ The arrows between Next.js and the Taskmigo runtime boundary are the network-sen
 
 For render-critical data, the target happy path is:
 
-| Operation | Browser → Next.js | Next.js → Taskmigo | Extra Taskmigo fetch after response |
-| --------- | ----------------- | ----------------- | ----------------------------------- |
-| Full load | 1                 | 1                 | 0                                   |
-| Navigation within the same tab | 1 | 1 | 0 |
+| Operation                      | Browser → Next.js | Next.js → Taskmigo | Extra Taskmigo fetch after response |
+| ------------------------------ | ----------------- | ------------------ | ----------------------------------- |
+| Full load                      | 1                 | 1                  | 0                                   |
+| Navigation within the same tab | 1                 | 1                  | 0                                   |
 
 This does not prohibit later requests caused by user actions, live data, or another capability's freshness rules. It means the Page shell itself must not require additional network calls merely to discover its Application, Page, reusable Components, translations, or backend Expression values.
 
