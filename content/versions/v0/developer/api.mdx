@@ -31,28 +31,58 @@ There is deliberately no Resource delete API, tag mutation API, manual snapshot 
 
 ## SSR serving contract
 
-Next.js must not reconstruct runtime state from Resource and revision endpoints. Given an incoming pathname, the serving boundary must resolve the request from one acquired immutable snapshot and return a self-contained render model.
+Next.js must not reconstruct runtime state from Resource and revision endpoints. The serving boundary works with a **runtime binding**: an opaque binding between one browser application instance, one immutable Site snapshot, and the presentation context captured for that instance.
+
+A browser application instance begins with a full document load and normally ends at the next full reload. The initial load creates a fresh binding from the currently active snapshot and current presentation defaults. Client-side navigation reuses that binding rather than reacquiring the active snapshot.
 
 The logical route result contains:
 
-- the matched Application and Page;
+- the matched Application and Page from the bound snapshot;
 - Site/Application metadata required by the rendered layout;
-- a deterministic not-found outcome when the active snapshot has no matching route.
+- a deterministic not-found outcome when the bound snapshot has no matching route.
 
 The logical render result contains:
 
 - Page metadata and body;
 - every reusable Component definition required to render that Page, without requiring follow-up Resource requests;
-- Translation and Expression results required by the render;
-- immutable runtime identity sufficient for caching and diagnostics.
+- Translation and Expression results evaluated with the bound presentation context;
+- runtime identity sufficient for caching, compatibility checks, and diagnostics without requiring the browser to understand persistence IDs.
 
-These are logical parts of one serving operation, not a requirement for separate HTTP endpoints. The happy path should require one backend HTTP round trip from Next.js SSR. The backend may load multiple snapshot artifacts internally, but Next.js must not perform a serial Site → Application → Page → Component request chain.
+These are logical parts of one serving operation, not a requirement for separate HTTP endpoints. The happy path should require one backend HTTP round trip from Next.js. The backend may load multiple snapshot artifacts internally, but Next.js must not perform a serial Site → Application → Page → Component request chain.
 
-For v0, Expression evaluation is backend-only. The serving API returns resolved values and does not expose Expression source or a frontend Expression program.
+### Binding lifecycle
 
-A serving operation acquires the active snapshot once. Route lookup, Page/Component loading, Translation lookup, and Expression evaluation all use that same handle even if another snapshot activates before the response completes. The serving path never falls back to mutable `resource.current_revision_id`.
+The serving boundary follows these rules:
 
-Compiled route indexes and render artifacts may be cached by immutable snapshot identity. Exact artifact partitioning, cache topology, and the public serving endpoint/schema are still open decisions; optimize them without weakening the one-snapshot or one-round-trip contracts.
+1. **Full document bootstrap:** ignore any previous app-instance binding for version selection, acquire the current active snapshot, capture supported presentation defaults, and return a fresh binding with the initial render model.
+2. **Client-side navigation:** accept the existing binding, validate it, and resolve exclusively against its bound snapshot and presentation context.
+3. **Full reload:** bootstrap again, allowing the tab to adopt the latest active snapshot and current profile defaults.
+4. **Explicit presentation change:** when the user intentionally changes a bound presentation value such as locale in the current tab, establish a consistent replacement binding/rerender for that tab. Do not mutate other tabs implicitly.
+5. **Invalid binding:** an expired, revoked, or renderer-incompatible binding may require a full reload. Exact error codes and recovery transport are not defined yet.
+
+The binding should be opaque to the browser. Do not make raw snapshot UUIDs, graph checksums, database keys, or token internals part of frontend logic. A signed/stateless token or server-side lease record are both possible implementations; token format and persistence remain open decisions.
+
+Do not scope the binding to the login session. Two tabs opened at different times must be able to use different runtime versions and presentation contexts independently.
+
+### Presentation context
+
+Mutable profile data is a **bootstrap default**, not automatically the live rendering source for an already-running application instance.
+
+Locale demonstrates why. Suppose Tab A bootstraps with `ja-JP`. Tab B later changes the user's profile language to `en`. Tab A must continue resolving `Trans`/`TransN` with `ja-JP`; otherwise its already-rendered Japanese layout can be combined with an English Page after client navigation.
+
+For v0, Expression evaluation is backend-only. The serving API returns resolved values and does not expose Expression source or a frontend Expression program. Translation and Expression evaluation use the locale and other supported presentation values from the runtime binding, not mutable profile defaults reread during each navigation.
+
+Future presentation values such as timezone or an SSR-rendered theme may join the binding when changing them between navigations would create a mixed UI. Do not automatically freeze security-sensitive or business-authoritative mutable state. Authorization, account status, permissions, and other security decisions require their own freshness contract and must not become stale merely because UI presentation is pinned.
+
+### Consistency and compatibility
+
+A request carrying a valid binding resolves entirely against the bound snapshot. Route lookup, Page/Component loading, Translation lookup, and Expression evaluation never fall back to `resource.current_revision_id` or the newly active snapshot.
+
+A newer snapshot may activate while the tab is open. Existing bindings normally continue to use their snapshot until full reload. The final design must support bounded retention and may support expiry or emergency revocation so old snapshots are not retained forever and unsafe versions can be retired.
+
+Renderer/artifact compatibility must be checkable independently of snapshot identity. A retained snapshot cannot be assumed renderable by every future Next.js deployment.
+
+Compiled route indexes and render artifacts may be cached by immutable snapshot identity. Exact artifact partitioning, cache topology, binding representation, retention policy, and the public serving endpoint/schema are still open decisions; optimize them without weakening the one-binding or one-round-trip contracts.
 
 ## Resource writes
 
@@ -207,7 +237,7 @@ ResourceQueryService.get(ResourceIdentity identity)
 ResourceQueryService.list(ResourceFilter filter, CursorPageRequest page)
 ResourceRevisionQueryService.list(ResourceIdentity identity, CursorPageRequest page)
 ResourceRevisionQueryService.get(ResourceIdentity identity, UUID revisionId)
-ResourceTagService.create(CreateResourceTagCommand command)
+ResourceTagService.create(ResourceIdentity identity, SemVer tag, UUID revisionId)
 ResourceTagQueryService.list(ResourceIdentity identity, CursorPageRequest page)
 SiteCandidateQueryService.get(UUID candidateId)
 SiteCandidateQueryService.list(CandidateFilter filter, CursorPageRequest page)
@@ -218,7 +248,7 @@ SiteSnapshotQueryService.listResources(UUID snapshotId, CursorPageRequest page)
 SiteRuntimeQueryService.getActive()
 ```
 
-Do not add the unresolved SSR serving endpoint to this list until its OpenAPI transport contract is decided. The internal runtime boundary should nevertheless be able to acquire one snapshot and produce the logical route/render result without querying current authoring pointers.
+Do not add the unresolved SSR serving endpoint to this list until its OpenAPI transport contract is decided. The internal runtime boundary should nevertheless be able to bootstrap a runtime binding and resolve later navigation from that binding without querying current authoring pointers.
 
 Do not make controller DTOs the domain model. Mapping is explicit at the web boundary.
 
@@ -242,13 +272,15 @@ ResourceAuthorization.authorize(ResourceOperation operation, ResourceIdentity id
 
 Until Policy is implemented, the concrete rule follows the current access contract, but the controller shape must not prevent Policy from later supplying the decision. Query authorization must happen before pagination when object filtering becomes applicable.
 
+A runtime binding freezes presentation context, not security authority. Do not use a bound locale/snapshot as justification for reusing stale authorization decisions. Security-sensitive mutable state requires fresh authoritative evaluation according to the owning capability's contract.
+
 ## OpenAPI implementation rule
 
 `public/openapi/v0/openapi.yaml` is the canonical HTTP schema for the currently defined API surface.
 
 When changing a defined endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
 
-Do not add a speculative SSR serving operation to OpenAPI until its concrete path, request context, response schema, and error semantics are decided. The runtime requirements in this guide constrain that future design.
+Do not add a speculative SSR serving operation to OpenAPI until its concrete path, request context, response schema, binding representation, and error semantics are decided. The runtime requirements in this guide constrain that future design.
 
 Do not generate the OpenAPI file from Spring annotations as the source of truth. Code generation may consume the file, but the reviewed contract remains design-first.
 
@@ -260,7 +292,7 @@ Web integration tests use the real Spring security/filter/controller stack and p
 
 PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, dependency changes propagate graph checksums without creating ancestor revisions, and cursor ordering remains deterministic under concurrent inserts.
 
-When the SSR serving endpoint is defined, add contract/integration coverage proving one backend request returns a self-contained Page render model, does not query mutable current Resource pointers after snapshot acquisition, and remains internally consistent across concurrent snapshot activation.
+When the SSR serving endpoint is defined, add contract/integration coverage proving one backend request returns a self-contained Page render model; client navigation preserves the bound snapshot and locale across concurrent snapshot activation and profile-language changes; full reload can acquire the latest snapshot/defaults; one tab cannot silently change another tab's binding; and serving never queries mutable current Resource pointers after binding validation.
 
 ## Definition of done
 
