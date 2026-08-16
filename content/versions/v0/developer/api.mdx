@@ -120,12 +120,12 @@ Diagnostics are ordered by `sequence` and contain a stable `code`, source `path`
 
 The API exposes distinct immutable checksums and must not collapse them into one meaning:
 
-| Field | Meaning | Changes when a child dependency changes? |
-| --- | --- | :---: |
-| `ResourceRevision.checksum` | Canonical authored source for that exact revision. | No |
-| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned revision. | Yes, for affected ancestors |
-| `SiteSnapshot.graphChecksum` | Complete resolved Site graph selected for the snapshot. | Yes |
-| `SiteSnapshot.checksum` | Compiled snapshot output. | Yes when compiled runtime output changes |
+| Field                            | Meaning                                                 | Changes when a child dependency changes? |
+| -------------------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| `ResourceRevision.checksum`      | Canonical authored source for that exact revision.      | No                                       |
+| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned revision. | Yes, for affected ancestors              |
+| `SiteSnapshot.graphChecksum`     | Complete resolved Site graph selected for the snapshot. | Yes                                      |
+| `SiteSnapshot.checksum`          | Compiled snapshot output.                               | Yes when compiled runtime output changes |
 
 A dependency change can therefore produce a new snapshot whose `siteRevisionId` is unchanged. The snapshot Resource pins expose the unchanged ancestor `revisionId` together with a new `graphChecksum`, while the changed child pin carries its new `revisionId`.
 
