@@ -8,8 +8,8 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 This page is the implementation guide for the Resource control plane and the runtime read model consumed by Next.js.
 
 <Callout title='Implementation target' type='info'>
-  One browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the same
-  snapshot and presentation context until the tab explicitly rebinds or performs a full reload.
+  One browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the
+  same snapshot and presentation context until the tab explicitly rebinds or performs a full reload.
 </Callout>
 
 ## Architecture
@@ -137,8 +137,8 @@ sequenceDiagram
 ```
 
 <Callout title='Never reacquire the active snapshot during navigation' type='warning'>
-  After validation, every route, Page, Component, Translation, and Expression lookup must use the bound snapshot. Silently
-  switching to the newly active snapshot can create a UI that never existed as one valid version.
+  After validation, every route, Page, Component, Translation, and Expression lookup must use the bound snapshot.
+  Silently switching to the newly active snapshot can create a UI that never existed as one valid version.
 </Callout>
 
 ## Build one render model
