@@ -7,8 +7,10 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 This page is the canonical engineering design for the Resource control plane and the runtime read model consumed by Next.js.
 
-<Callout type="info" title="Implementation target">
-A browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the same snapshot and presentation context, while security and business state can still be evaluated using their own freshness rules.
+<Callout type='info' title='Implementation target'>
+  A browser application instance keeps one **runtime binding** across client-side navigation. The binding keeps the same
+  snapshot and presentation context, while security and business state can still be evaluated using their own freshness
+  rules.
 </Callout>
 
 ## Architecture at a glance
@@ -195,8 +197,9 @@ sequenceDiagram
   Next-->>Browser: RSC / rendered response
 ```
 
-<Callout type="warning" title="Never reacquire current runtime during navigation">
-Do not call `ActiveSiteSnapshotProvider.acquire()` without the bound snapshot identity after binding validation. Doing so can mix an old layout with a newly activated Page graph.
+<Callout type='warning' title='Never reacquire current runtime during navigation'>
+  Do not call `ActiveSiteSnapshotProvider.acquire()` without the bound snapshot identity after binding validation. Doing so
+  can mix an old layout with a newly activated Page graph.
 </Callout>
 
 ## Implement route and render resolution
