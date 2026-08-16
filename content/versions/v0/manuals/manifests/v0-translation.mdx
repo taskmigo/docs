@@ -50,6 +50,12 @@ Translation resources are selected by locale and are not imported. See [Referenc
 
 Resources with the same normalized locale merge into one effective catalog. Nested keys form dotted lookup paths.
 
+## Runtime locale
+
+A browser application instance uses the locale captured by its [runtime binding](/versions/v0/manuals/runtime#one-browser-app-one-runtime-binding). `Trans` and `TransN` use that locale for the lifetime of the binding instead of rereading the user's mutable profile language on every navigation.
+
+This keeps one tab internally consistent. For example, if Tab A is already rendered in Japanese and Tab B changes the user's profile language to English, Tab A continues rendering newly navigated Pages in Japanese. A full reload can bootstrap from the newer profile default, and an explicit language change in Tab A can replace that tab's presentation binding consistently.
+
 ## Trans
 
 ```text
@@ -69,7 +75,7 @@ Missing or incompatible placeholder values cause a runtime error.
 
 ## TransN
 
-`TransN` selects a plural form using the active locale's [Unicode CLDR plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
+`TransN` selects a plural form using the runtime binding locale's [Unicode CLDR plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
 
 ```text
 TransN("key", count[, value...])
@@ -91,7 +97,7 @@ Plural objects use CLDR categories `zero`, `one`, `two`, `few`, `many`, and `oth
 
 ### Resolve the locale
 
-Use the active catalog or configured global fallback.
+Use the locale captured by the current runtime binding. If its catalog is unavailable, use the configured global fallback.
 
   </Step>
   <Step>
@@ -128,7 +134,7 @@ Merge results never depend on load order. Errors identify the locale, path, and 
 | `TransN` receives a non-numeric count          | `[invalid_plural_count:key]`               |
 | Selected category is missing                   | Use `other`.                               |
 | Selected category and `other` are missing      | `[untranslated_form:key]`                  |
-| Active locale is unavailable                   | Use the configured global fallback locale. |
+| Runtime binding locale is unavailable          | Use the configured global fallback locale. |
 | Message receives too few values                | Runtime error.                             |
 | Value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
