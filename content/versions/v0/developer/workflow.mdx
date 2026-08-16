@@ -6,8 +6,8 @@ description: Proposed implementation for durable Workflow execution, interaction
 import { File, Folder, Files } from 'fumadocs-ui/components/files';
 
 <Callout title='RFC — do not implement as delivered foundation behavior' type='warning'>
-  This page translates the proposed [Workflow contract](/versions/v0/manuals/manifests/v0-workflow) into an implementation
-  design. The contract may still change before Workflow enters delivery.
+  This page translates the proposed [Workflow contract](/versions/v0/manuals/manifests/v0-workflow) into an
+  implementation design. The contract may still change before Workflow enters delivery.
 </Callout>
 
 ## Execution model
@@ -74,12 +74,12 @@ Execution never falls back to a newer Workflow definition when the pinned artifa
 
 ## Persistence model
 
-| Table | Durable responsibility |
-| --- | --- |
-| `workflow_execution` | Snapshot/Workflow pins, status, current step, optimistic version, input, timestamps, terminal summary. |
+| Table                   | Durable responsibility                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `workflow_execution`    | Snapshot/Workflow pins, status, current step, optimistic version, input, timestamps, terminal summary.     |
 | `workflow_step_attempt` | Step/attempt identity, stable idempotency key, evaluated input, output, redacted error, attempt lifecycle. |
-| `workflow_interaction` | Waiting-step submission, expected execution version, requester, payload, accepted/rejected outcome. |
-| `workflow_outbox` | Transition event plus publish/retry metadata for work scheduled after commit. |
+| `workflow_interaction`  | Waiting-step submission, expected execution version, requester, payload, accepted/rejected outcome.        |
+| `workflow_outbox`       | Transition event plus publish/retry metadata for work scheduled after commit.                              |
 
 One transition transaction records the current execution version, completed attempt/interaction, output, selected destination, new status, and outbox event. Dependent work is published or scheduled only after that transaction commits.
 

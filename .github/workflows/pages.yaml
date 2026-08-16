@@ -34,11 +34,6 @@ jobs:
       - name: Run lint
         run: npm run lint:check
 
-      - name: Run format fix
-        run: |
-          npm run format:fix
-          git diff --no-color
-
       - name: Run format check
         run: npm run format:check
 

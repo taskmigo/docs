@@ -43,7 +43,8 @@ Translation Resources are selected by locale; they are not imported.
     'spec.content': {
       type: 'Dictionary<string | TranslationDictionary>',
       required: true,
-      description: 'Nested message dictionary. Every leaf is a message string; plural forms are nested dictionaries keyed by CLDR category.',
+      description:
+        'Nested message dictionary. Every leaf is a message string; plural forms are nested dictionaries keyed by CLDR category.',
     },
   }}
 />
@@ -118,23 +119,23 @@ Apply the count first, then additional values from left to right.
 
 ## Merge catalogs
 
-| Conflict | Result |
-| --- | --- |
-| Different dictionary/message paths | Merge recursively. |
-| Two Resources define the same final message path | Reject, even when both messages are identical. |
-| One Resource defines a message where another requires a dictionary | Reject. |
+| Conflict                                                           | Result                                         |
+| ------------------------------------------------------------------ | ---------------------------------------------- |
+| Different dictionary/message paths                                 | Merge recursively.                             |
+| Two Resources define the same final message path                   | Reject, even when both messages are identical. |
+| One Resource defines a message where another requires a dictionary | Reject.                                        |
 
 Merge results never depend on Resource load order. A merge diagnostic identifies the locale, conflicting path, and both source Resources.
 
 ## Errors and fallbacks
 
-| Condition | Result |
-| --- | --- |
-| `TransN` receives a non-numeric count | `[invalid_plural_count:key]` |
-| Selected plural category is missing | Use `other`. |
-| Selected category and `other` are missing | `[untranslated_form:key]` |
-| Runtime binding locale has no catalog | Use the configured global fallback locale. |
-| Message receives too few values | Runtime error. |
-| Value is incompatible with its formatting verb | `[translation_format_error:key]` |
+| Condition                                      | Result                                     |
+| ---------------------------------------------- | ------------------------------------------ |
+| `TransN` receives a non-numeric count          | `[invalid_plural_count:key]`               |
+| Selected plural category is missing            | Use `other`.                               |
+| Selected category and `other` are missing      | `[untranslated_form:key]`                  |
+| Runtime binding locale has no catalog          | Use the configured global fallback locale. |
+| Message receives too few values                | Runtime error.                             |
+| Value is incompatible with its formatting verb | `[translation_format_error:key]`           |
 
 Missing-key behavior remains open. See [Product status](/versions/v0/manuals/status#known-limitations-and-open-decisions).

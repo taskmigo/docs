@@ -66,12 +66,12 @@ The binding belongs to the running application instance, not the login session. 
 
 ### What remains stable?
 
-| Value | During client-side navigation | How it changes |
-| --- | --- | --- |
-| Site snapshot | Pinned to the binding. | Normally on full reload; future expiry/revocation may require reload. |
-| Locale | Pinned presentation context. | Explicit change in that tab or a new bootstrap. |
-| Future presentation values | Pinned only when the contract explicitly classifies them as presentation context. | Defined by that presentation feature. |
-| Authorization and business state | Not automatically pinned. | Follows the freshness rules of the owning capability. |
+| Value                            | During client-side navigation                                                     | How it changes                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Site snapshot                    | Pinned to the binding.                                                            | Normally on full reload; future expiry/revocation may require reload. |
+| Locale                           | Pinned presentation context.                                                      | Explicit change in that tab or a new bootstrap.                       |
+| Future presentation values       | Pinned only when the contract explicitly classifies them as presentation context. | Defined by that presentation feature.                                 |
+| Authorization and business state | Not automatically pinned.                                                         | Follows the freshness rules of the owning capability.                 |
 
 Snapshot pinning is a UI/runtime-consistency rule, not permission caching.
 

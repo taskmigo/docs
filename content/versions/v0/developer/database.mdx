@@ -19,11 +19,11 @@ flowchart LR
 
 The database stores three different kinds of state:
 
-| Layer | Mutable? | Owns |
-| --- | --- | --- |
-| Authoring | Resource current pointer is mutable; revisions/tags are immutable. | User-authored source history and selectors. |
-| Compilation | Candidate status/diagnostics progress through one evaluation attempt. | Why committed source did or did not become runtime. |
-| Runtime | Snapshot content is immutable; one active pointer is mutable. | Exact compiled version and retained artifacts used for rendering. |
+| Layer       | Mutable?                                                              | Owns                                                              |
+| ----------- | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Authoring   | Resource current pointer is mutable; revisions/tags are immutable.    | User-authored source history and selectors.                       |
+| Compilation | Candidate status/diagnostics progress through one evaluation attempt. | Why committed source did or did not become runtime.               |
+| Runtime     | Snapshot content is immutable; one active pointer is mutable.         | Exact compiled version and retained artifacts used for rendering. |
 
 ## Resource/runtime ERD
 
@@ -180,12 +180,12 @@ Queue workers may use PostgreSQL `FOR UPDATE SKIP LOCKED` for candidate acquisit
 
 ### Three different checksums
 
-| Column | Identity represented |
-| --- | --- |
-| `resource_revision.checksum` | Canonical authored source of one exact revision. |
-| `site_snapshot_resource.graph_checksum` | Resolved subgraph rooted at one exact pinned Resource revision. |
-| `site_snapshot.graph_checksum` | Complete resolved Site graph selected for the snapshot. |
-| `site_snapshot.checksum` | Compiled snapshot output produced from that resolved graph and compiler-relevant inputs. |
+| Column                                  | Identity represented                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `resource_revision.checksum`            | Canonical authored source of one exact revision.                                         |
+| `site_snapshot_resource.graph_checksum` | Resolved subgraph rooted at one exact pinned Resource revision.                          |
+| `site_snapshot.graph_checksum`          | Complete resolved Site graph selected for the snapshot.                                  |
+| `site_snapshot.checksum`                | Compiled snapshot output produced from that resolved graph and compiler-relevant inputs. |
 
 A child revision can therefore create a new snapshot while `site_revision_id` remains unchanged: affected ancestor pins keep the same `revision_id` but receive new `graph_checksum` values.
 

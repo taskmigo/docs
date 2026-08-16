@@ -34,13 +34,13 @@ The control plane may change while users continue to run an older immutable snap
 
 ## Capability ownership
 
-| Capability | Owns | Does not own |
-| --- | --- | --- |
-| `resource` | Resource identity/history, tags, graph resolution, candidates, snapshots, activation, runtime-binding snapshot access. | User identity, Policy decisions, Workflow execution state. |
-| `expression` | Safe FreeMarker compilation/evaluation foundation and profile enforcement. | Business functions such as Translation catalog ownership. |
-| `access` | Authentication and authoritative identity/access state. | Resource compilation or pinned presentation context. |
-| `policy` (RFC) | Proposed API request/object authorization. | Authentication and Resource authoring. |
-| `workflow` (RFC) | Proposed durable execution state. | Resource revision history or snapshot activation. |
+| Capability       | Owns                                                                                                                   | Does not own                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `resource`       | Resource identity/history, tags, graph resolution, candidates, snapshots, activation, runtime-binding snapshot access. | User identity, Policy decisions, Workflow execution state. |
+| `expression`     | Safe FreeMarker compilation/evaluation foundation and profile enforcement.                                             | Business functions such as Translation catalog ownership.  |
+| `access`         | Authentication and authoritative identity/access state.                                                                | Resource compilation or pinned presentation context.       |
+| `policy` (RFC)   | Proposed API request/object authorization.                                                                             | Authentication and Resource authoring.                     |
+| `workflow` (RFC) | Proposed durable execution state.                                                                                      | Resource revision history or snapshot activation.          |
 
 Cross-capability dependencies point to narrow public ports or events. No capability reads another capability's internal repository as a shortcut.
 
@@ -89,15 +89,15 @@ Taskmigo-specific rules:
 
 ## Invariants every implementation preserves
 
-| Invariant | Why it matters |
-| --- | --- |
-| Resource revision is authored-source history only. | A child change must not manufacture ancestor revisions. |
-| Resolved graph identity propagates dependency changes. | The Site can produce a new snapshot even when its own revision stays unchanged. |
-| Snapshot persistence and activation are separate atomic boundaries. | Invalid or partial candidates cannot replace a working runtime. |
-| Runtime binding is application-instance scoped. | Client navigation cannot mix snapshots or presentation locales. |
-| Presentation pinning does not pin authority. | Permission/account/business state can retain the freshness required by its owner. |
-| Expressions execute on the backend. | Browser rendering does not become a second Expression/runtime engine. |
-| Public HTTP schema is design-first OpenAPI. | Implementation cannot silently redefine transport semantics. |
+| Invariant                                                           | Why it matters                                                                    |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Resource revision is authored-source history only.                  | A child change must not manufacture ancestor revisions.                           |
+| Resolved graph identity propagates dependency changes.              | The Site can produce a new snapshot even when its own revision stays unchanged.   |
+| Snapshot persistence and activation are separate atomic boundaries. | Invalid or partial candidates cannot replace a working runtime.                   |
+| Runtime binding is application-instance scoped.                     | Client navigation cannot mix snapshots or presentation locales.                   |
+| Presentation pinning does not pin authority.                        | Permission/account/business state can retain the freshness required by its owner. |
+| Expressions execute on the backend.                                 | Browser rendering does not become a second Expression/runtime engine.             |
+| Public HTTP schema is design-first OpenAPI.                         | Implementation cannot silently redefine transport semantics.                      |
 
 ## Implementation dependency order
 

@@ -7,14 +7,14 @@ This page defines **required evidence**, not a claim that a particular applicati
 
 ## Verification layers
 
-| Layer | Proves | Use real technology when… |
-| --- | --- | --- |
-| Unit | Parsers, value types, graph algorithms, contract validation, Expression profiles, local state machines. | No external semantics are under test. |
-| Architecture | Capability boundaries and forbidden internal/repository shortcuts. | Module/package rules are part of correctness. |
-| PostgreSQL integration | Flyway schema, constraints, JSONB, locks, CAS, queue acquisition, transaction rollback, cleanup races. | PostgreSQL semantics protect an invariant. |
-| Web/security integration | OpenAPI mapping, security chain, authorization boundary, ETag/preconditions, Problem Details. | HTTP/security behavior is part of the contract. |
-| Failure/concurrency | Crash boundaries, stale activation, duplicate work, race recovery. | Correctness depends on ordering or durable commit points. |
-| End to end | One complete product journey through authoring → candidate → snapshot → runtime. | Cross-boundary behavior must be accepted as one system. |
+| Layer                    | Proves                                                                                                  | Use real technology when…                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Unit                     | Parsers, value types, graph algorithms, contract validation, Expression profiles, local state machines. | No external semantics are under test.                     |
+| Architecture             | Capability boundaries and forbidden internal/repository shortcuts.                                      | Module/package rules are part of correctness.             |
+| PostgreSQL integration   | Flyway schema, constraints, JSONB, locks, CAS, queue acquisition, transaction rollback, cleanup races.  | PostgreSQL semantics protect an invariant.                |
+| Web/security integration | OpenAPI mapping, security chain, authorization boundary, ETag/preconditions, Problem Details.           | HTTP/security behavior is part of the contract.           |
+| Failure/concurrency      | Crash boundaries, stale activation, duplicate work, race recovery.                                      | Correctness depends on ordering or durable commit points. |
+| End to end               | One complete product journey through authoring → candidate → snapshot → runtime.                        | Cross-boundary behavior must be accepted as one system.   |
 
 Do not substitute an in-memory database or mocked repository for a PostgreSQL constraint/race that the production design depends on.
 
@@ -101,14 +101,14 @@ When expiry/revocation/renderer compatibility are implemented, cover `VALID`, `I
 
 ## Expression verification
 
-| Area | Required evidence |
-| --- | --- |
-| Syntax | Documented interpolation/operators/built-ins/directives compile against the pinned FreeMarker version. |
-| Typed result | Sole interpolation preserves the declared result type; rendered templates return text/nodes as allowed by the field. |
-| Context isolation | A field sees only its documented roots/functions; Workflow/Policy profiles stay unavailable outside those RFC capabilities. |
-| Sandbox | Java API/reflection/static/class/file/include/import access fails safely. |
-| Limits | Source/output/iteration/nesting limits fail deterministically without context leakage. |
-| Runtime presentation | `Trans`/`TransN` use the runtime-binding locale. |
+| Area                 | Required evidence                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Syntax               | Documented interpolation/operators/built-ins/directives compile against the pinned FreeMarker version.                      |
+| Typed result         | Sole interpolation preserves the declared result type; rendered templates return text/nodes as allowed by the field.        |
+| Context isolation    | A field sees only its documented roots/functions; Workflow/Policy profiles stay unavailable outside those RFC capabilities. |
+| Sandbox              | Java API/reflection/static/class/file/include/import access fails safely.                                                   |
+| Limits               | Source/output/iteration/nesting limits fail deterministically without context leakage.                                      |
+| Runtime presentation | `Trans`/`TransN` use the runtime-binding locale.                                                                            |
 
 A FreeMarker upgrade requires the compatibility suite because parsing, numeric behavior, missing-value behavior, built-ins, or diagnostics may change.
 
@@ -125,7 +125,8 @@ Use PostgreSQL integration coverage for composite revision ownership, one-Site u
 ## RFC verification
 
 <Callout title='Keep RFC evidence separate from delivered acceptance' type='warning'>
-  Policy and Workflow test designs may be prepared now, but passing those tests does not make the capabilities available.
+  Policy and Workflow test designs may be prepared now, but passing those tests does not make the capabilities
+  available.
 </Callout>
 
 Policy RFC evidence focuses on fail-closed authorization and database predicate compilation. Workflow RFC evidence focuses on pinned execution definitions, durable state transitions, retries/idempotency, interaction races, and crash recovery.

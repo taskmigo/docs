@@ -49,18 +49,18 @@ Another capability may depend on the public root; it may not import `internal` p
 
 ## Implementation phases
 
-| Phase | Deliverable | Canonical design | Exit proof |
-| --- | --- | --- | --- |
-| 0 | Application/module/persistence test baseline | [Architecture](/versions/v0/developer/architecture) | Architecture and real PostgreSQL test harness can run. |
-| 1 | Resource identity + immutable revisions | [Resource model](/versions/v0/manuals/resources#identity-and-revisions), [Database](/versions/v0/developer/database#authoring-model) | Create/update/no-op/concurrency preserve immutable history. |
-| 2 | Immutable tags + reference selection | [Resource model](/versions/v0/manuals/resources#references) | Exact/caret/tilde selection is deterministic. |
-| 3 | Backend Expression foundation | [Expressions](/versions/v0/manuals/expressions) | Typed evaluation, sandbox, profiles, and diagnostics are proven. |
-| 4 | Defined manifest contracts | [Manifest reference](/versions/v0/manuals/manifests) | Site/Application/Page/Component/Translation validate and normalize independently. |
-| 5 | Resolved graph + graph checksums + diagnostics | [Resource model](/versions/v0/manuals/resources#resolved-graph-identity), [Resource and runtime](/versions/v0/developer/resource-runtime) | Child changes propagate graph identity without fake ancestor revisions. |
-| 6 | Candidate pipeline | [Resource and runtime](/versions/v0/developer/resource-runtime#candidate-and-activation-flow) | Invalid/crashed/stale candidates cannot replace active runtime. |
-| 7 | Snapshot persistence + activation | [Database](/versions/v0/developer/database#snapshot-and-activation) | Snapshot, pins, graph identity, and artifacts persist atomically; CAS activation is safe. |
-| 8 | Runtime binding + render read model | [Resource and runtime](/versions/v0/developer/resource-runtime) | One tab keeps snapshot/locale across navigation and renders without mutable authoring reads. |
-| 9 | Retention + operational hardening | [Database](/versions/v0/developer/database#retention-and-cleanup) | Cleanup cannot remove current/tagged/bound/otherwise retained runtime state. |
+| Phase | Deliverable                                    | Canonical design                                                                                                                          | Exit proof                                                                                   |
+| ----- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 0     | Application/module/persistence test baseline   | [Architecture](/versions/v0/developer/architecture)                                                                                       | Architecture and real PostgreSQL test harness can run.                                       |
+| 1     | Resource identity + immutable revisions        | [Resource model](/versions/v0/manuals/resources#identity-and-revisions), [Database](/versions/v0/developer/database#authoring-model)      | Create/update/no-op/concurrency preserve immutable history.                                  |
+| 2     | Immutable tags + reference selection           | [Resource model](/versions/v0/manuals/resources#references)                                                                               | Exact/caret/tilde selection is deterministic.                                                |
+| 3     | Backend Expression foundation                  | [Expressions](/versions/v0/manuals/expressions)                                                                                           | Typed evaluation, sandbox, profiles, and diagnostics are proven.                             |
+| 4     | Defined manifest contracts                     | [Manifest reference](/versions/v0/manuals/manifests)                                                                                      | Site/Application/Page/Component/Translation validate and normalize independently.            |
+| 5     | Resolved graph + graph checksums + diagnostics | [Resource model](/versions/v0/manuals/resources#resolved-graph-identity), [Resource and runtime](/versions/v0/developer/resource-runtime) | Child changes propagate graph identity without fake ancestor revisions.                      |
+| 6     | Candidate pipeline                             | [Resource and runtime](/versions/v0/developer/resource-runtime#candidate-and-activation-flow)                                             | Invalid/crashed/stale candidates cannot replace active runtime.                              |
+| 7     | Snapshot persistence + activation              | [Database](/versions/v0/developer/database#snapshot-and-activation)                                                                       | Snapshot, pins, graph identity, and artifacts persist atomically; CAS activation is safe.    |
+| 8     | Runtime binding + render read model            | [Resource and runtime](/versions/v0/developer/resource-runtime)                                                                           | One tab keeps snapshot/locale across navigation and renders without mutable authoring reads. |
+| 9     | Retention + operational hardening              | [Database](/versions/v0/developer/database#retention-and-cleanup)                                                                         | Cleanup cannot remove current/tagged/bound/otherwise retained runtime state.                 |
 
 Policy and Workflow remain RFCs. Do not insert their persistence or runtime behavior into phases 0–9 as delivered foundation work.
 
