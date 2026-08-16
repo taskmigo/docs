@@ -15,6 +15,34 @@ scripts may report missing locally installed tools).
 verification sequence. After installation succeeds, restart the full sequence at
 `npm run lint:check`.
 
+## Format check fails after documentation edits
+
+**Environment:** Any checkout after changing Markdown, MDX, JSON, YAML, or other
+files covered by `oxfmt`.
+
+**Symptom:** `npm run format:check` lists files with formatting differences. MDX
+Tables, JSX/Fumadocs components, wrapped prose, or embedded content may look
+correct by inspection but still differ from the repository formatter output.
+
+**Workaround:** Do not reproduce `oxfmt` output manually. In a writable checkout
+with locked dependencies installed, run:
+
+```bash
+npm run format:fix
+```
+
+Review the formatter-generated diff, then restart the complete verification
+sequence from:
+
+```bash
+npm run lint:check
+```
+
+Continue with `format:check`, `types:check`, and `build` only after the preceding
+gate passes. If the current environment cannot provide a writable checkout, move
+the formatting step to another valid environment rather than guessing spacing or
+rewriting MDX by hand.
+
 ## npm cannot write to its default cache
 
 **Environment:** A restricted or containerized environment where `/root/.npm` is
@@ -37,8 +65,16 @@ full verification sequence at `npm run lint:check`.
 
 ## Local checkout cannot reach GitHub
 
-**Environment:** A restricted container where outbound DNS for `github.com` is unavailable.
+**Environment:** A restricted container where outbound DNS for `github.com` is
+unavailable.
 
-**Symptom:** `git clone` fails with `Could not resolve host: github.com`, preventing local dependency installation and verification.
+**Symptom:** `git clone` fails with `Could not resolve host: github.com`, preventing
+that environment from creating or refreshing a local checkout.
 
-**Workaround:** Use the repository's GitHub Actions runner to execute the verification sequence. Ensure the workflow includes every required gate (`lint:check`, `format:check`, `types:check`, and `build`) and validate the final PR head with check-only steps.
+**Workaround:** Do not substitute manual formatting or skip verification. Use an
+existing checkout when available, or move the work to another writable environment
+that can obtain the repository and run the required commands. GitHub Actions can
+verify a pushed head with `lint:check`, `format:check`, `types:check`, and `build`,
+but a check-only workflow does not replace `npm run format:fix` when files need to
+be rewritten. After any formatter or code fix, restart verification from
+`npm run lint:check`.
