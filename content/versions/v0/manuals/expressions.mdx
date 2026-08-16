@@ -77,6 +77,16 @@ Context values are available only where the field contract exposes them. In v0, 
 
 Use bracket access when a dynamic key is not a valid FreeMarker identifier, as with a Workflow step ID containing `-`. Names and paths are case-sensitive.
 
+## Stable presentation context
+
+Backend evaluation does not mean every Expression rereads mutable user settings on every request. A running browser application instance has a [runtime binding](/versions/v0/manuals/runtime#one-browser-app-one-runtime-binding) that captures presentation context needed for a consistent UI.
+
+Locale is the first important example. `Trans` and `TransN` use the locale captured by the current runtime binding. If another tab changes the user's profile language, an already-running tab keeps its own locale so its existing layout and newly navigated Page cannot become a mixture of languages.
+
+The profile language is therefore a default used when a browser application instance is bootstrapped, or when that tab explicitly changes its presentation context. It is not automatically reread as the locale for each Expression evaluation.
+
+This distinction applies only to values intentionally classified as presentation context. Security-sensitive and business-authoritative values are not made stale by the runtime binding; their owning capability defines when they must be read or revalidated.
+
 ## Use operators and built-ins
 
 _The names below are illustrative. A Component can access only props declared by its own contract._
@@ -107,7 +117,7 @@ String and node fields may use the following FreeMarker directives as well as in
 
 Taskmigo validates the syntax, available data model, functions, and expected result type before activation whenever all required values are known. Runtime-only values are checked again during backend evaluation.
 
-For SSR, the backend evaluates every Expression needed for the requested render using the acquired snapshot and server-visible runtime context before the render model is returned to Next.js. The render model contains the resulting values, not Expression programs intended for browser execution.
+For SSR, the backend evaluates every Expression needed for the requested render using the snapshot and presentation context from the runtime binding plus any server-visible context whose contract requires fresh evaluation. The render model contains the resulting values, not Expression programs intended for browser execution.
 
 ## Before you save
 
