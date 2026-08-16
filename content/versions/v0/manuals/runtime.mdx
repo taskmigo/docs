@@ -56,12 +56,12 @@ A **browser application instance** is the running Taskmigo UI in one tab between
 
 The binding contains, conceptually:
 
-| Bound value | Why it stays stable |
-| --- | --- |
-| Snapshot | Routes, Pages, Components, and Translation catalogs must come from one immutable Resource graph. |
-| Locale | A tab must not switch language halfway through its UI because another tab changed the user's profile. |
+| Bound value                | Why it stays stable                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Snapshot                   | Routes, Pages, Components, and Translation catalogs must come from one immutable Resource graph.                               |
+| Locale                     | A tab must not switch language halfway through its UI because another tab changed the user's profile.                          |
 | Other presentation context | Future values such as timezone or SSR theme may be captured when changing them mid-instance would create a mixed presentation. |
-| Renderer compatibility | A retained snapshot must be rendered only by a compatible runtime/artifact format. |
+| Renderer compatibility     | A retained snapshot must be rendered only by a compatible runtime/artifact format.                                             |
 
 The concrete token format, expiry, revocation mechanism, and additional presentation fields are still design decisions. The important contract is the binding itself: subsequent navigation uses the captured runtime view instead of rereading mutable defaults.
 
