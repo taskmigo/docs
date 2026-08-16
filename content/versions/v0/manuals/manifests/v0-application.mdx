@@ -73,9 +73,9 @@ This exposes Page `index` at `/home/` on the current host.
 Taskmigo combines the Application prefix with the route path:
 
 | `spec.path` | `routes[].path` | Resulting URL path |
-| --- | --- | --- |
-| `/home` | `/` | `/home/` |
-| `/home` | `/settings` | `/home/settings` |
+| ----------- | --------------- | ------------------ |
+| `/home`     | `/`             | `/home/`           |
+| `/home`     | `/settings`     | `/home/settings`   |
 
 A route path is **not** an independent absolute URL. It is interpreted below `spec.path`.
 

@@ -40,20 +40,20 @@ Use this page to decide **where a responsibility belongs**. It is a target map: 
 
 ## Find a responsibility
 
-| Responsibility | Target owner/location | Canonical design |
-| --- | --- | --- |
-| Resource save/list/get/revisions/tags | `resource/internal/application/resource` and `resource/internal/web` | [API development](/versions/v0/developer/api) |
-| Reference parsing and revision selection | `resource/internal/domain/reference` | [Resource model](/versions/v0/manuals/resources) |
-| Manifest contract registry | `resource/internal/domain/contract` | [Development instructions](/versions/v0/developer/development-instructions#manifest-contracts) |
-| Graph resolution/checksums | `resource/internal/domain/graph` | [Resource and runtime](/versions/v0/developer/resource-runtime) |
-| Candidate pipeline and diagnostics | `resource/internal/application/pipeline` + `resource/internal/persistence/candidate` | [Resource and runtime](/versions/v0/developer/resource-runtime#candidate-and-activation-flow) |
-| Snapshot compilation/persistence | `resource/internal/domain/snapshot` + `resource/internal/persistence/snapshot` | [Database](/versions/v0/developer/database) |
-| Runtime binding | public `resource/RuntimeBindingService` + internal runtime application service | [Resource and runtime](/versions/v0/developer/resource-runtime#binding-lifecycle) |
-| Route/render read model | public/internal Resource runtime boundary | [Resource and runtime](/versions/v0/developer/resource-runtime#build-one-render-model) |
-| Expression engine | `expression` capability | [Expressions](/versions/v0/manuals/expressions) |
-| HTTP transport | owning capability's `internal/web` package | [API development](/versions/v0/developer/api) |
-| Database migrations | `console/src/main/resources/db/migration` | [Database](/versions/v0/developer/database) |
-| Architecture enforcement | `ArchitectureTest` | [Architecture](/versions/v0/developer/architecture) |
+| Responsibility                           | Target owner/location                                                                | Canonical design                                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Resource save/list/get/revisions/tags    | `resource/internal/application/resource` and `resource/internal/web`                 | [API development](/versions/v0/developer/api)                                                  |
+| Reference parsing and revision selection | `resource/internal/domain/reference`                                                 | [Resource model](/versions/v0/manuals/resources)                                               |
+| Manifest contract registry               | `resource/internal/domain/contract`                                                  | [Development instructions](/versions/v0/developer/development-instructions#manifest-contracts) |
+| Graph resolution/checksums               | `resource/internal/domain/graph`                                                     | [Resource and runtime](/versions/v0/developer/resource-runtime)                                |
+| Candidate pipeline and diagnostics       | `resource/internal/application/pipeline` + `resource/internal/persistence/candidate` | [Resource and runtime](/versions/v0/developer/resource-runtime#candidate-and-activation-flow)  |
+| Snapshot compilation/persistence         | `resource/internal/domain/snapshot` + `resource/internal/persistence/snapshot`       | [Database](/versions/v0/developer/database)                                                    |
+| Runtime binding                          | public `resource/RuntimeBindingService` + internal runtime application service       | [Resource and runtime](/versions/v0/developer/resource-runtime#binding-lifecycle)              |
+| Route/render read model                  | public/internal Resource runtime boundary                                            | [Resource and runtime](/versions/v0/developer/resource-runtime#build-one-render-model)         |
+| Expression engine                        | `expression` capability                                                              | [Expressions](/versions/v0/manuals/expressions)                                                |
+| HTTP transport                           | owning capability's `internal/web` package                                           | [API development](/versions/v0/developer/api)                                                  |
+| Database migrations                      | `console/src/main/resources/db/migration`                                            | [Database](/versions/v0/developer/database)                                                    |
+| Architecture enforcement                 | `ArchitectureTest`                                                                   | [Architecture](/versions/v0/developer/architecture)                                            |
 
 ## Resource capability target
 
@@ -93,14 +93,14 @@ Use this page to decide **where a responsibility belongs**. It is a target map: 
 
 ## Public ports that other code may depend on
 
-| Port/type | Responsibility |
-| --- | --- |
-| `ManifestContract` | Validate and normalize one `(apiVersion, kind)` Resource revision. |
-| `SnapshotContributor` | Add deterministic capability-owned artifacts to a Site snapshot. |
+| Port/type                    | Responsibility                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ManifestContract`           | Validate and normalize one `(apiVersion, kind)` Resource revision.                                   |
+| `SnapshotContributor`        | Add deterministic capability-owned artifacts to a Site snapshot.                                     |
 | `ActiveSiteSnapshotProvider` | Acquire the current snapshot during bootstrap or an exact retained snapshot for a validated binding. |
-| `RuntimeBindingService` | Bootstrap, validate, and encode the opaque application-instance binding. |
-| `RuntimeRenderService` | Resolve one path into a self-contained render model using an already validated binding. |
-| `SiteSnapshotActivated` | Notify observers after the durable activation boundary. |
+| `RuntimeBindingService`      | Bootstrap, validate, and encode the opaque application-instance binding.                             |
+| `RuntimeRenderService`       | Resolve one path into a self-contained render model using an already validated binding.              |
+| `SiteSnapshotActivated`      | Notify observers after the durable activation boundary.                                              |
 
 Keep repositories, JPA entities, compiler internals, controllers, and FreeMarker implementation types out of the public Resource package.
 
@@ -126,16 +126,16 @@ The public Expression surface describes contracts and compiled/evaluated results
 
 ## Where new code belongs
 
-| Code | Target location |
-| --- | --- |
-| Use-case orchestration and transaction boundary | `<capability>/internal/application/<use-case>` |
-| Domain value, parser, compiler algorithm, invariant | `<capability>/internal/domain/<area>` |
-| JPA/JDBC adapter | `<capability>/internal/persistence/<area>` |
-| Controller/DTO/Problem Details mapping | `<capability>/internal/web/<area>` |
-| Framework bean composition | `<capability>/internal/configuration` |
-| Cross-module port/event | `<capability>` public root |
-| Flyway migration | `console/src/main/resources/db/migration` |
-| Capability tests | matching package below `src/test/java` |
+| Code                                                | Target location                                |
+| --------------------------------------------------- | ---------------------------------------------- |
+| Use-case orchestration and transaction boundary     | `<capability>/internal/application/<use-case>` |
+| Domain value, parser, compiler algorithm, invariant | `<capability>/internal/domain/<area>`          |
+| JPA/JDBC adapter                                    | `<capability>/internal/persistence/<area>`     |
+| Controller/DTO/Problem Details mapping              | `<capability>/internal/web/<area>`             |
+| Framework bean composition                          | `<capability>/internal/configuration`          |
+| Cross-module port/event                             | `<capability>` public root                     |
+| Flyway migration                                    | `console/src/main/resources/db/migration`      |
+| Capability tests                                    | matching package below `src/test/java`         |
 
 Do not duplicate database schema, HTTP endpoint semantics, or implementation order here. Use [Database](/versions/v0/developer/database), [API development](/versions/v0/developer/api), and [Development instructions](/versions/v0/developer/development-instructions) as their canonical sources.
 

@@ -61,11 +61,11 @@ Update:
 If-Match: "<current-revision-id>"
 ```
 
-| Condition | HTTP result |
-| --- | --- |
-| Required precondition missing | `428 Precondition Required` |
-| ETag is stale or create-only Resource already exists | `412 Precondition Failed` |
-| Durable invariant conflict unrelated to the precondition | `409 Conflict` |
+| Condition                                                | HTTP result                 |
+| -------------------------------------------------------- | --------------------------- |
+| Required precondition missing                            | `428 Precondition Required` |
+| ETag is stale or create-only Resource already exists     | `412 Precondition Failed`   |
+| Durable invariant conflict unrelated to the precondition | `409 Conflict`              |
 
 The application service performs the compare/write in the same authoring transaction that appends the immutable revision and advances the current pointer. A controller-side read/check is not the concurrency boundary.
 
@@ -103,12 +103,12 @@ Do not keep the authoring HTTP request open while compilation runs. Candidate di
 
 The HTTP model exposes separate identities and must not collapse them:
 
-| Field | Meaning | Child dependency change |
-| --- | --- | --- |
-| `ResourceRevision.checksum` | Canonical authored source of that exact revision. | No change for an unchanged importer. |
-| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned Resource. | Changes for affected ancestors. |
-| `SiteSnapshot.graphChecksum` | Complete resolved Site graph selected by the snapshot. | Changes when any selected dependency changes the root graph. |
-| `SiteSnapshot.checksum` | Compiled snapshot output. | Changes when compiler-relevant runtime output changes. |
+| Field                            | Meaning                                                 | Child dependency change                                      |
+| -------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| `ResourceRevision.checksum`      | Canonical authored source of that exact revision.       | No change for an unchanged importer.                         |
+| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned Resource. | Changes for affected ancestors.                              |
+| `SiteSnapshot.graphChecksum`     | Complete resolved Site graph selected by the snapshot.  | Changes when any selected dependency changes the root graph. |
+| `SiteSnapshot.checksum`          | Compiled snapshot output.                               | Changes when compiler-relevant runtime output changes.       |
 
 A new snapshot can therefore keep the same `siteRevisionId` while its root `graphChecksum` and selected child revision change.
 

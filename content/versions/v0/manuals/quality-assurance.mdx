@@ -7,13 +7,13 @@ Test at the boundary where Taskmigo makes a product decision: authoring commit, 
 
 ## Defined contract boundaries
 
-| Boundary | Positive case | Failure case | Observable result |
-| --- | --- | --- | --- |
-| Manifest contract | Required fields, types, and field-local rules are valid. | A field is missing, invalid, or uses an unsupported Expression context. | Source-aware validation identifies the field/path. |
-| Resource resolution | Every reference selects one allowed exact revision and deterministic graph checksum. | Missing, duplicate, disallowed, cyclic, or unsatisfied reference. | Candidate remains non-active; current snapshot is unchanged. |
-| Site snapshot | Complete resolved graph compiles and pins exact revision + graph identity. | Any reachable Resource or cross-Resource rule is invalid. | Activation is all-or-nothing. |
-| Runtime binding | Navigation uses the binding's snapshot and presentation context. | A newer snapshot/profile default appears while the tab remains open. | Existing tab stays internally consistent. |
-| Expression | Backend evaluation has valid syntax, visible context, and result type. | Syntax/context/type fails at validation or runtime phase. | Safe diagnostic/error; browser never evaluates Expression source. |
+| Boundary            | Positive case                                                                        | Failure case                                                            | Observable result                                                 |
+| ------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Manifest contract   | Required fields, types, and field-local rules are valid.                             | A field is missing, invalid, or uses an unsupported Expression context. | Source-aware validation identifies the field/path.                |
+| Resource resolution | Every reference selects one allowed exact revision and deterministic graph checksum. | Missing, duplicate, disallowed, cyclic, or unsatisfied reference.       | Candidate remains non-active; current snapshot is unchanged.      |
+| Site snapshot       | Complete resolved graph compiles and pins exact revision + graph identity.           | Any reachable Resource or cross-Resource rule is invalid.               | Activation is all-or-nothing.                                     |
+| Runtime binding     | Navigation uses the binding's snapshot and presentation context.                     | A newer snapshot/profile default appears while the tab remains open.    | Existing tab stays internally consistent.                         |
+| Expression          | Backend evaluation has valid syntax, visible context, and result type.               | Syntax/context/type fails at validation or runtime phase.               | Safe diagnostic/error; browser never evaluates Expression source. |
 
 ## High-value regression journeys
 
