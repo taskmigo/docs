@@ -1,126 +1,83 @@
 ---
 title: API development
-description: Implement the Taskmigo HTTP API from the OpenAPI 3.2.0 contract.
+description: Implement the design-first authoring and inspection API and preserve the open SSR serving boundary.
 ---
 
-The canonical machine-readable HTTP contract is `public/openapi/v0/openapi.yaml`. Use the [interactive Scalar API Reference](/api-reference/) to browse operations, schemas, examples, and request/response contracts. The viewer loads the same OpenAPI 3.2.0 document that is reviewed in the repository, so the rendered reference and implementation contract cannot drift into separate sources of truth.
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
 
-## API principles
+`public/openapi/v0/openapi.yaml` is the canonical machine-readable HTTP contract. The [interactive API Reference](/api-reference/) renders that same document.
 
-The HTTP layer is an adapter over application services. Controllers do not own Resource revision rules, candidate compilation, snapshot activation, or database transactions.
+## API surface
 
-The API uses `/api/v0` as the HTTP contract namespace. Resource kinds remain independently versioned. A manifest kind such as `v0/page` is decomposed into `{kindVersion}/{kindName}` in URLs, so the Resource `v0/page` named `home` is addressed as:
+```mermaid
+flowchart LR
+  client["API client"] --> resources["Resources + revisions + tags"]
+  client --> candidates["Candidates + diagnostics"]
+  client --> snapshots["Snapshots + exact pins"]
+  client --> runtime["Active runtime pointer"]
+  next["Next.js SSR"] -. "serving endpoint not finalized" .-> serving["Runtime binding + render model"]
+```
+
+The defined OpenAPI surface is an **authoring and inspection API**. It deliberately does not expose Resource deletion, tag mutation, manual activation, candidate retry, compiled-artifact download, or the still-undecided SSR serving endpoint.
+
+## Resource identity in URLs
+
+Resource identity remains `(kind, metadata.name)`. `apiVersion` selects the revision contract and is not part of identity.
+
+HTTP paths include both contract version and kind name so transport routing does not require an encoded slash. A manifest with:
+
+```yaml
+apiVersion: v0
+kind: page
+metadata:
+  name: home
+```
+
+is addressed as:
 
 ```text
 /api/v0/resources/v0/page/home
 ```
 
-This avoids encoded-slash behavior while preserving the exact internal identity `(v0/page, home)`.
+The URL segments `v0/page` identify the requested contract/kind combination; they do not redefine Resource identity as `(v0/page, home)`.
 
-All responses except raw manifest input are JSON. Errors use `application/problem+json` with a stable Taskmigo `code` in addition to standard Problem Details fields.
-
-All endpoints require bearer authentication. Do not hard-code product Roles in controllers. Authentication belongs to `access`; operation authorization remains a replaceable policy decision so Policy can own it when that capability enters delivery.
-
-## Endpoint surface
-
-The current OpenAPI contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins with resolved graph checksums, and the current runtime pointer.
-
-This inspection surface is not sufficient for Next.js SSR rendering. A serving API still needs to expose the compiled runtime read model described below. Its concrete path and transport schema remain an open decision and must not be invented independently in implementation.
-
-There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the current contract. Those operations require product semantics that are not yet defined.
-
-## SSR serving contract
-
-Next.js must not reconstruct runtime state from Resource and revision endpoints. The serving boundary works with a **runtime binding**: an opaque binding between one browser application instance, one immutable Site snapshot, and the presentation context captured for that instance.
-
-A browser application instance begins with a full document load and normally ends at the next full reload. The initial load creates a fresh binding from the currently active snapshot and current presentation defaults. Client-side navigation reuses that binding rather than reacquiring the active snapshot.
-
-The logical route result contains:
-
-- the matched Application and Page from the bound snapshot;
-- Site/Application metadata required by the rendered layout;
-- a deterministic not-found outcome when the bound snapshot has no matching route.
-
-The logical render result contains:
-
-- Page metadata and body;
-- every reusable Component definition required to render that Page, without requiring follow-up Resource requests;
-- Translation and Expression results evaluated with the bound presentation context;
-- runtime identity sufficient for caching, compatibility checks, and diagnostics without requiring the browser to understand persistence IDs.
-
-These are logical parts of one serving operation, not a requirement for separate HTTP endpoints. The happy path should require one backend HTTP round trip from Next.js. The backend may load multiple snapshot artifacts internally, but Next.js must not perform a serial Site → Application → Page → Component request chain.
-
-### Binding lifecycle
-
-The serving boundary follows these rules:
-
-1. **Full document bootstrap:** ignore any previous app-instance binding for version selection, acquire the current active snapshot, capture supported presentation defaults, and return a fresh binding with the initial render model.
-2. **Client-side navigation:** accept the existing binding, validate it, and resolve exclusively against its bound snapshot and presentation context.
-3. **Full reload:** bootstrap again, allowing the tab to adopt the latest active snapshot and current profile defaults.
-4. **Explicit presentation change:** when the user intentionally changes a bound presentation value such as locale in the current tab, establish a consistent replacement binding/rerender for that tab. Do not mutate other tabs implicitly.
-5. **Invalid binding:** an expired, revoked, or renderer-incompatible binding may require a full reload. Exact error codes and recovery transport are not defined yet.
-
-The binding should be opaque to the browser. Do not make raw snapshot UUIDs, graph checksums, database keys, or token internals part of frontend logic. A signed/stateless token or server-side lease record are both possible implementations; token format and persistence remain open decisions.
-
-Do not scope the binding to the login session. Two tabs opened at different times must be able to use different runtime versions and presentation contexts independently.
-
-### Presentation context
-
-Mutable profile data is a **bootstrap default**, not automatically the live rendering source for an already-running application instance.
-
-Locale demonstrates why. Suppose Tab A bootstraps with `ja-JP`. Tab B later changes the user's profile language to `en`. Tab A must continue resolving `Trans`/`TransN` with `ja-JP`; otherwise its already-rendered Japanese layout can be combined with an English Page after client navigation.
-
-For v0, Expression evaluation is backend-only. The serving API returns resolved values and does not expose Expression source or a frontend Expression program. Translation and Expression evaluation use the locale and other supported presentation values from the runtime binding, not mutable profile defaults reread during each navigation.
-
-Future presentation values such as timezone or an SSR-rendered theme may join the binding when changing them between navigations would create a mixed UI. Do not automatically freeze security-sensitive or business-authoritative mutable state. Authorization, account status, permissions, and other security decisions require their own freshness contract and must not become stale merely because UI presentation is pinned.
-
-### Consistency and compatibility
-
-A request carrying a valid binding resolves entirely against the bound snapshot. Route lookup, Page/Component loading, Translation lookup, and Expression evaluation never fall back to `resource.current_revision_id` or the newly active snapshot.
-
-A newer snapshot may activate while the tab is open. Existing bindings normally continue to use their snapshot until full reload. The final design must support bounded retention and may support expiry or emergency revocation so old snapshots are not retained forever and unsafe versions can be retired.
-
-Renderer/artifact compatibility must be checkable independently of snapshot identity. A retained snapshot cannot be assumed renderable by every future Next.js deployment.
-
-Compiled route indexes and render artifacts may be cached by immutable snapshot identity. Exact artifact partitioning, cache topology, binding representation, retention policy, and the public serving endpoint/schema are still open decisions; optimize them without weakening the one-binding or one-round-trip contracts.
+All defined API operations require bearer authentication. Authorization stays behind an operation-level boundary rather than hard-coding Role names into controllers so the Policy RFC can later provide decisions without reshaping the transport layer.
 
 ## Resource writes
 
-Use `PUT /api/v0/resources/{kindVersion}/{kindName}/{name}` because the client identifies the logical Resource being written. The body is the complete manifest source using `application/yaml` or `text/yaml`.
+Use `PUT /api/v0/resources/{kindVersion}/{kindName}/{name}` with the complete YAML source.
 
 ### Optimistic concurrency
 
-Never implement last-write-wins for Resource authoring.
-
-A Resource GET/PUT returns a strong `ETag` representing the exact current revision.
-
-Creation uses:
+Creation:
 
 ```http
 If-None-Match: *
 ```
 
-Update uses:
+Update:
 
 ```http
 If-Match: "<current-revision-id>"
 ```
 
-Missing required preconditions map to `428 Precondition Required`. A stale `If-Match` or an existing Resource with `If-None-Match: *` maps to `412 Precondition Failed`. A durable invariant conflict unrelated to the HTTP precondition maps to `409 Conflict`.
+| Condition | HTTP result |
+| --- | --- |
+| Required precondition missing | `428 Precondition Required` |
+| ETag is stale or create-only Resource already exists | `412 Precondition Failed` |
+| Durable invariant conflict unrelated to the precondition | `409 Conflict` |
 
-The application service performs the authoritative compare/write in the same transaction that inserts the immutable revision and advances the current pointer. A controller-side read/check is never sufficient for concurrency safety.
+The application service performs the compare/write in the same authoring transaction that appends the immutable revision and advances the current pointer. A controller-side read/check is not the concurrency boundary.
 
-### Idempotent source writes
+### No-op source write
 
-Canonicalize source and compare its source checksum with the current revision. If the submitted source is already current, return the existing revision with `200` instead of inserting duplicate immutable history. Dependency changes never alter this checksum or create a new revision for an unchanged importer.
+Canonicalize source and compare it with the current revision checksum. Identical source returns the existing revision with `200`; it does not create duplicate immutable history.
 
-A newly created Resource returns `201`. A changed existing Resource returns `200`.
+A dependency-only change never changes an unchanged importer's source checksum or manufactures another revision for it.
 
-The response includes the committed Resource/revision and, when authoring schedules Site evaluation, a candidate reference. A successful Resource write means authoring state is durable; it does not mean runtime activation succeeded.
+## Save versus activation
 
-## Async activation contract
-
-Resource save and runtime activation are separate operations.
+A successful write means **authoring state committed**, not **runtime activated**.
 
 ```mermaid
 sequenceDiagram
@@ -133,45 +90,40 @@ sequenceDiagram
   Client->>API: PUT Resource + precondition
   API->>Resource: save(command)
   Resource-->>API: committed revision + candidateId
-  API-->>Client: 200/201
+  API-->>Client: 200 / 201
   Candidate-->>Candidate: resolve + validate + compile
   Candidate->>Runtime: CAS activate valid snapshot
-  Client->>API: GET candidate
-  API-->>Client: queued/running/invalid/activated/failed
+  Client->>API: inspect candidate
+  API-->>Client: queued / running / invalid / valid / activated / failed
 ```
 
-Do not hold the HTTP request open while the candidate compiles. Do not return `202` for the Resource write itself: the Resource mutation is complete when the authoring transaction commits. The asynchronous part is represented explicitly by `candidate`.
-
-Candidate states are `queued`, `running`, `invalid`, `valid`, `activated`, and `failed`. `invalid` represents deterministic product/source diagnostics. `failed` represents pipeline or infrastructure failure.
-
-Diagnostics are ordered by `sequence` and contain a stable `code`, source `path`, optional Resource/revision identity, optional line/column, and a safe message. Never expose secrets, Expression context values, SQL errors, stack traces, or internal exception class names.
+Do not keep the authoring HTTP request open while compilation runs. Candidate diagnostics belong to the candidate resource; they are not embedded into a generic save error after the authoring transaction already committed.
 
 ## Checksum contract
 
-The API exposes distinct immutable checksums and must not collapse them into one meaning:
+The HTTP model exposes separate identities and must not collapse them:
 
-| Field                            | Meaning                                                 | Changes when a child dependency changes? |
-| -------------------------------- | ------------------------------------------------------- | ---------------------------------------- |
-| `ResourceRevision.checksum`      | Canonical authored source for that exact revision.      | No                                       |
-| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned revision. | Yes, for affected ancestors              |
-| `SiteSnapshot.graphChecksum`     | Complete resolved Site graph selected for the snapshot. | Yes                                      |
-| `SiteSnapshot.checksum`          | Compiled snapshot output.                               | Yes when compiled runtime output changes |
+| Field | Meaning | Child dependency change |
+| --- | --- | --- |
+| `ResourceRevision.checksum` | Canonical authored source of that exact revision. | No change for an unchanged importer. |
+| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned Resource. | Changes for affected ancestors. |
+| `SiteSnapshot.graphChecksum` | Complete resolved Site graph selected by the snapshot. | Changes when any selected dependency changes the root graph. |
+| `SiteSnapshot.checksum` | Compiled snapshot output. | Changes when compiler-relevant runtime output changes. |
 
-A dependency change can therefore produce a new snapshot whose `siteRevisionId` is unchanged. The snapshot Resource pins expose the unchanged ancestor `revisionId` together with a new `graphChecksum`, while the changed child pin carries its new `revisionId`.
-
-`graphChecksum` is derived by the Resource resolver/compiler boundary. Controllers only map the persisted values into response DTOs; they never recompute graph identity from current Resource pointers.
+A new snapshot can therefore keep the same `siteRevisionId` while its root `graphChecksum` and selected child revision change.
 
 ## Tags
 
-Tags are immutable. `POST .../tags` creates one `(kind, name, tag) -> revisionId` association.
+`POST .../tags` creates one immutable `(kind, name, tag) → revisionId` association.
 
-Retrying the same tag-to-revision association returns `200` with the existing association. Reusing an existing tag for another revision returns `409`. A revision that belongs to another Resource is rejected; the database composite foreign key remains the final safety boundary.
-
-Do not implement PATCH or PUT for moving tags.
+- retrying the identical association returns the existing result;
+- reusing that tag for another revision is a conflict;
+- a revision owned by another Resource is rejected;
+- there is no endpoint that moves a tag.
 
 ## Pagination
 
-List endpoints use opaque cursor pagination.
+List operations use opaque cursor pagination:
 
 ```json
 {
@@ -183,15 +135,11 @@ List endpoints use opaque cursor pagination.
 }
 ```
 
-`limit` defaults to 50 and is capped at 200. Cursors are implementation-owned opaque tokens. Clients must not parse or construct them.
-
-Pagination order must be deterministic and include a unique tie-breaker. Do not expose raw database offsets as cursors when concurrent inserts can cause duplicates or skips.
+`limit` defaults to 50 and is capped at 200. Cursor encoding is implementation-owned; clients do not parse or construct cursors. Ordering includes a unique tie-breaker so concurrent inserts cannot make a page ambiguous.
 
 ## Problem Details
 
-Use Spring `ProblemDetail` as the transport model while keeping application failures framework-neutral.
-
-Every API problem includes a stable `code`:
+Transport failures use `application/problem+json` with a stable Taskmigo `code` in addition to standard Problem Details fields.
 
 ```json
 {
@@ -203,97 +151,82 @@ Every API problem includes a stable `code`:
 }
 ```
 
-Use `violations[]` for multiple request-field/source-envelope errors. Candidate diagnostics are not embedded into generic Problem Details; they remain candidate resources because graph validation is asynchronous authoring feedback.
+Use `violations[]` for multiple request/source-envelope errors. Do not expose SQL errors, stack traces, secrets, Expression context values, or exception class names as the machine contract.
 
-Stable error categories for this slice include `REQUEST_INVALID`, `AUTHENTICATION_REQUIRED`, `ACCESS_DENIED`, `RESOURCE_NOT_FOUND`, `RESOURCE_ALREADY_EXISTS`, `RESOURCE_PRECONDITION_REQUIRED`, `RESOURCE_PRECONDITION_FAILED`, `RESOURCE_SOURCE_INVALID`, `RESOURCE_KIND_UNSUPPORTED`, `TAG_CONFLICT`, `REVISION_NOT_FOUND`, `CANDIDATE_NOT_FOUND`, `SNAPSHOT_NOT_FOUND`, and `RUNTIME_NOT_ACTIVE`.
+## SSR serving contract
 
-Do not use human-readable exception messages as the machine contract.
+The current OpenAPI inspection endpoints are not sufficient for Next.js rendering. Next.js must not call Resource/revision endpoints to reconstruct `Site → Application → Page → Component` itself.
 
-## Spring implementation
+The future serving boundary works with an opaque **runtime binding** for one browser application instance.
 
-Keep HTTP adapters inside the owning Resource capability:
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant Next as Next.js
+  participant Runtime
 
-```text
-resource/internal/web/
-├── ResourceController.java
-├── ResourceRevisionController.java
-├── ResourceTagController.java
-├── SiteCandidateController.java
-├── SiteSnapshotController.java
-├── SiteRuntimeController.java
-├── dto/
-│   ├── request/
-│   └── response/
-└── ResourceProblemHandler.java
+  Browser->>Next: full document load
+  Next->>Runtime: bootstrap pathname + presentation defaults
+  Runtime-->>Next: binding + self-contained render model
+  Next-->>Browser: SSR HTML + opaque binding
+
+  Browser->>Next: client navigation + binding
+  Next->>Runtime: pathname + same binding
+  Runtime-->>Next: render model from bound snapshot/context
 ```
 
-Controllers depend on application/query ports, never repositories.
+The logical render operation supplies everything required for the matched Page: Site/Application layout metadata, Page metadata/body, required reusable Components, and backend-resolved Translation/Expression values.
 
-Suggested application boundaries:
+The happy path targets **one backend round trip** from Next.js per render/navigation. Exact endpoint, request/response DTO, binding token/lease representation, expiry/revocation errors, and cache protocol remain open decisions and must not be invented in OpenAPI until agreed.
 
-```java
-ResourceCommandService.save(SaveResourceCommand command)
-ResourceQueryService.get(ResourceIdentity identity)
-ResourceQueryService.list(ResourceFilter filter, CursorPageRequest page)
-ResourceRevisionQueryService.list(ResourceIdentity identity, CursorPageRequest page)
-ResourceRevisionQueryService.get(ResourceIdentity identity, UUID revisionId)
-ResourceTagService.create(ResourceIdentity identity, SemVer tag, UUID revisionId)
-ResourceTagQueryService.list(ResourceIdentity identity, CursorPageRequest page)
-SiteCandidateQueryService.get(UUID candidateId)
-SiteCandidateQueryService.list(CandidateFilter filter, CursorPageRequest page)
-SiteDiagnosticQueryService.list(UUID candidateId, CursorPageRequest page)
-SiteSnapshotQueryService.get(UUID snapshotId)
-SiteSnapshotQueryService.list(CursorPageRequest page)
-SiteSnapshotQueryService.listResources(UUID snapshotId, CursorPageRequest page)
-SiteRuntimeQueryService.getActive()
-```
+A valid binding always resolves against its bound snapshot and presentation context. It does not fall back to `resource.current_revision_id` or the newly active snapshot. Presentation pinning also does not make authorization/account/business state stale; those decisions follow the owning capability's freshness contract.
 
-Do not add the unresolved SSR serving endpoint to this list until its OpenAPI transport contract is decided. The internal runtime boundary should nevertheless be able to bootstrap a runtime binding and resolve later navigation from that binding without querying current authoring pointers.
+## Target Spring adapter
 
-Do not make controller DTOs the domain model. Mapping is explicit at the web boundary.
+<Files>
+  <Folder name='resource/internal/web' defaultOpen>
+    <File name='ResourceController.java' />
+    <File name='ResourceRevisionController.java' />
+    <File name='ResourceTagController.java' />
+    <File name='SiteCandidateController.java' />
+    <File name='SiteSnapshotController.java' />
+    <File name='SiteRuntimeController.java' />
+    <Folder name='dto'>
+      <Folder name='request' />
+      <Folder name='response' />
+    </Folder>
+    <File name='ResourceProblemHandler.java' />
+  </Folder>
+</Files>
 
-## Manifest source parsing
+Controllers map HTTP to framework-neutral application commands/queries. They do not own graph resolution, snapshot transactions, or revision/tag invariants.
 
-The controller treats request content as source text. It does not deserialize the manifest into controller-specific DTOs.
+Suggested application boundaries include Resource command/query services, revision/tag queries, candidate/diagnostic queries, snapshot queries, and active-runtime inspection. Do not add an SSR controller until its transport contract is defined; implement the stable runtime-binding/render services behind the transport boundary first.
 
-Pass media type and source text into the Resource application boundary. Parsing, identity verification, canonicalization, source-checksum generation, contract dispatch, and revision persistence remain Resource responsibilities. Resolved graph checksums are calculated later during candidate resolution from exact revision selections and dependency relationships.
+## Manifest source boundary
 
-The identity encoded in the manifest must match the Resource identity in the URL. A mismatch is rejected and must never silently rename or re-key the Resource.
+The web adapter treats the body as source text plus media type. Resource application/domain code owns YAML parsing, URL/source identity comparison, canonicalization, source checksum, contract dispatch, and revision persistence.
 
-## Authorization boundary
+The identity in source must match the URL identity. Never silently rename/re-key a Resource because those two inputs disagree.
 
-The first implementation authenticates bearer JWTs through the existing access/security stack.
+## OpenAPI change rule
 
-Do not scatter Role-name checks through controllers. Keep an operation-level seam such as:
+When a **defined HTTP operation** changes, update the OpenAPI operation/schema/error examples and then implementation/tests/documentation in the same change.
 
-```java
-ResourceAuthorization.authorize(ResourceOperation operation, ResourceIdentity identity, Principal principal)
-```
+When behavior is **not yet defined**—such as the SSR serving endpoint—document the internal product/runtime requirement but do not publish a speculative route or DTO.
 
-Until Policy is implemented, the concrete rule follows the current access contract, but the controller shape must not prevent Policy from later supplying the decision. Query authorization must happen before pagination when object filtering becomes applicable.
+## Verification
 
-A runtime binding freezes presentation context, not security authority. Do not use a bound locale/snapshot as justification for reusing stale authorization decisions. Security-sensitive mutable state requires fresh authoritative evaluation according to the owning capability's contract.
+Contract and integration coverage must prove:
 
-## OpenAPI implementation rule
+- OpenAPI 3.2.0 parses with valid references and unique `operationId` values;
+- bearer authentication/authorization and content negotiation match the contract;
+- ETags/preconditions/no-op writes match authoring semantics;
+- candidate status/diagnostic serialization is stable and safe;
+- `SiteSnapshot.graphChecksum` and `SnapshotResource.graphChecksum` serialize exactly as persisted;
+- cursor ordering is deterministic;
+- URL/source Resource identity mismatch is rejected;
+- concurrent writers cannot both advance the same current revision;
+- future SSR serving coverage proves one self-contained render response, bound snapshot/locale stability, full-reload adoption, and no mutable authoring lookup after binding validation.
 
-`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for the currently defined API surface.
-
-When changing a defined endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
-
-Do not add a speculative SSR serving operation to OpenAPI until its concrete path, request context, response schema, binding representation, and error semantics are decided. The runtime requirements in this guide constrain that future design.
-
-Do not generate the OpenAPI file from Spring annotations as the source of truth. Code generation may consume the file, but the reviewed contract remains design-first.
-
-## API tests
-
-Contract tests parse and validate `public/openapi/v0/openapi.yaml` as OpenAPI 3.2.0 and fail on invalid references, duplicate `operationId`, invalid schemas, or unsupported contract syntax.
-
-Web integration tests use the real Spring security/filter/controller stack and prove authentication/authorization responses, content negotiation, ETag/Location headers, precondition behavior, status mappings, Problem Details codes, cursor validation, manifest URL identity mismatch, no-op writes, and snapshot graph-checksum serialization.
-
-PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, dependency changes propagate graph checksums without creating ancestor revisions, and cursor ordering remains deterministic under concurrent inserts.
-
-When the SSR serving endpoint is defined, add contract/integration coverage proving one backend request returns a self-contained Page render model; client navigation preserves the bound snapshot and locale across concurrent snapshot activation and profile-language changes; full reload can acquire the latest snapshot/defaults; one tab cannot silently change another tab's binding; and serving never queries mutable current Resource pointers after binding validation.
-
-## Definition of done
-
-An API change is complete only when the OpenAPI contract, Spring adapter, application service, persistence/concurrency semantics, security boundary, Problem Details mapping, contract tests, integration tests, and Developer documentation agree.
+An API change is done only when OpenAPI, application boundary, persistence/concurrency semantics, security mapping, tests, and Developer/Manual documentation agree.

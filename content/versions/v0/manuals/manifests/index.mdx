@@ -1,16 +1,21 @@
 ---
 title: Manifest reference
-description: Choose the resource that matches what you want to build.
+description: Choose the Resource that owns the behavior you want to define.
 ---
 
-| I want to…                          | Resource                                                     | Owns                                                  | Status  |
-| ----------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------- | ------- |
-| Compose exposed Applications        | [Site](/versions/v0/manuals/manifests/v0-site)               | Shared branding and Application order.                | Defined |
-| Route Pages under one path          | [Application](/versions/v0/manuals/manifests/v0-application) | Base path and Page routes.                            | Defined |
-| Build an interface                  | [Page](/versions/v0/manuals/manifests/v0-page)               | Page metadata, component tree, and exposed Workflows. | Defined |
-| Reuse an interface tree             | [Component](/versions/v0/manuals/manifests/v0-component)     | Typed props and reusable component template.          | Defined |
-| Translate content                   | [Translation](/versions/v0/manuals/manifests/v0-translation) | Locale catalog messages and plural forms.             | Defined |
-| Authorize an API and filter objects | [Policy](/versions/v0/manuals/manifests/v0-policy)           | Request decisions and database-backed object scopes.  | RFC     |
-| Run durable business steps          | [Workflow](/versions/v0/manuals/manifests/v0-workflow)       | Inputs, steps, navigation, retries, and UI waits.     | RFC     |
+| I want to…                        | Resource                                                     | Owns                                                          | Status  |
+| --------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- | ------- |
+| Compose and expose Applications   | [Site](/versions/v0/manuals/manifests/v0-site)               | Shared branding and Application exposure order.               | Defined |
+| Route Pages under one URL prefix  | [Application](/versions/v0/manuals/manifests/v0-application) | Application path and Page routes.                             | Defined |
+| Build an interface                | [Page](/versions/v0/manuals/manifests/v0-page)               | Page metadata and component tree.                             | Defined |
+| Reuse an interface tree           | [Component](/versions/v0/manuals/manifests/v0-component)     | Typed props and reusable component template.                  | Defined |
+| Translate content                 | [Translation](/versions/v0/manuals/manifests/v0-translation) | Locale catalog messages and plural forms.                     | Defined |
+| Run durable business steps        | [Workflow](/versions/v0/manuals/manifests/v0-workflow)       | Proposed inputs, steps, navigation, retries, and UI waits.    | RFC     |
+| Authorize APIs and filter objects | [Policy](/versions/v0/manuals/manifests/v0-policy)           | Proposed request decisions and database-backed object scopes. | RFC     |
 
-For rules shared by manifests, use [Resource model](/versions/v0/manuals/resources) and [Expressions](/versions/v0/manuals/expressions). Check [Product status](/versions/v0/manuals/status) before relying on an RFC or planned contract.
+Shared identity, revision, tag, and import rules live in the [Resource model](/versions/v0/manuals/resources). Dynamic field syntax lives in [Expressions](/versions/v0/manuals/expressions).
+
+<Callout title='RFC rows are not runtime capabilities' type='warning'>
+  Workflow and Policy have detailed proposed contracts so implementation can be designed consistently, but they remain
+  unavailable until their delivery status changes. See [Product status](/versions/v0/manuals/status).
+</Callout>

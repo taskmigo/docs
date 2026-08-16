@@ -1,121 +1,134 @@
 ---
 title: Architecture
-description: System boundaries, module rules, request flows, implementation order, and unresolved design decisions.
+description: Understand Taskmigo capability ownership, runtime planes, dependency direction, invariants, and open decisions.
 ---
 
-Taskmigo is a modular monolith built around capability ownership and immutable runtime snapshots. Start here to understand dependency direction and the invariants every implementation must preserve.
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
 
-## Architecture and package rules
+This page defines the target architecture. It explains **who owns each decision** and the invariants implementation must preserve; concrete classes and persistence details live in the subsystem pages.
 
-Taskmigo Console is a modular monolith. A top-level package represents a cohesive business capability; packages below `internal` separate application, domain, persistence, web, and configuration concerns.
+## System boundaries
 
-```text
-<capability>/
-├── package-info.java                    # Spring Modulith boundary
-└── internal/
-    ├── application/                     # use cases and transaction orchestration
-    ├── domain/                          # entities, value objects and domain behavior
-    ├── persistence/                     # JPA/JDBC adapters
-    ├── web/                             # controllers, request/response types, error mapping
-    └── configuration/                   # Spring beans and framework composition
+```mermaid
+flowchart LR
+  subgraph Control[Authoring / control plane]
+    author["Resource authoring"] --> history["Immutable revisions"]
+    history --> candidate["Resolve + validate candidate"]
+    candidate --> compiler["Snapshot compiler"]
+  end
+
+  subgraph Runtime[Serving plane]
+    active["Active snapshot pointer"] --> bootstrap["Runtime binding bootstrap"]
+    bootstrap --> render["Route + render read model"]
+  end
+
+  compiler --> snapshot["Immutable snapshot store"]
+  snapshot --> active
+  snapshot --> render
+  access["Identity + authoritative access state"] --> render
+  policy["Policy RFC"] -.-> render
+  workflow["Workflow RFC"] -.-> compiler
 ```
 
-Module boundaries are declared in each capability's `package-info.java`, beginning with `access/package-info.java` and `system/package-info.java`. A module with no compile-time dependency declares none; every additional dependency must be explicit and minimal.
+The control plane may change while users continue to run an older immutable snapshot. The serving plane never reconstructs runtime state from mutable current Resource pointers.
 
-When adding a real business capability:
+## Capability ownership
 
-- create one top-level module for the capability, not one module per framework type;
-- expose cross-module contracts only from the module's public root package;
-- keep implementation types below `internal`;
-- declare the smallest exact `allowedDependencies` set when a compile-time dependency is necessary;
-- prefer a public application interface or domain event over access to another module's repository;
-- use constructor injection; `@Autowired` is prohibited;
-- keep transactions in application services or persistence adapters that own the complete operation;
-- add the module and dependency rules to `ArchitectureTest`.
+| Capability | Owns | Does not own |
+| --- | --- | --- |
+| `resource` | Resource identity/history, tags, graph resolution, candidates, snapshots, activation, runtime-binding snapshot access. | User identity, Policy decisions, Workflow execution state. |
+| `expression` | Safe FreeMarker compilation/evaluation foundation and profile enforcement. | Business functions such as Translation catalog ownership. |
+| `access` | Authentication and authoritative identity/access state. | Resource compilation or pinned presentation context. |
+| `policy` (RFC) | Proposed API request/object authorization. | Authentication and Resource authoring. |
+| `workflow` (RFC) | Proposed durable execution state. | Resource revision history or snapshot activation. |
 
-Do not create a generic `common`, `api`, or `composition` dumping ground. A shared error envelope, serializer, or filter moves to a foundation package only after at least two capabilities need the same stable contract and an architecture test protects its scope.
+Cross-capability dependencies point to narrow public ports or events. No capability reads another capability's internal repository as a shortcut.
 
-## Application startup and request flows
+## Target module shape
 
-### Startup
+<Files>
+  <Folder name='com.taskmigo.console' defaultOpen>
+    <Folder name='resource'>
+      <File name='package-info.java' />
+      <File name='public ports and events' />
+      <Folder name='internal'>
+        <Folder name='application' />
+        <Folder name='domain' />
+        <Folder name='persistence' />
+        <Folder name='web' />
+        <Folder name='configuration' />
+      </Folder>
+    </Folder>
+    <Folder name='expression' />
+    <Folder name='access' />
+    <Folder name='policy (RFC)' />
+    <Folder name='workflow (RFC)' />
+  </Folder>
+</Files>
+
+The public root contains only contracts another capability legitimately consumes. Implementation stays below `internal`.
+
+## Dependency direction
 
 ```mermaid
 flowchart TD
-  boot["Spring Boot starts"] --> flyway["Flyway V1–V4"]
-  flyway --> context["Create application context"]
-  context --> identity["Provision bootstrap administrator"]
-  context --> oauth["Synchronize configured clients"]
-  oauth --> key["Ensure one active signing key"]
-  identity --> ready["Console ready"]
-  key --> ready
+  web["Web / transport adapters"] --> application["Application use cases"]
+  persistence["Persistence adapters"] --> application
+  configuration["Framework composition"] --> application
+  application --> domain["Domain values + algorithms"]
+  application --> public["Public capability ports"]
+  domain -. "no Spring/JPA/HTTP dependency" .-> isolated["Framework-independent core"]
 ```
 
-`IdentityConfiguration.administratorBootstrap` invokes `BootstrapAdministrator.provision`. `AuthorizationServerConfiguration.authorizationBootstrap` invokes client synchronization and then signing-key initialization. The runners have no required relative order; each must be independently safe and idempotent unless an explicit dependency is introduced.
+Taskmigo-specific rules:
 
-### HTTP security
+- transaction ownership belongs to the use case that makes the complete durable decision;
+- compiler/runtime code receives immutable Resource/snapshot identities explicitly rather than rereading mutable pointers;
+- cross-module data is represented by public value types, not another module's persistence entity;
+- shared technical foundations are introduced only when multiple capabilities need the same stable mechanism.
 
-Spring Security chooses the first matching `SecurityFilterChain`:
+## Invariants every implementation preserves
 
-| Order | Matcher                        | Behavior                                                                                        |
-| ----: | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `100` | Authorization Server endpoints | OAuth 2.1 and OpenID Connect; unauthenticated browser requests enter form login.                |
-| `200` | `/api/**`                      | JWT Resource Server; `/api/public` is explicitly public and other paths require authentication. |
-| `300` | Fallback                       | Browser routes and form login.                                                                  |
+| Invariant | Why it matters |
+| --- | --- |
+| Resource revision is authored-source history only. | A child change must not manufacture ancestor revisions. |
+| Resolved graph identity propagates dependency changes. | The Site can produce a new snapshot even when its own revision stays unchanged. |
+| Snapshot persistence and activation are separate atomic boundaries. | Invalid or partial candidates cannot replace a working runtime. |
+| Runtime binding is application-instance scoped. | Client navigation cannot mix snapshots or presentation locales. |
+| Presentation pinning does not pin authority. | Permission/account/business state can retain the freshness required by its owner. |
+| Expressions execute on the backend. | Browser rendering does not become a second Expression/runtime engine. |
+| Public HTTP schema is design-first OpenAPI. | Implementation cannot silently redefine transport semantics. |
 
-Feature-specific authorization belongs beside the owning controller or use case through `@PreAuthorize`. The security-chain owner remains `access`; a new feature must not create a competing catch-all chain.
+## Implementation dependency order
 
-### JWT and OAuth client lifecycle
+```mermaid
+flowchart TD
+  history["Resource identity + immutable revisions"] --> references["Tags + reference selection"]
+  references --> expression["Expression foundation"]
+  expression --> contracts["Manifest contracts"]
+  contracts --> graph["Resolved graph + diagnostics"]
+  graph --> candidate["Candidate pipeline"]
+  candidate --> snapshot["Snapshot persistence + activation"]
+  snapshot --> binding["Runtime binding + render model"]
+  binding --> operations["Retention + operational hardening"]
+  binding -.-> policy["Policy RFC"]
+  binding -.-> workflow["Workflow RFC"]
+```
 
-JWT validation is local: signature, timestamps, issuer, and authorities are checked without database client-state lookup. Disabling or deleting an OAuth client prevents new authorization, token, and refresh operations, but a previously issued self-contained JWT remains valid until `exp`. Permanent deletion removes stored authorization and consent rows through database cascades; it does not retroactively revoke the JWT itself.
-
-## Common code and coding conventions
-
-Common behavior should be a stable contract, not a convenience folder.
-
-| Concern              | System pattern                                  | Rule for new code                                                                     |
-| -------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Time                 | Injected `Clock`                                | Never call `Instant.now()` in domain/application behavior that tests must control.    |
-| Dependency injection | Constructors                                    | Do not add field injection or `@Autowired`.                                           |
-| Transactions         | Application service/repository method           | One use case owns its transaction; controllers and domain entities do not.            |
-| API errors           | Scoped `RestControllerAdvice` + Problem Details | Use stable machine `code`, safe human detail, and feature ownership.                  |
-| DTOs/value objects   | Java records where immutable                    | Validate at creation/boundary; avoid untyped `Map` past parsing boundaries.           |
-| Persistence          | Flyway schema + JPA/JDBC validation             | Never use Hibernate DDL generation; migrations and integration tests change together. |
-| Cross-module calls   | Public root interface or event                  | Never import another module's `internal` package or repository.                       |
-| Framework mapping    | Configuration/persistence/web adapter           | Keep Spring, Nimbus, JPA, and FreeMarker types out of core domain contracts.          |
-
-If two capabilities need a common primitive, first decide whether one capability should own and expose it. Create a shared foundation only for truly technical, stable code such as the `expression` engine, correlation IDs, or a generic outbox primitive, and protect the allowed contents with architecture tests. Shared code must not contain business endpoints, domain repositories, or feature-specific DTOs. Taskmigo functions such as `Trans` remain owned by their business capability and register through the public Expression SPI.
-
-## Recommended implementation order
-
-The order below produces usable vertical slices and avoids building Policy or Workflow on an unstable snapshot model:
-
-1. Resource identity, immutable revisions, Flyway schema, and CRUD API.
-2. Tag creation and deterministic reference parsing/selection.
-3. FreeMarker Expression foundation, profiles, Taskmigo functions, and security/conformance tests.
-4. Versioned Manifest contracts for Site, Application, Page, Component, and Translation.
-5. Resource graph resolution and diagnostics.
-6. Snapshot compilation, persistence, atomic activation, and runtime acquisition.
-7. Page/Application runtime using only compiled snapshots.
-8. Role/Group domain and effective-role resolution in `access`.
-9. Policy predicate parser, snapshot contributor, request authorization, then object-query adapter.
-10. Workflow definition compiler and persistence state machine.
-11. Workflow worker, outbox, Actions, UI interaction, and operational recovery.
-
-Each step should include its migration, source code, tests, Manual updates, and a runnable acceptance scenario. Do not create all database tables first and postpone behavior; unused schema quickly diverges from the actual model.
+[Development instructions](/versions/v0/developer/development-instructions) turns this dependency graph into implementation phases. [Resource and runtime](/versions/v0/developer/resource-runtime) is canonical for the serving side.
 
 ## Open decisions
 
-The following require explicit product or architecture decisions before implementation can be considered complete:
+These decisions remain intentionally unresolved and must not be invented in implementation:
 
-- Application source layout after Console gains a separate end-user runtime or frontend.
-- Public resource CRUD, revision-tag, diagnostics, and snapshot inspection APIs.
-- Physical snapshot artifact format, cache, compiler compatibility, and retention.
-- Candidate queue implementation, retry policy, coalescing, and operational limits.
-- Role/Group management APIs and migration from or coexistence with `app_authority`.
-- API contract for exposing Policy Request values and database Resource mappings.
-- Workflow start, inspect, interact, cancel, retry, and authorization APIs.
-- Action idempotency/error contract, execution retention, cancellation, and parallel fork/join.
-- Production signing-key integration with KMS/HSM instead of database private JWK storage.
-- Quantitative SLOs for compilation, activation, API latency, Workflow scheduling, and recovery.
+- concrete SSR serving endpoint, request/response schema, and runtime-binding transport;
+- runtime-binding token/lease representation, maximum lifetime, expiry, revocation, and emergency reload behavior;
+- physical snapshot artifact partitioning, cache topology, renderer/artifact compatibility protocol, and retention duration;
+- candidate queue implementation, retry/coalescing policy, and operational limits;
+- explicit in-tab presentation-change transport and any future pinned presentation fields beyond locale;
+- Role/Group management and Policy attachment APIs;
+- Policy API metadata/database mapping contract while Policy remains RFC;
+- Workflow start/inspect/interact/cancel/retry APIs, Action idempotency/error envelope, retention, and parallel execution while Workflow remains RFC;
+- production signing-key integration and quantitative operational SLOs.
 
-An open decision may refine the proposed class or table layout, but it must preserve the public contract and the safety boundaries described above.
+An open decision may refine internal representation, but it cannot weaken the public Resource, snapshot, runtime-binding, or safety contracts already defined.

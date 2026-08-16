@@ -3,32 +3,32 @@ title: Product status
 description: Distinguish defined contracts, RFCs, planned work, and open decisions.
 ---
 
-| Status  | Capability                                                                          | Contract scope                                                                 |
-| ------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Defined | [Resource model](/versions/v0/manuals/resources)                                    | Identity, revisions, tags, references, resolved graph identity, and snapshots. |
-| Defined | [Expressions](/versions/v0/manuals/expressions)                                     | Backend-evaluated dynamic values, functions, and context data.                 |
-| Defined | [Runtime binding](/versions/v0/manuals/runtime#one-browser-app-one-runtime-binding) | Stable snapshot and presentation context for one browser application instance. |
-| Defined | [Site](/versions/v0/manuals/manifests/v0-site)                                      | Applications and shared branding.                                              |
-| Defined | [Application](/versions/v0/manuals/manifests/v0-application)                        | Paths and Page routes.                                                         |
-| Defined | [Page](/versions/v0/manuals/manifests/v0-page)                                      | Declarative UI trees.                                                          |
-| Defined | [Component](/versions/v0/manuals/manifests/v0-component)                            | Typed reusable UI templates.                                                   |
-| Defined | [Translation](/versions/v0/manuals/manifests/v0-translation)                        | Locale catalogs and pluralization.                                             |
-| RFC     | [Workflow](/versions/v0/manuals/manifests/v0-workflow)                              | Actions, UI steps, navigation, and durable execution.                          |
-| RFC     | [Policy](/versions/v0/manuals/manifests/v0-policy)                                  | Role-attached API authorization and database-backed object filtering.          |
-| Planned | `entity`, `query`, `action`, `theme`, `navigation`                                  | No public contract yet.                                                        |
+| Status  | Capability                                                              | Contract scope                                                                 |
+| ------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Defined | [Resource model](/versions/v0/manuals/resources)                        | Identity, revisions, tags, references, resolved graph identity, and snapshots. |
+| Defined | [Expressions](/versions/v0/manuals/expressions)                         | Backend-evaluated dynamic values, functions, and context data.                 |
+| Defined | [Runtime binding](/versions/v0/manuals/runtime#browser-runtime-binding) | Stable snapshot and presentation context for one browser application instance. |
+| Defined | [Site](/versions/v0/manuals/manifests/v0-site)                          | Applications and shared branding.                                              |
+| Defined | [Application](/versions/v0/manuals/manifests/v0-application)            | URL prefix and Page routes.                                                    |
+| Defined | [Page](/versions/v0/manuals/manifests/v0-page)                          | Declarative UI trees.                                                          |
+| Defined | [Component](/versions/v0/manuals/manifests/v0-component)                | Typed reusable UI templates.                                                   |
+| Defined | [Translation](/versions/v0/manuals/manifests/v0-translation)            | Locale catalogs and pluralization.                                             |
+| RFC     | [Workflow](/versions/v0/manuals/manifests/v0-workflow)                  | Actions, UI steps, navigation, and durable execution.                          |
+| RFC     | [Policy](/versions/v0/manuals/manifests/v0-policy)                      | Role-attached API authorization and database-backed object filtering.          |
+| Planned | `entity`, `query`, `action`, `theme`, `navigation`                      | No public contract yet.                                                        |
 
-“Defined” means the documentation defines the intended public contract; it does not independently guarantee that every contract is implemented. RFC capabilities are explicitly unavailable in the current runtime.
+“Defined” means the documentation defines the intended contract; it does not independently prove that implementation has been delivered. RFC capabilities are explicitly unavailable in the current runtime.
 
 ## Known limitations and open decisions
 
 - Multi-tenancy is not available.
-- Expressions execute only in the Taskmigo backend. Frontend/browser Expression evaluation and frontend-only context variables are not defined in v0.
-- A browser application instance is defined to keep one runtime binding across client-side navigation and normally replace it on full reload. The concrete binding token/lease representation, maximum lifetime, expiry/revocation mechanism, and renderer compatibility protocol are not finalized.
-- Locale is captured as presentation context so one tab cannot silently change language because another tab updates the profile default. The transport used for an explicit in-tab language change is not finalized.
-- Additional presentation fields such as timezone or SSR theme are not yet defined as runtime-binding fields. Security-sensitive mutable state is explicitly not assumed to be pinned with presentation context.
-- The SSR serving API must support a self-contained render result in one backend round trip on the happy path, but its endpoint and request/response schema are not finalized.
-- Page UI currently includes only [`Stack`](/versions/v0/manuals/ui-components/stack) and [`Typography`](/versions/v0/manuals/ui-components/typography), with their minimum props.
-- Missing-translation-key behavior and translation override precedence are not defined.
-- Snapshot artifact encoding, cache strategy, and retention are not finalized.
-- Public revision-tag API paths, authorization, and deletion policy are not defined.
-- The API and management surface used to attach registered Policies to Roles are not defined.
+- Expressions execute only in the Taskmigo backend; browser Expression evaluation and frontend-only context variables are not defined.
+- Runtime binding representation, maximum lifetime, expiry/revocation, emergency reload behavior, and renderer/artifact compatibility protocol are not finalized.
+- Locale is captured as presentation context, but the transport used for an explicit in-tab language change is not finalized.
+- Additional presentation values such as timezone or SSR theme are not yet defined as binding fields. Security-sensitive mutable state is not assumed to be pinned with presentation context.
+- The SSR serving API must return a self-contained render result in one backend round trip on the happy path, but its endpoint and request/response schema are not finalized.
+- Page UI currently includes only [`Stack`](/versions/v0/manuals/ui-components/stack) and [`Typography`](/versions/v0/manuals/ui-components/typography), with their defined props.
+- Missing-translation-key behavior is not defined.
+- Snapshot artifact encoding, cache topology, and retention duration are not finalized.
+- Resource deletion semantics are not defined. Revision-tag endpoints are defined by OpenAPI, while their final product authorization policy may evolve with the Policy capability.
+- The Role/Group management and Policy-attachment API is not defined.

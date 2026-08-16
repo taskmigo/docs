@@ -29,7 +29,7 @@ description: '${Trans("applications.home.welcome", User.Name)}'
 
 _`User` is illustrative context data, not a global Taskmigo value._
 
-Translation resources are selected by locale and are not imported. See [Reference ability](/versions/v0/manuals/resources#reference-ability).
+Translation Resources are selected by locale; they are not imported.
 
 ## Fields
 
@@ -38,31 +38,31 @@ Translation resources are selected by locale and are not imported. See [Referenc
     'spec.locale': {
       type: 'string',
       required: true,
-      description: 'Selects the catalog locale using a BCP 47 language tag such as `en`, `vi`, or `pt-BR`.',
+      description: 'Catalog locale as a BCP 47 language tag such as `en`, `vi`, or `pt-BR`.',
     },
     'spec.content': {
       type: 'Dictionary<string | TranslationDictionary>',
       required: true,
-      description: 'Maps each user-defined key to a message string or another dictionary of the same shape.',
+      description: 'Nested message dictionary. Every leaf is a message string; plural forms are nested dictionaries keyed by CLDR category.',
     },
   }}
 />
 
-Resources with the same normalized locale merge into one effective catalog. Nested keys form dotted lookup paths.
+Nested keys form dotted lookup paths. Multiple Translation Resources with the same normalized locale merge into one effective catalog when their final message paths do not conflict.
 
 ## Runtime locale
 
-A browser application instance uses the locale captured by its [runtime binding](/versions/v0/manuals/runtime#one-browser-app-one-runtime-binding). `Trans` and `TransN` use that locale for the lifetime of the binding instead of rereading the user's mutable profile language on every navigation.
+`Trans` and `TransN` use the locale captured by the current browser [runtime binding](/versions/v0/manuals/runtime#browser-runtime-binding). They do not reread the mutable user-profile language on every navigation.
 
-This keeps one tab internally consistent. For example, if Tab A is already rendered in Japanese and Tab B changes the user's profile language to English, Tab A continues rendering newly navigated Pages in Japanese. A full reload can bootstrap from the newer profile default, and an explicit language change in Tab A can replace that tab's presentation binding consistently.
+A profile-language change in another tab therefore cannot mix languages inside an already-running tab. The full lifecycle belongs to [Runtime lifecycle](/versions/v0/manuals/runtime).
 
-## Trans
+## `Trans`
 
 ```text
 Trans("key"[, value...])
 ```
 
-Values fill formatting placeholders from left to right:
+Additional values fill message placeholders from left to right:
 
 ```yaml
 orders:
@@ -73,7 +73,7 @@ ${Trans("orders.summary", Order.Number, User.Name)}
 
 Missing or incompatible placeholder values cause a runtime error.
 
-## TransN
+## `TransN`
 
 `TransN` selects a plural form using the runtime binding locale's [Unicode CLDR plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
 
@@ -90,21 +90,21 @@ items:
 ${TransN("items.count", Cart.Count, User.Name)}
 ```
 
-Plural objects use CLDR categories `zero`, `one`, `two`, `few`, `many`, and `other`. Always define `other`.
+Plural dictionaries may use CLDR categories `zero`, `one`, `two`, `few`, `many`, and `other`. Always define `other`.
 
 <Steps>
   <Step>
 
 ### Resolve the locale
 
-Use the locale captured by the current runtime binding. If its catalog is unavailable, use the configured global fallback.
+Use the runtime binding locale. If its catalog is unavailable, use the configured global fallback locale.
 
   </Step>
   <Step>
 
 ### Select the plural form
 
-Evaluate the count with the locale's CLDR rules. Fall back to `other` when the selected category is absent.
+Evaluate the count with the locale's CLDR rules. Use `other` when the selected category is absent.
 
   </Step>
   <Step>
@@ -118,24 +118,23 @@ Apply the count first, then additional values from left to right.
 
 ## Merge catalogs
 
-| Conflict                              | Result                                    |
-| ------------------------------------- | ----------------------------------------- |
-| Different object paths                | Merge recursively.                        |
-| Arrays or non-object values           | Keep as final values; do not concatenate. |
-| Two resources define the same path    | Reject, even when values match.           |
-| An object and non-object share a path | Reject.                                   |
+| Conflict | Result |
+| --- | --- |
+| Different dictionary/message paths | Merge recursively. |
+| Two Resources define the same final message path | Reject, even when both messages are identical. |
+| One Resource defines a message where another requires a dictionary | Reject. |
 
-Merge results never depend on load order. Errors identify the locale, path, and both source manifests.
+Merge results never depend on Resource load order. A merge diagnostic identifies the locale, conflicting path, and both source Resources.
 
 ## Errors and fallbacks
 
-| Condition                                      | Result                                     |
-| ---------------------------------------------- | ------------------------------------------ |
-| `TransN` receives a non-numeric count          | `[invalid_plural_count:key]`               |
-| Selected category is missing                   | Use `other`.                               |
-| Selected category and `other` are missing      | `[untranslated_form:key]`                  |
-| Runtime binding locale is unavailable          | Use the configured global fallback locale. |
-| Message receives too few values                | Runtime error.                             |
-| Value is incompatible with its formatting verb | `[translation_format_error:key]`           |
+| Condition | Result |
+| --- | --- |
+| `TransN` receives a non-numeric count | `[invalid_plural_count:key]` |
+| Selected plural category is missing | Use `other`. |
+| Selected category and `other` are missing | `[untranslated_form:key]` |
+| Runtime binding locale has no catalog | Use the configured global fallback locale. |
+| Message receives too few values | Runtime error. |
+| Value is incompatible with its formatting verb | `[translation_format_error:key]` |
 
-Missing-key behavior is not yet defined. See [Product status](/versions/v0/manuals/status#known-limitations-and-open-decisions).
+Missing-key behavior remains open. See [Product status](/versions/v0/manuals/status#known-limitations-and-open-decisions).

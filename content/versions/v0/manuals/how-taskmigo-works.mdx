@@ -1,29 +1,68 @@
 ---
 title: How Taskmigo works
-description: Understand the product model without implementation details.
+description: Understand the Taskmigo mental model before reading field-level reference pages.
 ---
 
-Taskmigo separates editable resources from the version currently serving users.
+Taskmigo separates **authoring state** from the **runtime version serving an application instance**.
 
 ```mermaid
 flowchart LR
-  author["Edit resources"] --> validate["Resolve and validate"]
-  validate -->|valid| snapshot["Activate snapshot"]
-  validate -->|invalid| diagnostics["Show diagnostics"]
-  snapshot --> user["Serve users"]
+  source["YAML Resources"] --> revision["Immutable revisions"]
+  revision --> candidate["Resolved Site candidate"]
+  candidate -->|"valid"| snapshot["Immutable Site snapshot"]
+  candidate -->|"invalid"| diagnostics["Diagnostics"]
+  snapshot --> binding["Runtime binding"]
+  binding --> ui["Rendered application"]
 ```
 
-| Concept        | What it means to you                                                                 |
-| -------------- | ------------------------------------------------------------------------------------ |
-| Resource       | One versioned definition, such as a Site, Page, or Component.                        |
-| Import         | A declared dependency between resources.                                             |
-| Revision       | An immutable saved version of one Resource's authored source.                        |
-| Graph checksum | An identity for one resolved revision together with its exact resolved dependencies. |
-| Snapshot       | A validated, immutable resolved graph and compiled runtime model serving a Site.     |
-| Diagnostic     | A validation problem that prevents a candidate snapshot from activating.             |
+## The six concepts to know
 
-Saving a resource does not guarantee activation. Taskmigo first resolves its dependencies and validates the complete candidate. A valid candidate replaces the active snapshot atomically; an invalid candidate preserves the current working version.
+| Concept         | Mental model                                                                           |
+| --------------- | -------------------------------------------------------------------------------------- |
+| Resource        | A named definition such as a Site, Application, Page, Component, or Translation.       |
+| Revision        | One immutable saved version of a Resource's authored source.                           |
+| Resolved graph  | The exact revisions selected for a Site and their dependency relationships.            |
+| Candidate       | One attempt to validate and compile committed authoring state.                         |
+| Snapshot        | An immutable compiled runtime built from one valid resolved Site graph.                |
+| Runtime binding | The stable snapshot and presentation context used by one browser application instance. |
 
-Changing a dependency does not manufacture new revisions for its importers. Instead, the dependency's new revision changes the resolved graph checksum of each affected ancestor. This propagation reaches the Site root and allows Taskmigo to build a new snapshot while unchanged Site, Application, or Page source keeps the same revision ID.
+## Authoring does not immediately change runtime
 
-For authoring rules, see the [resource model](/versions/v0/manuals/resources). For activation and recovery behavior, see the [runtime lifecycle](/versions/v0/manuals/runtime). Taskmigo contributors can find architecture, code ownership, and implementation guides in [Developer](/versions/v0/developer).
+A save first commits authoring history. Taskmigo then evaluates a candidate. Invalid candidates produce diagnostics while the previously active snapshot keeps serving users.
+
+```mermaid
+flowchart TD
+  save["Save Resource"] --> history["Commit revision"]
+  history --> evaluate["Resolve + validate + compile"]
+  evaluate --> valid{"Valid?"}
+  valid -->|"No"| keep["Keep current snapshot"]
+  valid -->|"Yes"| activate["Atomically activate new snapshot"]
+```
+
+For exact identity, revision, tag, reference, and graph-checksum rules, use the [Resource model](/versions/v0/manuals/resources).
+
+## Activation does not rewrite an open tab
+
+A newly activated snapshot becomes the default for **new browser application instances**. A tab that is already running keeps its runtime binding across client-side navigation. A full document reload normally bootstraps a new binding from the current active snapshot.
+
+Presentation values that must remain visually consistent, starting with locale, are captured by the same binding. This prevents one tab from mixing old and new UI versions or mixing languages after another tab changes the user's profile default.
+
+See [Runtime lifecycle](/versions/v0/manuals/runtime) for the complete browser and activation behavior.
+
+## Resource composition
+
+```mermaid
+flowchart TD
+  site["Site"] --> application["Application"]
+  application --> page["Page"]
+  page --> component["Reusable Component"]
+  translation["Translation catalogs"] --> snapshot["Compiled snapshot"]
+  site --> snapshot
+  application --> snapshot
+  page --> snapshot
+  component --> snapshot
+```
+
+The Site is the composition root, Applications own URL routing, Pages own UI trees, Components provide reusable trees, and Translation catalogs are selected by locale rather than imported.
+
+Use the [Manifest reference](/versions/v0/manuals/manifests) when you know which behavior you want to author.

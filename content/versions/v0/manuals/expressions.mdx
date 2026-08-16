@@ -1,24 +1,24 @@
 ---
 title: Expressions
-description: Put dynamic text or typed values into fields that accept an Expression.
+description: Use backend-evaluated dynamic values in fields that explicitly support Expressions.
 ---
 
 Taskmigo Expressions use [Apache FreeMarker Template Language](https://freemarker.apache.org/docs/dgui_template_exp.html). A field exposes only its documented context values and Taskmigo functions; Expressions cannot access arbitrary Java objects, methods, files, network resources, or environment state.
 
-> **v0 execution boundary:** Expressions are evaluated only by the Taskmigo backend. Frontend runtimes, including React/Next.js, receive resolved values and must not evaluate Expression source themselves. Frontend-only context variables and browser-side Expression evaluation are not part of the v0 contract.
+<Callout title='Backend-only execution' type='info'>
+  Expressions are evaluated by the Taskmigo backend. React/Next.js receives resolved values; browser-only context and
+  frontend Expression evaluation are not part of the defined contract.
+</Callout>
 
 ## Start here
 
 Use `${...}` for a dynamic value and quote the complete YAML value:
 
 ```yaml
-spec:
-  label: '${Trans("applications.home.label")}'
+label: '${Trans("applications.home.label")}'
 ```
 
-Here, `'...'` is the YAML string, `${...}` is the FreeMarker interpolation, and `Trans` is a Taskmigo function.
-
-When the YAML value is exactly one interpolation, Taskmigo preserves its evaluated type. This allows a boolean field, for example, to receive a boolean instead of the text `"true"`:
+When the complete YAML value is one interpolation, Taskmigo preserves the evaluated type:
 
 ```yaml
 when: '${step.output.approved}'
@@ -30,98 +30,87 @@ Literal text around an interpolation produces a string:
 label: 'Welcome to ${This.name}!'
 ```
 
-FreeMarker directives such as `<#if>` and `<#list>` are therefore valid only where the field accepts rendered text or nodes. Non-string fields require exactly one interpolation whose result matches the declared field type.
+Non-string fields require exactly one interpolation whose result matches the field type. FreeMarker directives such as `<#if>` and `<#list>` are valid only where the field accepts rendered text or nodes.
 
-## Choose what you need
+## Where Expressions are allowed
 
-| I want to…                                           | Start with                                                                         |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Show translated text or pluralize a count            | [Use Taskmigo functions](#use-taskmigo-functions)                                  |
-| Use runtime, manifest, Component, or Workflow values | [Use context values](#use-context-values)                                          |
-| Compare, select, or transform a value                | [Use operators and built-ins](#use-operators-and-built-ins)                        |
-| Filter database records in a Policy                  | [Policy predicates](/versions/v0/manuals/manifests/v0-policy#available-predicates) |
+A manifest field supports Expressions only when its Type Table shows the Expression marker. Syntax support does not grant access to every context variable: the field contract decides which values and functions are visible.
 
-## Use Taskmigo functions
+## Taskmigo functions
 
-These are the global Taskmigo functions. A field-specific page documents any additional function exposed only in that field.
+| Function | Returns | Purpose |
+| --- | --- | --- |
+| `Trans(key[, value...])` | string | Resolve one message and fill placeholders. |
+| `TransN(key, count[, value...])` | string | Select a plural form for the bound locale, then fill placeholders. |
 
-| Function                         | Returns | Use                                                                                        |
-| -------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
-| `Trans(key[, value...])`         | string  | Resolves a catalog key; additional arguments fill message placeholders from left to right. |
-| `TransN(key, count[, value...])` | string  | Selects the locale's plural form for `count`, then fills its message placeholders.         |
+Translation catalog structure, plural behavior, and fallback rules are defined by [Translation](/versions/v0/manuals/manifests/v0-translation).
+
+## Defined context values
+
+### Global context
+
+| Value | Meaning |
+| --- | --- |
+| `Runtime.Hostname` | Hostname at evaluation time. |
+| `This.kind` | Current manifest kind. |
+| `This.name` | Current manifest name. |
+| `This.version` | Current manifest contract version. |
+| `This.revision` | Current manifest revision. |
+
+### Component template context
+
+An imported reusable Component can read only props declared by its own `spec.props` contract:
 
 ```yaml
-description: '${Trans("applications.home.description")}'
-itemCount: '${TransN("cart.items", 3)}'
+children: '${props.title}'
 ```
 
-For catalog structure, placeholders, plural rules, fallbacks, and errors, see [Translation](/versions/v0/manuals/manifests/v0-translation).
+Use `props.<name>` inside `Component.spec.template`.
 
-## Use context values
-
-Context values are available only where the field contract exposes them. In v0, every context value must be available to backend evaluation; browser-only state is not an Expression context.
-
-| Value                  | Available in              | Returns                                            |
-| ---------------------- | ------------------------- | -------------------------------------------------- |
-| `Runtime.Hostname`     | Any Expression            | Hostname at evaluation time.                       |
-| `This.kind`            | Any Expression            | Current manifest kind.                             |
-| `This.name`            | Any Expression            | Current manifest name.                             |
-| `This.version`         | Any Expression            | Current manifest version.                          |
-| `This.revision`        | Any Expression            | Current manifest revision.                         |
-| `props.<name>`         | Component `spec.template` | A prop passed to that Component.                   |
-| `input.<name>`         | Workflow execution        | Input captured when execution started.             |
-| `steps["<id>"].output` | Workflow execution        | Persisted output of a completed or continued step. |
-| `steps["<id>"].status` | Workflow execution        | Persisted runtime status of that step.             |
-| `step.input`           | Current Workflow step     | Input resolved for the step being evaluated.       |
-| `step.output`          | Workflow navigation       | Current step output used to select the next edge.  |
-
-Use bracket access when a dynamic key is not a valid FreeMarker identifier, as with a Workflow step ID containing `-`. Names and paths are case-sensitive.
+<Callout title='Workflow context is an RFC' type='warning'>
+  `input`, `steps`, `step.input`, and `step.output` belong to the proposed Workflow contract. They are documented in
+  [Workflow — Expressions and data flow](/versions/v0/manuals/manifests/v0-workflow#expressions-and-data-flow) and are not
+  available runtime context until Workflow is delivered.
+</Callout>
 
 ## Stable presentation context
 
-Backend evaluation does not mean every Expression rereads mutable user settings on every request. A running browser application instance has a [runtime binding](/versions/v0/manuals/runtime#one-browser-app-one-runtime-binding) that captures presentation context needed for a consistent UI.
+Backend evaluation uses the presentation context captured by the browser runtime binding. In particular, `Trans` and `TransN` use the bound locale instead of rereading mutable profile language on every navigation.
 
-Locale is the first important example. `Trans` and `TransN` use the locale captured by the current runtime binding. If another tab changes the user's profile language, an already-running tab keeps its own locale so its existing layout and newly navigated Page cannot become a mixture of languages.
+See [Runtime lifecycle](/versions/v0/manuals/runtime#browser-runtime-binding) for tab isolation, reload behavior, and explicit presentation changes.
 
-The profile language is therefore a default used when a browser application instance is bootstrapped, or when that tab explicitly changes its presentation context. It is not automatically reread as the locale for each Expression evaluation.
+## Operators and built-ins
 
-This distinction applies only to values intentionally classified as presentation context. Security-sensitive and business-authoritative values are not made stale by the runtime binding; their owning capability defines when they must be read or revalidated.
+_The example prop names below are illustrative._
 
-## Use operators and built-ins
+| Need | Syntax | Example |
+| --- | --- | --- |
+| Boolean conditions | `&&`, `\|\|`, `!` | `${props.enabled && props.visible}` |
+| Compare values | `==`, `!=`, `<`, `<=`, `>`, `>=` | `${props.variant == "primary"}` |
+| Count a sequence | `?size` | `${props.items?size}` |
+| Select a value | `[index]` | `${props.items[0]}` |
+| Select a range | `[start..end]` | `${props.items[0..1]}` |
+| Test membership | `?seq_contains(value)` | `${props.roles?seq_contains("admin")}` |
+| Supply a default | `value!fallback` | `${props.subtitle!"Untitled"}` |
+| Test availability | `value??` | `${props.subtitle??}` |
+| Combine text | `+` | `${"Hello, " + props.name}` |
 
-_The names below are illustrative. A Component can access only props declared by its own contract._
+A field may expose a narrower Expression profile. The proposed Policy contract has its own restricted [predicate subset](/versions/v0/manuals/manifests/v0-policy#available-predicates).
 
-The default Expression profile supports the operators and built-ins below. A field may expose a narrower profile; Policy has its own [restricted predicate list](/versions/v0/manuals/manifests/v0-policy#available-predicates).
+## Text directives
 
-| Need                       | Syntax                           | Example                                |
-| -------------------------- | -------------------------------- | -------------------------------------- |
-| Combine boolean conditions | `&&`, `\|\|`, `!`                | `${props.enabled && props.visible}`    |
-| Compare values             | `==`, `!=`, `<`, `<=`, `>`, `>=` | `${props.variant == "primary"}`        |
-| Count a sequence           | `?size`                          | `${props.items?size}`                  |
-| Select one value           | `[index]`                        | `${props.items[0]}`                    |
-| Select a range             | `[start..end]`                   | `${props.items[0..1]}`                 |
-| Test membership            | `?seq_contains(value)`           | `${props.roles?seq_contains("admin")}` |
-| Provide a default          | `value!fallback`                 | `${props.subtitle!"Untitled"}`         |
-| Test availability          | `value??`                        | `${props.subtitle??}`                  |
-| Combine text               | `+`                              | `${"Hello, " + props.name}`            |
+String and node fields may use permitted FreeMarker directives:
 
-## Render text with directives
+| Need | Example |
+| --- | --- |
+| Store a value | `<#assign title = props.title>${title}` |
+| Conditional text | `<#if props.active>Active<#else>Inactive</#if>` |
+| Iterate a sequence | `<#list props.items as item>${item}</#list>` |
 
-String and node fields may use the following FreeMarker directives as well as interpolation:
+Taskmigo validates syntax, visible context, functions, and expected result type before activation whenever the required values are known. Values that exist only at runtime are checked again during backend evaluation.
 
-| Need                        | Syntax example                                  |
-| --------------------------- | ----------------------------------------------- |
-| Store and reuse a value     | `<#assign title = props.title>${title}`         |
-| Render a conditional branch | `<#if props.active>Active<#else>Inactive</#if>` |
-| Iterate a sequence          | `<#list props.items as item>${item}</#list>`    |
-
-Taskmigo validates the syntax, available data model, functions, and expected result type before activation whenever all required values are known. Runtime-only values are checked again during backend evaluation.
-
-For SSR, the backend evaluates every Expression needed for the requested render using the snapshot and presentation context from the runtime binding plus any server-visible context whose contract requires fresh evaluation. The render model contains the resulting values, not Expression programs intended for browser execution.
-
-## Before you save
+## Authoring checklist
 
 1. Quote YAML values containing FreeMarker syntax.
-2. Use only context values and functions exposed by that field.
-3. For a non-string result, use exactly one `${...}` interpolation.
-4. Ensure the evaluated result matches the field's declared type.
+2. Use only context values and functions exposed by the field.
+3. For a non-string result, use exactly one interpolation and return the field's declared type.

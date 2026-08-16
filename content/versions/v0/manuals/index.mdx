@@ -1,40 +1,41 @@
 ---
 title: Manuals
-description: Learn, build, validate, and plan with Taskmigo.
+description: Learn how Taskmigo is composed, authored, activated, and served.
 ---
 
-Taskmigo turns versioned YAML resources into an active Site. Choose the path that matches your role; all paths lead to the same canonical manifest reference.
+Start with the smallest working Site, then use the reference pages only when you need deeper rules.
 
 <Cards>
   <Card
-    title='Use Taskmigo'
-    href='/versions/v0/manuals/getting-started#product-users'
-    description='Understand Sites, Applications, Pages, Workflows, and access behavior.'
+    title='Build your first Site'
+    href='/versions/v0/manuals/getting-started'
+    description='Create one Site, one Application, and one Page and see how they become a routed UI.'
   />
   <Card
-    title='Build with manifests'
-    href='/versions/v0/manuals/getting-started#manifest-developers'
-    description='Choose resources, compose a Site, and understand validation and activation.'
+    title='Understand the mental model'
+    href='/versions/v0/manuals/how-taskmigo-works'
+    description='See how Resources, revisions, candidates, snapshots, and runtime bindings fit together.'
   />
   <Card
-    title='Test the product'
-    href='/versions/v0/manuals/quality-assurance'
-    description='Derive QC and QA scenarios from resource, snapshot, Workflow, and Policy contracts.'
+    title='Choose a manifest'
+    href='/versions/v0/manuals/manifests'
+    description='Find the Resource kind that owns the behavior you want to define.'
   />
   <Card
-    title='Plan the product'
-    href='/versions/v0/manuals/product-planning'
-    description='Read capability status, dependencies, limitations, and change impact.'
+    title='Check availability'
+    href='/versions/v0/manuals/status'
+    description='Separate defined contracts from RFCs, planned capabilities, limitations, and open decisions.'
   />
 </Cards>
 
-## Quick reference
+## Reference by question
 
-| Need                                        | Canonical page                                       |
-| ------------------------------------------- | ---------------------------------------------------- |
-| Choose a resource kind                      | [Manifest reference](/versions/v0/manuals/manifests) |
-| Use dynamic values                          | [Expressions](/versions/v0/manuals/expressions)      |
-| Understand identity, imports, and revisions | [Resource model](/versions/v0/manuals/resources)     |
-| Diagnose why a change is not active         | [Runtime lifecycle](/versions/v0/manuals/runtime)    |
-| Check what is supported                     | [Product status](/versions/v0/manuals/status)        |
-| Find a short answer                         | [FAQ](/versions/v0/manuals/faq)                      |
+| Question                                                                 | Canonical page                                              |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| How are identity, revisions, tags, imports, and graph checksums defined? | [Resource model](/versions/v0/manuals/resources)            |
+| Where can dynamic values be used?                                        | [Expressions](/versions/v0/manuals/expressions)             |
+| Which built-in UI nodes can a Page render?                               | [UI Components](/versions/v0/manuals/ui-components)         |
+| Why is a saved change not active yet?                                    | [Runtime lifecycle](/versions/v0/manuals/runtime)           |
+| What should QC/QA verify?                                                | [Quality assurance](/versions/v0/manuals/quality-assurance) |
+| What is planned versus delivered?                                        | [Product planning](/versions/v0/manuals/product-planning)   |
+| Where is a short answer?                                                 | [FAQ](/versions/v0/manuals/faq)                             |

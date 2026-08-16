@@ -854,7 +854,7 @@ components:
     SiteSnapshot:
       type: object
       additionalProperties: false
-      required: [id, siteRevisionId, checksum, compilerVersion, createdAt]
+      required: [id, siteRevisionId, graphChecksum, checksum, compilerVersion, createdAt]
       properties:
         id:
           type: string
@@ -862,6 +862,10 @@ components:
         siteRevisionId:
           type: string
           format: uuid
+        graphChecksum:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: Deterministic identity of the complete resolved Site graph compiled by this snapshot.
         checksum:
           type: string
           pattern: '^[a-f0-9]{64}$'
@@ -874,7 +878,7 @@ components:
     SnapshotResource:
       type: object
       additionalProperties: false
-      required: [kind, name, revisionId]
+      required: [kind, name, revisionId, graphChecksum]
       properties:
         kind:
           $ref: '#/components/schemas/ResourceKind'
@@ -883,6 +887,10 @@ components:
         revisionId:
           type: string
           format: uuid
+        graphChecksum:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: Deterministic identity of the resolved subgraph rooted at this exact pinned revision.
 
     SiteRuntimeState:
       type: object

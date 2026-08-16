@@ -1,112 +1,114 @@
 ---
-title: Policy
-description: Implement Role-attached API request authorization and database-backed object filtering.
+title: Policy (RFC)
+description: Proposed implementation for Role-attached API authorization and database-backed object filtering.
 ---
 
-This page translates the [Policy contract](/versions/v0/manuals/manifests/v0-policy) into module boundaries, public ports, database integration, and fail-closed verification.
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
 
-Policy applies only to registered APIs. A Policy is globally registered, targets an absolute API path glob, and becomes effective only through a Role attached directly to the user or inherited through a Group. Request authorization and object filtering are separate phases and separate Policy manifests.
+<Callout title='RFC — do not implement as delivered foundation behavior' type='warning'>
+  This page translates the proposed [Policy contract](/versions/v0/manuals/manifests/v0-policy) into an implementation
+  design. The contract may still change before Policy enters delivery.
+</Callout>
 
-## Target packages and public ports
+## Runtime model
 
-```text
-com.taskmigo.console.policy/
-├── package-info.java                         # allowedDependencies = {"access", "expression", "resource"}
-├── ApiPolicyAuthorizer.java                  # called before an API handler
-├── ApiPolicyContract.java                    # feature-owned API metadata SPI
-├── ObjectPolicyFilterCompiler.java           # called by object query builders
-└── internal/
-    ├── application/{PolicySnapshotContributor,PolicySelectionService}.java
-    ├── application/ApiPolicyContractRegistry.java
-    ├── domain/expression/{PolicyPredicateParser,PredicateNode,PredicateTypeChecker}.java
-    ├── domain/target/ApiPathGlob.java
-    ├── domain/evaluation/{RequestPolicyEvaluator,ObjectPolicyCombiner}.java
-    ├── persistence/attachment/
-    └── configuration/PolicyConfiguration.java
+```mermaid
+flowchart LR
+  request["Authenticated API request"] --> select["Select path-matching Policies\nattached to effective Roles"]
+  select --> requestMode["Request mode\ndeny wins; allow required"]
+  requestMode --> objectMode["Object mode\ncompile allowed object scope"]
+  objectMode --> query["Apply predicate in database query"]
+  query --> response["Filtered response"]
 ```
 
-Add public access contracts at `com.taskmigo.console.access` for a snapshot-independent principal view:
+Policy does not authenticate users, control Page visibility, or filter records in application memory. Authentication/effective identity belongs to `access`; Policy makes API authorization/object-scope decisions using that authoritative principal view.
 
-```java
-public record PrincipalContext(
-    String username,
-    Set<String> roles,
-    Set<String> groups) {}
+## Target module
 
-public interface PrincipalContextResolver {
-  PrincipalContext resolve(Authentication authentication);
-}
+<Files>
+  <Folder name='policy' defaultOpen>
+    <File name='package-info.java' />
+    <File name='ApiPolicyAuthorizer.java' />
+    <File name='ApiPolicyContract.java' />
+    <File name='ObjectPolicyFilterCompiler.java' />
+    <Folder name='internal'>
+      <Folder name='application'>
+        <File name='PolicySnapshotContributor.java' />
+        <File name='PolicySelectionService.java' />
+        <File name='ApiPolicyContractRegistry.java' />
+      </Folder>
+      <Folder name='domain'>
+        <Folder name='expression' />
+        <Folder name='target' />
+        <Folder name='evaluation' />
+      </Folder>
+      <Folder name='persistence/attachment' />
+      <Folder name='configuration' />
+    </Folder>
+  </Folder>
+</Files>
+
+The module may depend only on the public contracts it needs from `access`, `expression`, and `resource`. Database query implementations remain owned by the capability that owns the queried records.
+
+## Public boundaries
+
+`access` exposes a snapshot-independent principal view containing authenticated username, effective Roles, and Groups. Policy never receives Access persistence entities.
+
+`ApiPolicyAuthorizer` evaluates request-mode Policies before the handler. `ObjectPolicyFilterCompiler` returns a typed adapter-neutral predicate and bound parameters for object-mode queries. Neither public port returns raw SQL.
+
+Every Policy-aware API registers an `ApiPolicyContract` that declares its normalized registered path, validated `Request.*` values, and—when object filtering applies—logical `Resource.*` fields plus database-query mappings. Snapshot compilation rejects duplicate paths and incompatible mappings.
+
+## Predicate pipeline
+
+```mermaid
+flowchart LR
+  source["Restricted Policy Expression"] --> parse["PolicyPredicateParser"]
+  parse --> typecheck["PredicateTypeChecker"]
+  typecheck --> ast["Typed predicate AST"]
+  ast --> requestEval["Request boolean evaluation"]
+  ast --> dbAdapter["Database predicate adapter"]
 ```
 
-The Policy ports should remain small:
+Do not depend on FreeMarker internal AST classes and never render an Expression into SQL text. Object-mode operands become typed nodes and bound parameters.
 
-```java
-public interface ApiPolicyAuthorizer {
-  RequestDecision authorize(
-      AcquiredSiteSnapshot snapshot,
-      String registeredApiPath,
-      PrincipalContext principal,
-      Map<String, Object> requestValues);
-}
-
-public interface ObjectPolicyFilterCompiler {
-  CompiledObjectFilter compile(
-      AcquiredSiteSnapshot snapshot,
-      String registeredApiPath,
-      PrincipalContext principal,
-      Map<String, Object> requestValues,
-      ResourceQueryMapping mapping);
-}
-```
-
-Every feature exposing a Policy-aware API registers one `ApiPolicyContract` bean. The contract supplies the normalized registered path, validated `Request.*` names/types, and—when the API returns queryable objects—the logical `Resource.*` types and their `ResourceQueryMapping`. `ApiPolicyContractRegistry` rejects duplicate paths and gives snapshot compilation a deterministic API catalog. Spring MVC route discovery alone is insufficient because handler metadata cannot describe database translations.
-
-`RequestDecision` is either allowed or denied with a non-sensitive audit reason. `CompiledObjectFilter` is a typed adapter-neutral predicate plus bound parameters, never raw SQL.
-
-## Predicate representation
-
-Policy Expressions use one interpolation from the restricted FreeMarker predicate profile. `PolicyPredicateParser` accepts the documented comparison, membership, string, and missing-value forms and produces a typed tree without using FreeMarker's internal AST classes:
-
-```java
-sealed interface PredicateNode
-    permits AndNode, OrNode, NotNode, ComparisonNode,
-            MembershipNode, StringMatchNode, NullCheckNode {}
-
-sealed interface ValueNode
-    permits LiteralValue, PrincipalValue, RequestValue, ResourceValue {}
-```
-
-The type checker validates operand type, missing-value semantics, collection element type, allowed built-ins, and mode availability. `Resource.*` is valid only in object mode. Request mode requires `effect`; object mode rejects it.
+The predicate subset and value availability are canonical in [Policy — Available predicates](/versions/v0/manuals/manifests/v0-policy#available-predicates).
 
 ## Request and object phases
 
-For each request, `PolicySelectionService` intersects snapshot-pinned Policies matching the normalized registered API path with Policies attached to the Principal's effective Roles.
+Request-mode decision:
 
-Request mode runs before the handler. Any true `deny` wins. Without a denial, at least one `allow` must evaluate true; otherwise return `403`.
+1. keep Policies whose path glob matches and whose attachment is effective for the Principal;
+2. any matching `deny` whose statement is true returns `403`;
+3. otherwise at least one matching `allow` must be true;
+4. without a grant, fail closed.
 
-After authorization, object mode compiles every applicable statement and combines them with `OR`. No applicable Policy becomes a false predicate. The filter must enter the base database query before count, ordering, pagination, projection, and serialization. Fetching candidates and filtering them in application memory is prohibited.
+Object-mode decision:
 
-## Database adapter boundary
+1. compile every applicable object Policy;
+2. combine granted scopes with `OR`;
+3. no applicable Policy becomes a false predicate;
+4. apply the predicate before count, ordering, pagination, projection, and serialization;
+5. any unsupported mapping/compilation condition fails closed rather than retrying unfiltered.
 
-Define the adapter in the capability that owns object querying, not in a controller:
+## Role attachment and snapshot consistency
 
-```java
-public interface DatabasePredicateAdapter<Q> {
-  Q apply(Q query, PredicateNode predicate, List<BoundParameter> parameters);
-  Set<PredicateCapability> capabilities();
-}
+The final Role/Group management and Policy-attachment APIs remain open. Whatever transport is chosen, snapshot compilation pins the Policy revisions and Role-to-Policy attachment state used by that snapshot. User membership/authoritative principal state may change at request time and must not be frozen merely because the UI runtime binding is pinned.
+
+```mermaid
+flowchart LR
+  snapshot["Pinned Policy revision + attachment map"] --> decision["Policy decision"]
+  principal["Fresh effective Principal"] --> decision
+  request["Validated request values"] --> decision
 ```
 
-Snapshot compilation verifies that every API matched by the glob exposes compatible Request values, Resource field types, and database mappings. Computed application-layer fields are policy-queryable only when their query mapping supplies an equivalent database expression. Any missing capability invalidates the candidate snapshot; runtime never retries without the filter.
+## Database adapter rule
 
-## Roles, Groups, and attachments
+The capability owning an object query provides an adapter that can translate the typed predicate to its database query model and advertises supported predicate capabilities. Snapshot compilation verifies every `Resource.*` field has a compatible database translation for every API matched by the Policy glob.
 
-Keep Spring platform authorities such as `ROLE_ADMIN` separate from Taskmigo Policy roles. Extend `access` with `access_role`, `access_group`, `access_user_role`, `access_group_member`, and `access_group_role`. `PrincipalContextResolver` resolves direct and inherited Roles and the user's Groups for each request.
+Fetching records first and filtering them in Java is not a valid fallback.
 
-The `policy` module owns `policy_role_attachment(role_name, policy_name, created_at)`. Candidate compilation resolves each attachment to an exact Policy revision and stores the resulting map in the snapshot. User membership can change at runtime; the Policy revision and Role-to-Policy attachment used by the snapshot do not.
+## Verification
 
-## Policy verification
+Policy RFC acceptance evidence must cover glob boundaries, predicate syntax/type checking, deny precedence, allow requirement, effective Role/Group selection, bound parameters, null/empty collections, filter-before-pagination behavior, database capability mismatches, and deliberate adapter/compiler failures that prove no unfiltered query executes.
 
-Unit tests cover glob boundaries, Expression parsing, type checking, deny precedence, allow requirements, and OR combination. Contract tests run the same predicate fixtures against every database adapter. PostgreSQL integration tests prove bound parameters, null and empty-collection behavior, filter-before-count/pagination ordering, direct and Group-inherited Roles, and fail-closed compilation.
-
-Security tests must explicitly inject SQL metacharacters and adapter/compiler failures and prove that no unfiltered query executes.
+Keep this RFC suite separate from the defined foundation acceptance suite until [Product status](/versions/v0/manuals/status) moves Policy into delivery.
