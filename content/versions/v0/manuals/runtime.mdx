@@ -48,6 +48,24 @@ A valid candidate becomes an immutable snapshot containing the exact selected re
 
 Diagnostics identify the error, manifest path, and source location when available without exposing credentials or data outside Taskmigo's schema.
 
+## Server-side rendering
+
+For v0, Expressions execute only in the Taskmigo backend. A server-side rendering operation acquires one active snapshot and keeps that immutable snapshot for route resolution, Page/Component lookup, Translation lookup, and Expression evaluation.
+
+```mermaid
+flowchart LR
+  request["Next.js SSR request"] --> acquire["Acquire active snapshot"]
+  acquire --> route["Resolve Application + Page route"]
+  route --> render["Load compiled Page + Components"]
+  render --> expression["Evaluate Expressions in backend"]
+  expression --> model["Return resolved render model"]
+  model --> next["React / Next.js SSR"]
+```
+
+Next.js receives resolved values in the render model. It does not receive Expression source or an Expression program that the browser must execute. Frontend-only Expression context is outside the v0 contract.
+
+A snapshot activation that happens after acquisition does not change the in-flight SSR operation. Route selection, Component structure, Translation values, and evaluated Expression results therefore always come from one consistent snapshot.
+
 ## Workflow execution
 
 ```mermaid
