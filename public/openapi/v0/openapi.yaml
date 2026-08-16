@@ -34,13 +34,13 @@ paths:
       operationId: listResources
       summary: List Resource identities
       parameters:
-        - $ref: '#/components/parameters/KindVersionQuery'
-        - $ref: '#/components/parameters/KindNameQuery'
+        - $ref: '#/components/parameters/ResourceKindQuery'
         - name: namePrefix
           in: query
           schema:
             type: string
             minLength: 1
+            pattern: '^[a-zA-Z0-9_-]+$'
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -55,10 +55,9 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /api/v0/resources/{kindVersion}/{kindName}/{name}:
+  /api/v0/resources/{kind}/{name}:
     parameters:
-      - $ref: '#/components/parameters/KindVersionPath'
-      - $ref: '#/components/parameters/KindNamePath'
+      - $ref: '#/components/parameters/ResourceKindPath'
       - $ref: '#/components/parameters/ResourceNamePath'
     get:
       tags: [Resources]
@@ -85,7 +84,9 @@ paths:
       operationId: putResource
       summary: Create a Resource or append a new current revision
       description: |
-        The request body is the complete authored manifest source.
+        The request body is the complete authored manifest source. Its `kind` and
+        `metadata.name` must match the Resource identity in the URL. `apiVersion` belongs
+        to the revision source and can change between revisions without changing the URL.
 
         For creation, send `If-None-Match: *`.
         For an existing Resource, send `If-Match` with the ETag returned by the most
@@ -163,10 +164,9 @@ paths:
         '428':
           $ref: '#/components/responses/PreconditionRequired'
 
-  /api/v0/resources/{kindVersion}/{kindName}/{name}/revisions:
+  /api/v0/resources/{kind}/{name}/revisions:
     parameters:
-      - $ref: '#/components/parameters/KindVersionPath'
-      - $ref: '#/components/parameters/KindNamePath'
+      - $ref: '#/components/parameters/ResourceKindPath'
       - $ref: '#/components/parameters/ResourceNamePath'
     get:
       tags: [Revisions]
@@ -189,10 +189,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v0/resources/{kindVersion}/{kindName}/{name}/revisions/{revisionId}:
+  /api/v0/resources/{kind}/{name}/revisions/{revisionId}:
     parameters:
-      - $ref: '#/components/parameters/KindVersionPath'
-      - $ref: '#/components/parameters/KindNamePath'
+      - $ref: '#/components/parameters/ResourceKindPath'
       - $ref: '#/components/parameters/ResourceNamePath'
       - $ref: '#/components/parameters/RevisionIdPath'
     get:
@@ -213,10 +212,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v0/resources/{kindVersion}/{kindName}/{name}/tags:
+  /api/v0/resources/{kind}/{name}/tags:
     parameters:
-      - $ref: '#/components/parameters/KindVersionPath'
-      - $ref: '#/components/parameters/KindNamePath'
+      - $ref: '#/components/parameters/ResourceKindPath'
       - $ref: '#/components/parameters/ResourceNamePath'
     get:
       tags: [Tags]
@@ -241,7 +239,7 @@ paths:
     post:
       tags: [Tags]
       operationId: createResourceTag
-      summary: Create an immutable tag pointing at an exact revision
+      summary: Create an immutable Semantic Version tag pointing at an exact revision
       description: |
         Tags never move. Retrying the same tag-to-revision association returns the
         existing association. Reusing an existing tag for another revision returns 409.
@@ -282,17 +280,15 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableContent'
 
-  /api/v0/resources/{kindVersion}/{kindName}/{name}/tags/{tag}:
+  /api/v0/resources/{kind}/{name}/tags/{tag}:
     parameters:
-      - $ref: '#/components/parameters/KindVersionPath'
-      - $ref: '#/components/parameters/KindNamePath'
+      - $ref: '#/components/parameters/ResourceKindPath'
       - $ref: '#/components/parameters/ResourceNamePath'
       - name: tag
         in: path
         required: true
         schema:
-          type: string
-          minLength: 1
+          $ref: '#/components/schemas/RevisionTag'
     get:
       tags: [Tags]
       operationId: getResourceTag
@@ -487,30 +483,18 @@ components:
         format: uri-reference
 
   parameters:
-    KindVersionPath:
-      name: kindVersion
+    ResourceKindPath:
+      name: kind
       in: path
       required: true
-      description: Version segment of the Resource kind, for example `v0` from `v0/page`.
       schema:
-        type: string
-        pattern: '^v[0-9]+$'
-    KindNamePath:
-      name: kindName
-      in: path
-      required: true
-      description: Name segment of the Resource kind.
-      schema:
-        type: string
-        enum: [site, application, page, component, translation]
+        $ref: '#/components/schemas/ResourceKind'
     ResourceNamePath:
       name: name
       in: path
       required: true
       schema:
-        type: string
-        minLength: 1
-        maxLength: 253
+        $ref: '#/components/schemas/ResourceName'
     RevisionIdPath:
       name: revisionId
       in: path
@@ -532,18 +516,11 @@ components:
       schema:
         type: string
         format: uuid
-    KindVersionQuery:
-      name: kindVersion
+    ResourceKindQuery:
+      name: kind
       in: query
       schema:
-        type: string
-        pattern: '^v[0-9]+$'
-    KindNameQuery:
-      name: kindName
-      in: query
-      schema:
-        type: string
-        enum: [site, application, page, component, translation]
+        $ref: '#/components/schemas/ResourceKind'
     Cursor:
       name: cursor
       in: query
@@ -580,7 +557,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     NotFound:
-      description: Requested Resource does not exist
+      description: Requested object does not exist
       content:
         application/problem+json:
           schema:
@@ -620,11 +597,21 @@ components:
     ResourceKind:
       type: string
       enum:
-        - v0/site
-        - v0/application
-        - v0/page
-        - v0/component
-        - v0/translation
+        - site
+        - application
+        - page
+        - component
+        - translation
+
+    ResourceName:
+      type: string
+      minLength: 1
+      pattern: '^[a-zA-Z0-9_-]+$'
+
+    RevisionTag:
+      type: string
+      description: Semantic Version tag identifying one immutable Resource revision.
+      pattern: '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$'
 
     Resource:
       type: object
@@ -634,7 +621,7 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         currentRevision:
           $ref: '#/components/schemas/ResourceRevisionSummary'
         createdAt:
@@ -652,7 +639,7 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         currentRevisionId:
           type: string
           format: uuid
@@ -693,7 +680,7 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         apiVersion:
           type: string
         checksum:
@@ -740,8 +727,7 @@ components:
       required: [tag, revisionId]
       properties:
         tag:
-          type: string
-          minLength: 1
+          $ref: '#/components/schemas/RevisionTag'
         revisionId:
           type: string
           format: uuid
@@ -754,9 +740,9 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         tag:
-          type: string
+          $ref: '#/components/schemas/RevisionTag'
         revisionId:
           type: string
           format: uuid
@@ -815,7 +801,7 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         revisionId:
           type: string
           format: uuid
@@ -836,7 +822,9 @@ components:
             - $ref: '#/components/schemas/ResourceKind'
             - type: 'null'
         name:
-          type: [string, 'null']
+          oneOf:
+            - $ref: '#/components/schemas/ResourceName'
+            - type: 'null'
         revisionId:
           type: [string, 'null']
           format: uuid
@@ -883,7 +871,7 @@ components:
         kind:
           $ref: '#/components/schemas/ResourceKind'
         name:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         revisionId:
           type: string
           format: uuid
@@ -898,7 +886,7 @@ components:
       required: [siteName, activeSnapshotId, version, activatedAt]
       properties:
         siteName:
-          type: string
+          $ref: '#/components/schemas/ResourceName'
         activeSnapshotId:
           type: string
           format: uuid

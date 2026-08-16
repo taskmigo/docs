@@ -22,9 +22,9 @@ The defined OpenAPI surface is an **authoring and inspection API**. It deliberat
 
 ## Resource identity in URLs
 
-Resource identity remains `(kind, metadata.name)`. `apiVersion` selects the revision contract and is not part of identity.
+Resource identity is `(kind, metadata.name)`. `apiVersion` selects the contract for a revision; it is not part of identity and therefore is not part of the canonical Resource URL.
 
-HTTP paths include both contract version and kind name so transport routing does not require an encoded slash. A manifest with:
+A manifest with:
 
 ```yaml
 apiVersion: v0
@@ -36,16 +36,16 @@ metadata:
 is addressed as:
 
 ```text
-/api/v0/resources/v0/page/home
+/api/v0/resources/page/home
 ```
 
-The URL segments `v0/page` identify the requested contract/kind combination; they do not redefine Resource identity as `(v0/page, home)`.
+If that same Resource later receives a revision with another supported `apiVersion`, its canonical Resource URL remains unchanged. Historical revision URLs are also anchored by `(kind, name)` plus the immutable `revisionId`; the revision response carries its own `apiVersion`.
 
 All defined API operations require bearer authentication. Authorization stays behind an operation-level boundary rather than hard-coding Role names into controllers so the Policy RFC can later provide decisions without reshaping the transport layer.
 
 ## Resource writes
 
-Use `PUT /api/v0/resources/{kindVersion}/{kindName}/{name}` with the complete YAML source.
+Use `PUT /api/v0/resources/{kind}/{name}` with the complete YAML source. The source `kind` and `metadata.name` must match the URL. `apiVersion` is validated from the source and stored on the resulting revision.
 
 ### Optimistic concurrency
 
