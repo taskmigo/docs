@@ -85,14 +85,14 @@ Run the compatibility suite whenever the pinned FreeMarker version changes. A ve
 
 ## Debugging and operational entry points
 
-| Symptom                                  | Inspect first                                                                                                  |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Application fails before serving         | Flyway output, validated configuration, bootstrap runners, client mapper, signing-key initialization.          |
-| `/api/**` returns unexpected status      | Security chain match/order, JWT issuer/expiry, then controller `@PreAuthorize`.                                |
-| OAuth client disappeared from token flow | `oauth2_registered_client_state.active`, configuration synchronization, manual override.                       |
-| Client deletion rejected                 | Configured-client set, confirmation hash, expiry, requester, reuse and target client.                          |
-| JWT remains valid after client deletion  | Expected self-contained JWT behavior; inspect `exp`, not the deleted client row.                               |
+| Symptom                                  | Inspect first                                                                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Application fails before serving         | Flyway output, validated configuration, bootstrap runners, client mapper, signing-key initialization.                                                          |
+| `/api/**` returns unexpected status      | Security chain match/order, JWT issuer/expiry, then controller `@PreAuthorize`.                                                                                |
+| OAuth client disappeared from token flow | `oauth2_registered_client_state.active`, configuration synchronization, manual override.                                                                       |
+| Client deletion rejected                 | Configured-client set, confirmation hash, expiry, requester, reuse and target client.                                                                          |
+| JWT remains valid after client deletion  | Expected self-contained JWT behavior; inspect `exp`, not the deleted client row.                                                                               |
 | Candidate does not activate              | Candidate correlation ID, exact revision selections, root graph checksum, resolution/validation diagnostics, compiler capability, activation version conflict. |
-| Workflow appears stuck                   | Execution version/status, current step, attempt/outbox rows, lease/worker telemetry.                           |
+| Workflow appears stuck                   | Execution version/status, current step, attempt/outbox rows, lease/worker telemetry.                                                                           |
 
 Candidate and Workflow logs should use correlation IDs and stable failure categories. Inputs, outputs, client secrets, passwords, raw confirmation tokens, private JWKs, and values outside Taskmigo's schema must not appear in logs or diagnostics.

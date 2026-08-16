@@ -13,14 +13,14 @@ flowchart LR
   snapshot --> user["Serve users"]
 ```
 
-| Concept        | What it means to you                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------ |
-| Resource       | One versioned definition, such as a Site, Page, or Component.                              |
-| Import         | A declared dependency between resources.                                                   |
-| Revision       | An immutable saved version of one Resource's authored source.                              |
-| Graph checksum | An identity for one resolved revision together with its exact resolved dependencies.        |
-| Snapshot       | A validated, immutable resolved graph and compiled runtime model serving a Site.            |
-| Diagnostic     | A validation problem that prevents a candidate snapshot from activating.                   |
+| Concept        | What it means to you                                                                |
+| -------------- | ----------------------------------------------------------------------------------- |
+| Resource       | One versioned definition, such as a Site, Page, or Component.                       |
+| Import         | A declared dependency between resources.                                            |
+| Revision       | An immutable saved version of one Resource's authored source.                       |
+| Graph checksum | An identity for one resolved revision together with its exact resolved dependencies. |
+| Snapshot       | A validated, immutable resolved graph and compiled runtime model serving a Site.     |
+| Diagnostic     | A validation problem that prevents a candidate snapshot from activating.            |
 
 Saving a resource does not guarantee activation. Taskmigo first resolves its dependencies and validates the complete candidate. A valid candidate replaces the active snapshot atomically; an invalid candidate preserves the current working version.
 

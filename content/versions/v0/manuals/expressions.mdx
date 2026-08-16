@@ -61,19 +61,19 @@ For catalog structure, placeholders, plural rules, fallbacks, and errors, see [T
 
 Context values are available only where the field contract exposes them. In v0, every context value must be available to backend evaluation; browser-only state is not an Expression context.
 
-| Value                    | Available in              | Returns                                            |
-| ------------------------ | ------------------------- | -------------------------------------------------- |
-| `Runtime.Hostname`       | Any Expression            | Hostname at evaluation time.                       |
-| `This.kind`              | Any Expression            | Current manifest kind.                             |
-| `This.name`              | Any Expression            | Current manifest name.                             |
-| `This.version`           | Any Expression            | Current manifest version.                          |
-| `This.revision`          | Any Expression            | Current manifest revision.                         |
-| `props.<name>`           | Component `spec.template` | A prop passed to that Component.                   |
-| `input.<name>`           | Workflow execution        | Input captured when execution started.             |
-| `steps["<id>"].output`  | Workflow execution        | Persisted output of a completed or continued step. |
-| `steps["<id>"].status`  | Workflow execution        | Persisted runtime status of that step.             |
-| `step.input`             | Current Workflow step     | Input resolved for the step being evaluated.       |
-| `step.output`            | Workflow navigation       | Current step output used to select the next edge.  |
+| Value                  | Available in              | Returns                                            |
+| ---------------------- | ------------------------- | -------------------------------------------------- |
+| `Runtime.Hostname`     | Any Expression            | Hostname at evaluation time.                       |
+| `This.kind`            | Any Expression            | Current manifest kind.                             |
+| `This.name`            | Any Expression            | Current manifest name.                             |
+| `This.version`         | Any Expression            | Current manifest version.                          |
+| `This.revision`        | Any Expression            | Current manifest revision.                         |
+| `props.<name>`         | Component `spec.template` | A prop passed to that Component.                   |
+| `input.<name>`         | Workflow execution        | Input captured when execution started.             |
+| `steps["<id>"].output` | Workflow execution        | Persisted output of a completed or continued step. |
+| `steps["<id>"].status` | Workflow execution        | Persisted runtime status of that step.             |
+| `step.input`           | Current Workflow step     | Input resolved for the step being evaluated.       |
+| `step.output`          | Workflow navigation       | Current step output used to select the next edge.  |
 
 Use bracket access when a dynamic key is not a valid FreeMarker identifier, as with a Workflow step ID containing `-`. Names and paths are case-sensitive.
 
@@ -83,16 +83,16 @@ _The names below are illustrative. A Component can access only props declared by
 
 The default Expression profile supports the operators and built-ins below. A field may expose a narrower profile; Policy has its own [restricted predicate list](/versions/v0/manuals/manifests/v0-policy#available-predicates).
 
-| Need                       | Syntax                           | Example                                  |
-| -------------------------- | -------------------------------- | ---------------------------------------- |
-| Combine boolean conditions | `&&`, `\|\|`, `!`              | `${props.enabled && props.visible}`      |
-| Compare values             | `==`, `!=`, `<`, `<=`, `>`, `>=` | `${props.variant == "primary"}`       |
-| Count a sequence           | `?size`                          | `${props.items?size}`                    |
-| Select one value           | `[index]`                        | `${props.items[0]}`                      |
-| Select a range             | `[start..end]`                   | `${props.items[0..1]}`                   |
+| Need                       | Syntax                           | Example                                |
+| -------------------------- | -------------------------------- | -------------------------------------- |
+| Combine boolean conditions | `&&`, `\|\|`, `!`                | `${props.enabled && props.visible}`    |
+| Compare values             | `==`, `!=`, `<`, `<=`, `>`, `>=` | `${props.variant == "primary"}`        |
+| Count a sequence           | `?size`                          | `${props.items?size}`                  |
+| Select one value           | `[index]`                        | `${props.items[0]}`                    |
+| Select a range             | `[start..end]`                   | `${props.items[0..1]}`                 |
 | Test membership            | `?seq_contains(value)`           | `${props.roles?seq_contains("admin")}` |
 | Provide a default          | `value!fallback`                 | `${props.subtitle!"Untitled"}`         |
-| Test availability          | `value??`                        | `${props.subtitle??}`                    |
+| Test availability          | `value??`                        | `${props.subtitle??}`                  |
 | Combine text               | `+`                              | `${"Hello, " + props.name}`            |
 
 ## Render text with directives
