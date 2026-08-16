@@ -26,7 +26,7 @@ description: Distinguish defined contracts, RFCs, planned work, and open decisio
 - Runtime binding representation, maximum lifetime, expiry/revocation, emergency reload behavior, and renderer/artifact compatibility protocol are not finalized.
 - Locale is captured as presentation context, but the transport used for an explicit in-tab language change is not finalized.
 - Additional presentation values such as timezone or SSR theme are not yet defined as binding fields. Security-sensitive mutable state is not assumed to be pinned with presentation context.
-- The SSR serving API must return a self-contained render result in one backend round trip on the happy path, but its endpoint and request/response schema are not finalized.
+- The SSR serving API must complete one backend round trip on the happy path. [Incremental Runtime Graph Delivery](/versions/v0/developer/incremental-runtime-graph) proposes progressively transferring only route graph nodes the client does not already possess, but the endpoint, request/response schema, graph-state protocol, and artifact wire format are not finalized.
 - Page UI currently includes only [`Stack`](/versions/v0/manuals/ui-components/stack) and [`Typography`](/versions/v0/manuals/ui-components/typography), with their defined props.
 - Missing-translation-key behavior is not defined.
 - Snapshot artifact encoding, cache topology, and retention duration are not finalized.
