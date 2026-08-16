@@ -29,7 +29,9 @@ spec:
 
 `(kind, metadata.name)` identifies a resource. `apiVersion` selects the contract for a revision; it is not part of identity.
 
-Changing a manifest creates a new immutable revision, including when `apiVersion` changes. Historical revisions keep the contract that validated them.
+Changing a manifest creates a new immutable revision, including when `apiVersion` changes. Historical revisions keep the contract that validated them. A revision represents only that Resource's authored source: changing a dependency does not create or mutate revisions of its importers.
+
+Each revision has a source checksum derived from its canonical stored source. The checksum therefore stays unchanged when only a dependency changes.
 
 A Taskmigo system contains exactly one logical `site` resource. A different name or `apiVersion` cannot create a second Site.
 
@@ -75,6 +77,24 @@ A `ResourceReference` contains the target `kind` and `name`; its tag constraint 
 
 Translation catalogs are selected by locale. Policies are registered globally, target API path globs, are activated through Role attachments, and cannot be imported. Workflow relationships are part of the [Workflow RFC](/versions/v0/manuals/manifests/v0-workflow).
 
+### Resolved graph identity
+
+Candidate resolution selects exact revisions for every Resource used by the Site. Taskmigo gives each resolved node a **graph checksum** derived from its own exact revision and the graph checksums of its direct resolved dependencies. The Site node's graph checksum therefore identifies the complete resolved dependency state used by that candidate.
+
+```mermaid
+flowchart LR
+  component["Component header\nrevision changes"] --> page["Page dashboard\nsame revision\nnew graph checksum"]
+  page --> app["Application home\nsame revision\nnew graph checksum"]
+  app --> site["Site root\nsame revision\nnew graph checksum"]
+  site --> snapshot["New Site snapshot"]
+```
+
+A dependency change propagates through every affected ancestor without manufacturing new ancestor revisions. For example, changing an imported Component can change the Page, Application, and Site graph checksums while all three keep their existing revision IDs.
+
+The resolved Site graph also includes contract-defined Resource selections used during compilation even when they are not declared through `imports`, such as the Translation revisions selected for the Site locale catalogs. A change to any selected Resource that affects the Site causes reevaluation and, when the candidate remains valid, produces a new snapshot.
+
+Graph checksums are deterministic: the same exact revision selections and dependency relationships produce the same values regardless of database row or traversal order.
+
 ### Resolution
 
 <Steps>
@@ -94,9 +114,9 @@ Use the current revision, or the highest tagged revision satisfying the referenc
   </Step>
   <Step>
 
-### Validate and pin
+### Validate, fingerprint, and pin
 
-Validate with the selected revision's `apiVersion` contract and record its exact revision in the snapshot. Invalid selections do not fall back to another revision.
+Validate with the selected revision's `apiVersion` contract, calculate the resolved graph checksums, and record each exact revision plus its graph checksum in the snapshot. Invalid selections do not fall back to another revision.
 
   </Step>
 </Steps>

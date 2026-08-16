@@ -23,9 +23,66 @@ All endpoints require bearer authentication. Do not hard-code product Roles in c
 
 ## Endpoint surface
 
-The first API contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins, and the current runtime pointer.
+The current OpenAPI contract exposes Resource list/get/write operations, immutable revision history, immutable tags, Site candidate state and diagnostics, immutable snapshot metadata and Resource pins with resolved graph checksums, and the current runtime pointer.
 
-There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the first contract. Those operations require product semantics that are not yet defined.
+This inspection surface is not sufficient for Next.js SSR rendering. A serving API still needs to expose the compiled runtime read model described below. Its concrete path and transport schema remain an open decision and must not be invented independently in implementation.
+
+There is deliberately no Resource delete API, tag mutation API, manual snapshot activation API, candidate retry API, or compiled-artifact download API in the current contract. Those operations require product semantics that are not yet defined.
+
+## SSR serving contract
+
+Next.js must not reconstruct runtime state from Resource and revision endpoints. The serving boundary works with a **runtime binding**: an opaque binding between one browser application instance, one immutable Site snapshot, and the presentation context captured for that instance.
+
+A browser application instance begins with a full document load and normally ends at the next full reload. The initial load creates a fresh binding from the currently active snapshot and current presentation defaults. Client-side navigation reuses that binding rather than reacquiring the active snapshot.
+
+The logical route result contains:
+
+- the matched Application and Page from the bound snapshot;
+- Site/Application metadata required by the rendered layout;
+- a deterministic not-found outcome when the bound snapshot has no matching route.
+
+The logical render result contains:
+
+- Page metadata and body;
+- every reusable Component definition required to render that Page, without requiring follow-up Resource requests;
+- Translation and Expression results evaluated with the bound presentation context;
+- runtime identity sufficient for caching, compatibility checks, and diagnostics without requiring the browser to understand persistence IDs.
+
+These are logical parts of one serving operation, not a requirement for separate HTTP endpoints. The happy path should require one backend HTTP round trip from Next.js. The backend may load multiple snapshot artifacts internally, but Next.js must not perform a serial Site → Application → Page → Component request chain.
+
+### Binding lifecycle
+
+The serving boundary follows these rules:
+
+1. **Full document bootstrap:** ignore any previous app-instance binding for version selection, acquire the current active snapshot, capture supported presentation defaults, and return a fresh binding with the initial render model.
+2. **Client-side navigation:** accept the existing binding, validate it, and resolve exclusively against its bound snapshot and presentation context.
+3. **Full reload:** bootstrap again, allowing the tab to adopt the latest active snapshot and current profile defaults.
+4. **Explicit presentation change:** when the user intentionally changes a bound presentation value such as locale in the current tab, establish a consistent replacement binding/rerender for that tab. Do not mutate other tabs implicitly.
+5. **Invalid binding:** an expired, revoked, or renderer-incompatible binding may require a full reload. Exact error codes and recovery transport are not defined yet.
+
+The binding should be opaque to the browser. Do not make raw snapshot UUIDs, graph checksums, database keys, or token internals part of frontend logic. A signed/stateless token or server-side lease record are both possible implementations; token format and persistence remain open decisions.
+
+Do not scope the binding to the login session. Two tabs opened at different times must be able to use different runtime versions and presentation contexts independently.
+
+### Presentation context
+
+Mutable profile data is a **bootstrap default**, not automatically the live rendering source for an already-running application instance.
+
+Locale demonstrates why. Suppose Tab A bootstraps with `ja-JP`. Tab B later changes the user's profile language to `en`. Tab A must continue resolving `Trans`/`TransN` with `ja-JP`; otherwise its already-rendered Japanese layout can be combined with an English Page after client navigation.
+
+For v0, Expression evaluation is backend-only. The serving API returns resolved values and does not expose Expression source or a frontend Expression program. Translation and Expression evaluation use the locale and other supported presentation values from the runtime binding, not mutable profile defaults reread during each navigation.
+
+Future presentation values such as timezone or an SSR-rendered theme may join the binding when changing them between navigations would create a mixed UI. Do not automatically freeze security-sensitive or business-authoritative mutable state. Authorization, account status, permissions, and other security decisions require their own freshness contract and must not become stale merely because UI presentation is pinned.
+
+### Consistency and compatibility
+
+A request carrying a valid binding resolves entirely against the bound snapshot. Route lookup, Page/Component loading, Translation lookup, and Expression evaluation never fall back to `resource.current_revision_id` or the newly active snapshot.
+
+A newer snapshot may activate while the tab is open. Existing bindings normally continue to use their snapshot until full reload. The final design must support bounded retention and may support expiry or emergency revocation so old snapshots are not retained forever and unsafe versions can be retired.
+
+Renderer/artifact compatibility must be checkable independently of snapshot identity. A retained snapshot cannot be assumed renderable by every future Next.js deployment.
+
+Compiled route indexes and render artifacts may be cached by immutable snapshot identity. Exact artifact partitioning, cache topology, binding representation, retention policy, and the public serving endpoint/schema are still open decisions; optimize them without weakening the one-binding or one-round-trip contracts.
 
 ## Resource writes
 
@@ -55,7 +112,7 @@ The application service performs the authoritative compare/write in the same tra
 
 ### Idempotent source writes
 
-Canonicalize source and compare its checksum with the current revision. If the submitted source is already current, return the existing revision with `200` instead of inserting duplicate immutable history.
+Canonicalize source and compare its source checksum with the current revision. If the submitted source is already current, return the existing revision with `200` instead of inserting duplicate immutable history. Dependency changes never alter this checksum or create a new revision for an unchanged importer.
 
 A newly created Resource returns `201`. A changed existing Resource returns `200`.
 
@@ -88,6 +145,21 @@ Do not hold the HTTP request open while the candidate compiles. Do not return `2
 Candidate states are `queued`, `running`, `invalid`, `valid`, `activated`, and `failed`. `invalid` represents deterministic product/source diagnostics. `failed` represents pipeline or infrastructure failure.
 
 Diagnostics are ordered by `sequence` and contain a stable `code`, source `path`, optional Resource/revision identity, optional line/column, and a safe message. Never expose secrets, Expression context values, SQL errors, stack traces, or internal exception class names.
+
+## Checksum contract
+
+The API exposes distinct immutable checksums and must not collapse them into one meaning:
+
+| Field                            | Meaning                                                 | Changes when a child dependency changes? |
+| -------------------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| `ResourceRevision.checksum`      | Canonical authored source for that exact revision.      | No                                       |
+| `SnapshotResource.graphChecksum` | Resolved subgraph rooted at that exact pinned revision. | Yes, for affected ancestors              |
+| `SiteSnapshot.graphChecksum`     | Complete resolved Site graph selected for the snapshot. | Yes                                      |
+| `SiteSnapshot.checksum`          | Compiled snapshot output.                               | Yes when compiled runtime output changes |
+
+A dependency change can therefore produce a new snapshot whose `siteRevisionId` is unchanged. The snapshot Resource pins expose the unchanged ancestor `revisionId` together with a new `graphChecksum`, while the changed child pin carries its new `revisionId`.
+
+`graphChecksum` is derived by the Resource resolver/compiler boundary. Controllers only map the persisted values into response DTOs; they never recompute graph identity from current Resource pointers.
 
 ## Tags
 
@@ -165,7 +237,7 @@ ResourceQueryService.get(ResourceIdentity identity)
 ResourceQueryService.list(ResourceFilter filter, CursorPageRequest page)
 ResourceRevisionQueryService.list(ResourceIdentity identity, CursorPageRequest page)
 ResourceRevisionQueryService.get(ResourceIdentity identity, UUID revisionId)
-ResourceTagService.create(CreateResourceTagCommand command)
+ResourceTagService.create(ResourceIdentity identity, SemVer tag, UUID revisionId)
 ResourceTagQueryService.list(ResourceIdentity identity, CursorPageRequest page)
 SiteCandidateQueryService.get(UUID candidateId)
 SiteCandidateQueryService.list(CandidateFilter filter, CursorPageRequest page)
@@ -176,13 +248,15 @@ SiteSnapshotQueryService.listResources(UUID snapshotId, CursorPageRequest page)
 SiteRuntimeQueryService.getActive()
 ```
 
+Do not add the unresolved SSR serving endpoint to this list until its OpenAPI transport contract is decided. The internal runtime boundary should nevertheless be able to bootstrap a runtime binding and resolve later navigation from that binding without querying current authoring pointers.
+
 Do not make controller DTOs the domain model. Mapping is explicit at the web boundary.
 
 ## Manifest source parsing
 
 The controller treats request content as source text. It does not deserialize the manifest into controller-specific DTOs.
 
-Pass media type and source text into the Resource application boundary. Parsing, identity verification, canonicalization, checksum generation, contract dispatch, and revision persistence remain Resource responsibilities.
+Pass media type and source text into the Resource application boundary. Parsing, identity verification, canonicalization, source-checksum generation, contract dispatch, and revision persistence remain Resource responsibilities. Resolved graph checksums are calculated later during candidate resolution from exact revision selections and dependency relationships.
 
 The identity encoded in the manifest must match the Resource identity in the URL. A mismatch is rejected and must never silently rename or re-key the Resource.
 
@@ -198,11 +272,15 @@ ResourceAuthorization.authorize(ResourceOperation operation, ResourceIdentity id
 
 Until Policy is implemented, the concrete rule follows the current access contract, but the controller shape must not prevent Policy from later supplying the decision. Query authorization must happen before pagination when object filtering becomes applicable.
 
+A runtime binding freezes presentation context, not security authority. Do not use a bound locale/snapshot as justification for reusing stale authorization decisions. Security-sensitive mutable state requires fresh authoritative evaluation according to the owning capability's contract.
+
 ## OpenAPI implementation rule
 
-`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for this API slice.
+`public/openapi/v0/openapi.yaml` is the canonical HTTP schema for the currently defined API surface.
 
-When changing an endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
+When changing a defined endpoint, update the OpenAPI operation, schemas, errors, and examples first. Then update this guide when behavior or architecture changes, implement controller/application mappings, add contract tests proving Spring behavior matches OpenAPI, and update Manual/status documentation if user-visible behavior changes.
+
+Do not add a speculative SSR serving operation to OpenAPI until its concrete path, request context, response schema, binding representation, and error semantics are decided. The runtime requirements in this guide constrain that future design.
 
 Do not generate the OpenAPI file from Spring annotations as the source of truth. Code generation may consume the file, but the reviewed contract remains design-first.
 
@@ -210,9 +288,11 @@ Do not generate the OpenAPI file from Spring annotations as the source of truth.
 
 Contract tests parse and validate `public/openapi/v0/openapi.yaml` as OpenAPI 3.2.0 and fail on invalid references, duplicate `operationId`, invalid schemas, or unsupported contract syntax.
 
-Web integration tests use the real Spring security/filter/controller stack and prove authentication/authorization responses, content negotiation, ETag/Location headers, precondition behavior, status mappings, Problem Details codes, cursor validation, manifest URL identity mismatch, and no-op writes.
+Web integration tests use the real Spring security/filter/controller stack and prove authentication/authorization responses, content negotiation, ETag/Location headers, precondition behavior, status mappings, Problem Details codes, cursor validation, manifest URL identity mismatch, no-op writes, and snapshot graph-checksum serialization.
 
-PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, and cursor ordering remains deterministic under concurrent inserts.
+PostgreSQL/Testcontainers tests prove two writers using the same ETag cannot both advance the current revision, tag ownership cannot cross Resource identity, dependency changes propagate graph checksums without creating ancestor revisions, and cursor ordering remains deterministic under concurrent inserts.
+
+When the SSR serving endpoint is defined, add contract/integration coverage proving one backend request returns a self-contained Page render model; client navigation preserves the bound snapshot and locale across concurrent snapshot activation and profile-language changes; full reload can acquire the latest snapshot/defaults; one tab cannot silently change another tab's binding; and serving never queries mutable current Resource pointers after binding validation.
 
 ## Definition of done
 
