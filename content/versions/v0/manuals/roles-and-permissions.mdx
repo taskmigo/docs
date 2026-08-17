@@ -9,20 +9,20 @@ Taskmigo uses additive role-based access control. Roles grant permissions; they 
 
 Permissions use the form `<resource>:<action>`, for example:
 
-| Permission | Allows |
-| --- | --- |
-| `project:view` | Open and read an accessible project. |
-| `project:settings` | Change project configuration. |
-| `member:view` | Read project membership. |
-| `member:manage` | Add, change, or remove project memberships. |
-| `issue:view` | Read issues in the project. |
-| `issue:create` | Create issues. |
-| `issue:update` | Edit issue fields that are otherwise valid. |
-| `issue:delete` | Delete an issue when deletion is supported. |
-| `issue:assign` | Change the assignee. |
-| `issue:transition` | Attempt a workflow status transition. |
-| `comment:create` | Add an issue comment. |
-| `comment:update` | Edit one's own comment where the comment contract allows it. |
+| Permission         | Allows                                                       |
+| ------------------ | ------------------------------------------------------------ |
+| `project:view`     | Open and read an accessible project.                         |
+| `project:settings` | Change project configuration.                                |
+| `member:view`      | Read project membership.                                     |
+| `member:manage`    | Add, change, or remove project memberships.                  |
+| `issue:view`       | Read issues in the project.                                  |
+| `issue:create`     | Create issues.                                               |
+| `issue:update`     | Edit issue fields that are otherwise valid.                  |
+| `issue:delete`     | Delete an issue when deletion is supported.                  |
+| `issue:assign`     | Change the assignee.                                         |
+| `issue:transition` | Attempt a workflow status transition.                        |
+| `comment:create`   | Add an issue comment.                                        |
+| `comment:update`   | Edit one's own comment where the comment contract allows it. |
 
 The permission catalog is centrally defined by Taskmigo. Custom roles select from that catalog; they do not create new permission keys.
 

@@ -7,25 +7,25 @@ An issue is a unit of work owned by exactly one project. Issues use a project-lo
 
 ## Core fields
 
-| Field | Contract |
-| --- | --- |
-| ID | Stable internal identifier. |
-| Sequence | Monotonic integer unique within the project. Never reused. |
-| Project | Owning project. Immutable after creation. |
-| Type | Issue type configured for the project. |
-| Status | Current workflow status. |
-| Priority | Current urgency classification. |
-| Subject | Required short summary. |
-| Description | Optional long-form description. |
-| Author | User who created the issue. Immutable. |
-| Assignee | Optional user or group that is a current project member. |
-| Parent | Optional issue in the same project. |
-| Start date | Optional planned start date. |
-| Due date | Optional planned completion date. |
-| Estimate | Optional estimated effort in minutes. |
-| Progress | Optional integer from 0 through 100. |
-| Created at | Creation timestamp. |
-| Updated at | Last mutation timestamp. |
+| Field       | Contract                                                   |
+| ----------- | ---------------------------------------------------------- |
+| ID          | Stable internal identifier.                                |
+| Sequence    | Monotonic integer unique within the project. Never reused. |
+| Project     | Owning project. Immutable after creation.                  |
+| Type        | Issue type configured for the project.                     |
+| Status      | Current workflow status.                                   |
+| Priority    | Current urgency classification.                            |
+| Subject     | Required short summary.                                    |
+| Description | Optional long-form description.                            |
+| Author      | User who created the issue. Immutable.                     |
+| Assignee    | Optional user or group that is a current project member.   |
+| Parent      | Optional issue in the same project.                        |
+| Start date  | Optional planned start date.                               |
+| Due date    | Optional planned completion date.                          |
+| Estimate    | Optional estimated effort in minutes.                      |
+| Progress    | Optional integer from 0 through 100.                       |
+| Created at  | Creation timestamp.                                        |
+| Updated at  | Last mutation timestamp.                                   |
 
 Issue type, status, and priority are referenced by stable identifiers rather than copied labels. Renaming a configuration value therefore updates how existing issues are presented without rewriting issue history.
 

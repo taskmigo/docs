@@ -9,10 +9,10 @@ A workflow controls how an issue moves between statuses. The workflow is evaluat
 
 A project selects one workflow for each enabled issue type. A workflow contains a set of transitions:
 
-| Field | Contract |
-| --- | --- |
-| From status | Current status required for the transition. |
-| To status | Resulting status. |
+| Field         | Contract                                       |
+| ------------- | ---------------------------------------------- |
+| From status   | Current status required for the transition.    |
+| To status     | Resulting status.                              |
 | Allowed roles | Project roles that may perform the transition. |
 
 A transition from a status to itself is not a transition and is rejected.
@@ -48,11 +48,11 @@ A status that is currently referenced by an issue or workflow cannot be deleted.
 
 For a Bug workflow:
 
-| From | To | Roles |
-| --- | --- | --- |
-| New | In Progress | Developer, Manager |
-| In Progress | Resolved | Developer, Manager |
-| Resolved | Closed | Manager |
-| Resolved | In Progress | Developer, Manager |
+| From        | To          | Roles              |
+| ----------- | ----------- | ------------------ |
+| New         | In Progress | Developer, Manager |
+| In Progress | Resolved    | Developer, Manager |
+| Resolved    | Closed      | Manager            |
+| Resolved    | In Progress | Developer, Manager |
 
 This model supports different lifecycle rules for different kinds of work without embedding status logic inside the Role resource.

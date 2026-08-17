@@ -7,18 +7,18 @@ Use a relational database for the core model. Membership, authorization, workflo
 
 ## Required constraints
 
-| Data | Constraint |
-| --- | --- |
-| User username | Unique. |
-| User normalized email | Unique. |
-| Group membership | Unique `(group_id, user_id)`. |
-| Project key | Unique. |
-| Project membership | Unique `(project_id, principal_type, principal_id)`. |
-| Member role | Unique `(project_member_id, role_id)`. |
-| Role permission | Unique `(role_id, permission_key)`. |
-| Issue sequence | Unique `(project_id, sequence)`. |
-| Workflow selection | Unique `(project_id, issue_type_id)`. |
-| Workflow transition | Unique `(workflow_id, from_status_id, to_status_id)`. |
+| Data                  | Constraint                                            |
+| --------------------- | ----------------------------------------------------- |
+| User username         | Unique.                                               |
+| User normalized email | Unique.                                               |
+| Group membership      | Unique `(group_id, user_id)`.                         |
+| Project key           | Unique.                                               |
+| Project membership    | Unique `(project_id, principal_type, principal_id)`.  |
+| Member role           | Unique `(project_member_id, role_id)`.                |
+| Role permission       | Unique `(role_id, permission_key)`.                   |
+| Issue sequence        | Unique `(project_id, sequence)`.                      |
+| Workflow selection    | Unique `(project_id, issue_type_id)`.                 |
+| Workflow transition   | Unique `(workflow_id, from_status_id, to_status_id)`. |
 
 Polymorphic principal references (`USER` or `GROUP`) require application and database-level care because a conventional foreign key cannot target two tables. Prefer an explicit principal model if the selected persistence stack makes polymorphic integrity difficult to enforce safely.
 

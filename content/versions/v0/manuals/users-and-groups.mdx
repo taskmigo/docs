@@ -7,13 +7,13 @@ description: Identity and reusable team membership in Taskmigo.
 
 A user represents one person in a Taskmigo installation. Project permissions are not stored on the user.
 
-| Field | Contract |
-| --- | --- |
-| ID | Stable internal identifier. |
-| Username | Unique login/display handle within the installation. |
-| Email | Unique normalized email address. |
-| Display name | Human-readable name shown in the UI. |
-| Status | `ACTIVE`, `SUSPENDED`, or `DISABLED`. |
+| Field                | Contract                                                                  |
+| -------------------- | ------------------------------------------------------------------------- |
+| ID                   | Stable internal identifier.                                               |
+| Username             | Unique login/display handle within the installation.                      |
+| Email                | Unique normalized email address.                                          |
+| Display name         | Human-readable name shown in the UI.                                      |
+| Status               | `ACTIVE`, `SUSPENDED`, or `DISABLED`.                                     |
 | System administrator | Installation-level administrative privilege, separate from project roles. |
 
 `SUSPENDED` prevents authentication while preserving membership and audit history. `DISABLED` represents an account that is no longer intended for use. Neither state deletes historical authorship.
