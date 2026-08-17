@@ -1,15 +1,4 @@
 {
   "title": "Developer",
-  "pages": [
-    "index",
-    "architecture",
-    "development-instructions",
-    "resource-runtime",
-    "api",
-    "database",
-    "codebase",
-    "verification",
-    "policy",
-    "workflow"
-  ]
+  "pages": ["index", "architecture", "domain-model", "authorization", "persistence", "implementation-plan"]
 }

@@ -1,134 +1,46 @@
 ---
 title: Architecture
-description: Understand Taskmigo capability ownership, runtime planes, dependency direction, invariants, and open decisions.
+description: Domain boundaries and dependency direction for the Taskmigo core.
 ---
 
-import { File, Folder, Files } from 'fumadocs-ui/components/files';
-
-This page defines the target architecture. It explains **who owns each decision** and the invariants implementation must preserve; concrete classes and persistence details live in the subsystem pages.
-
-## System boundaries
-
-```mermaid
-flowchart LR
-  subgraph Control[Authoring / control plane]
-    author["Resource authoring"] --> history["Immutable revisions"]
-    history --> candidate["Resolve + validate candidate"]
-    candidate --> compiler["Snapshot compiler"]
-  end
-
-  subgraph Runtime[Serving plane]
-    active["Active snapshot pointer"] --> bootstrap["Runtime binding bootstrap"]
-    bootstrap --> render["Route + render read model"]
-  end
-
-  compiler --> snapshot["Immutable snapshot store"]
-  snapshot --> active
-  snapshot --> render
-  access["Identity + authoritative access state"] --> render
-  policy["Policy RFC"] -.-> render
-  workflow["Workflow RFC"] -.-> compiler
-```
-
-The control plane may change while users continue to run an older immutable snapshot. The serving plane never reconstructs runtime state from mutable current Resource pointers.
-
-## Capability ownership
-
-| Capability       | Owns                                                                                                                   | Does not own                                               |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `resource`       | Resource identity/history, tags, graph resolution, candidates, snapshots, activation, runtime-binding snapshot access. | User identity, Policy decisions, Workflow execution state. |
-| `expression`     | Safe FreeMarker compilation/evaluation foundation and profile enforcement.                                             | Business functions such as Translation catalog ownership.  |
-| `access`         | Authentication and authoritative identity/access state.                                                                | Resource compilation or pinned presentation context.       |
-| `policy` (RFC)   | Proposed API request/object authorization.                                                                             | Authentication and Resource authoring.                     |
-| `workflow` (RFC) | Proposed durable execution state.                                                                                      | Resource revision history or snapshot activation.          |
-
-Cross-capability dependencies point to narrow public ports or events. No capability reads another capability's internal repository as a shortcut.
-
-## Target module shape
-
-<Files>
-  <Folder name='com.taskmigo.console' defaultOpen>
-    <Folder name='resource'>
-      <File name='package-info.java' />
-      <File name='public ports and events' />
-      <Folder name='internal'>
-        <Folder name='application' />
-        <Folder name='domain' />
-        <Folder name='persistence' />
-        <Folder name='web' />
-        <Folder name='configuration' />
-      </Folder>
-    </Folder>
-    <Folder name='expression' />
-    <Folder name='access' />
-    <Folder name='policy (RFC)' />
-    <Folder name='workflow (RFC)' />
-  </Folder>
-</Files>
-
-The public root contains only contracts another capability legitimately consumes. Implementation stays below `internal`.
-
-## Dependency direction
+The core should be implemented as a modular monolith first. Taskmigo's domains require transactional consistency more than independent deployment, and splitting them into services would turn simple invariants such as project membership and issue transitions into distributed coordination problems.
 
 ```mermaid
 flowchart TD
-  web["Web / transport adapters"] --> application["Application use cases"]
-  persistence["Persistence adapters"] --> application
-  configuration["Framework composition"] --> application
-  application --> domain["Domain values + algorithms"]
-  application --> public["Public capability ports"]
-  domain -. "no Spring/JPA/HTTP dependency" .-> isolated["Framework-independent core"]
+  api[API / UI adapters] --> app[Application services]
+  app --> identity[Identity + Groups]
+  app --> projects[Projects + Membership]
+  app --> auth[Authorization]
+  app --> config[Issue Configuration]
+  app --> issues[Issues + Journal]
+  issues --> auth
+  issues --> config
+  projects --> identity
+  auth --> projects
+  persistence[Persistence adapters] --> identity
+  persistence --> projects
+  persistence --> config
+  persistence --> issues
 ```
 
-Taskmigo-specific rules:
+## Domain boundaries
 
-- transaction ownership belongs to the use case that makes the complete durable decision;
-- compiler/runtime code receives immutable Resource/snapshot identities explicitly rather than rereading mutable pointers;
-- cross-module data is represented by public value types, not another module's persistence entity;
-- shared technical foundations are introduced only when multiple capabilities need the same stable mechanism.
+**Identity** owns users, account status, and groups. It does not know project roles.
 
-## Invariants every implementation preserves
+**Projects** owns projects and principal membership. It references user/group identities but does not own them.
 
-| Invariant                                                           | Why it matters                                                                    |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Resource revision is authored-source history only.                  | A child change must not manufacture ancestor revisions.                           |
-| Resolved graph identity propagates dependency changes.              | The Site can produce a new snapshot even when its own revision stays unchanged.   |
-| Snapshot persistence and activation are separate atomic boundaries. | Invalid or partial candidates cannot replace a working runtime.                   |
-| Runtime binding is application-instance scoped.                     | Client navigation cannot mix snapshots or presentation locales.                   |
-| Presentation pinning does not pin authority.                        | Permission/account/business state can retain the freshness required by its owner. |
-| Expressions execute on the backend.                                 | Browser rendering does not become a second Expression/runtime engine.             |
-| Public HTTP schema is design-first OpenAPI.                         | Implementation cannot silently redefine transport semantics.                      |
+**Authorization** resolves effective roles and permissions from project membership. It contains no issue lifecycle logic.
 
-## Implementation dependency order
+**Issue Configuration** owns issue types, priorities, statuses, roles, permission assignments, workflows, and project configuration that selects those values.
 
-```mermaid
-flowchart TD
-  history["Resource identity + immutable revisions"] --> references["Tags + reference selection"]
-  references --> expression["Expression foundation"]
-  expression --> contracts["Manifest contracts"]
-  contracts --> graph["Resolved graph + diagnostics"]
-  graph --> candidate["Candidate pipeline"]
-  candidate --> snapshot["Snapshot persistence + activation"]
-  snapshot --> binding["Runtime binding + render model"]
-  binding --> operations["Retention + operational hardening"]
-  binding -.-> policy["Policy RFC"]
-  binding -.-> workflow["Workflow RFC"]
-```
+**Issues** owns issues, hierarchy, assignment, comments, journal entries, and transition orchestration. It asks Authorization whether the actor may attempt the action and asks Issue Configuration whether the requested state is valid.
 
-[Development instructions](/versions/v0/developer/development-instructions) turns this dependency graph into implementation phases. [Resource and runtime](/versions/v0/developer/resource-runtime) is canonical for the serving side.
+## Application boundary
 
-## Open decisions
+All mutations should pass through application services that establish one transaction, load the required domain state, authorize the actor, validate invariants, persist changes, and append audit records before commit.
 
-These decisions remain intentionally unresolved and must not be invented in implementation:
+HTTP handlers, GraphQL resolvers, jobs, and CLI commands are adapters. They must not bypass domain/application invariants by writing repositories directly.
 
-- concrete SSR serving endpoint, request/response schema, and runtime-binding transport;
-- runtime-binding token/lease representation, maximum lifetime, expiry, revocation, and emergency reload behavior;
-- physical snapshot artifact partitioning, cache topology, renderer/artifact compatibility protocol, and retention duration;
-- candidate queue implementation, retry/coalescing policy, and operational limits;
-- explicit in-tab presentation-change transport and any future pinned presentation fields beyond locale;
-- Role/Group management and Policy attachment APIs;
-- Policy API metadata/database mapping contract while Policy remains RFC;
-- Workflow start/inspect/interact/cancel/retry APIs, Action idempotency/error envelope, retention, and parallel execution while Workflow remains RFC;
-- production signing-key integration and quantitative operational SLOs.
+## Deployment direction
 
-An open decision may refine internal representation, but it cannot weaken the public Resource, snapshot, runtime-binding, or safety contracts already defined.
+Keep module interfaces explicit so a future extraction remains possible, but do not introduce network boundaries inside the core simply for theoretical scalability. The first scaling tools should be ordinary database indexing, caching of safe derived reads, read replicas where appropriate, and background processing for non-transactional side effects.

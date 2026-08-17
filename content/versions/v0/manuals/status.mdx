@@ -1,34 +1,30 @@
 ---
 title: Product status
-description: Distinguish defined contracts, RFCs, planned work, and open decisions.
+description: Scope boundaries for the initial Taskmigo product contract.
 ---
 
-| Status  | Capability                                                              | Contract scope                                                                 |
-| ------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Defined | [Resource model](/versions/v0/manuals/resources)                        | Identity, revisions, tags, references, resolved graph identity, and snapshots. |
-| Defined | [Expressions](/versions/v0/manuals/expressions)                         | Backend-evaluated dynamic values, functions, and context data.                 |
-| Defined | [Runtime binding](/versions/v0/manuals/runtime#browser-runtime-binding) | Stable snapshot and presentation context for one browser application instance. |
-| Defined | [Site](/versions/v0/manuals/manifests/v0-site)                          | Applications and shared branding.                                              |
-| Defined | [Application](/versions/v0/manuals/manifests/v0-application)            | URL prefix and Page routes.                                                    |
-| Defined | [Page](/versions/v0/manuals/manifests/v0-page)                          | Declarative UI trees.                                                          |
-| Defined | [Component](/versions/v0/manuals/manifests/v0-component)                | Typed reusable UI templates.                                                   |
-| Defined | [Translation](/versions/v0/manuals/manifests/v0-translation)            | Locale catalogs and pluralization.                                             |
-| RFC     | [Workflow](/versions/v0/manuals/manifests/v0-workflow)                  | Actions, UI steps, navigation, and durable execution.                          |
-| RFC     | [Policy](/versions/v0/manuals/manifests/v0-policy)                      | Role-attached API authorization and database-backed object filtering.          |
-| Planned | `entity`, `query`, `action`, `theme`, `navigation`                      | No public contract yet.                                                        |
+The documentation defines the target product contract. It does not imply that every documented capability is already implemented.
 
-“Defined” means the documentation defines the intended contract; it does not independently prove that implementation has been delivered. RFC capabilities are explicitly unavailable in the current runtime.
+## Initial product scope
 
-## Known limitations and open decisions
+The first coherent implementation should deliver these capabilities together:
 
-- Multi-tenancy is not available.
-- Expressions execute only in the Taskmigo backend; browser Expression evaluation and frontend-only context variables are not defined.
-- Runtime binding representation, maximum lifetime, expiry/revocation, emergency reload behavior, and renderer/artifact compatibility protocol are not finalized.
-- Locale is captured as presentation context, but the transport used for an explicit in-tab language change is not finalized.
-- Additional presentation values such as timezone or SSR theme are not yet defined as binding fields. Security-sensitive mutable state is not assumed to be pinned with presentation context.
-- The SSR serving API must return a self-contained render result in one backend round trip on the happy path, but its endpoint and request/response schema are not finalized.
-- Page UI currently includes only [`Stack`](/versions/v0/manuals/ui-components/stack) and [`Typography`](/versions/v0/manuals/ui-components/typography), with their defined props.
-- Missing-translation-key behavior is not defined.
-- Snapshot artifact encoding, cache topology, and retention duration are not finalized.
-- Resource deletion semantics are not defined. Revision-tag endpoints are defined by OpenAPI, while their final product authorization policy may evolve with the Policy capability.
-- The Role/Group management and Policy-attachment API is not defined.
+| Area                | Scope                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Identity            | Users, account status, system administrator flag.                                 |
+| Teams               | Flat groups and group membership.                                                 |
+| Projects            | Active/archive lifecycle, project key, project membership.                        |
+| Authorization       | Custom roles, fixed permission catalog, direct and group-derived role assignment. |
+| Issue configuration | Issue types, statuses, priorities, workflows.                                     |
+| Issues              | Create, read, update, assign, transition, hierarchy, journal, comments.           |
+| Auditability        | Immutable authorship plus chronological issue change history.                     |
+
+## Explicitly deferred
+
+The following capabilities are important to the broader mission but are not part of the initial contract: custom fields, time tracking, wiki, repository integration, Gantt planning, issue relations beyond parent/child, saved queries, email ingestion, notifications, attachments, public projects, anonymous access, multi-project issue ownership, plugin compatibility, Redmine API compatibility, and Redmine database compatibility.
+
+Deferral is intentional. These features should be added only after their domain model and permission implications are designed end to end.
+
+## Open product decisions
+
+Authentication provider configuration, issue deletion semantics, configuration-value archival, notification delivery, and import/migration behavior remain separate design decisions. Implementations must not invent externally visible behavior for them merely to complete the core domain.
