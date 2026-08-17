@@ -1,40 +1,59 @@
 ---
 title: Projects
-description: The collaboration, issue numbering, and authorization boundary in Taskmigo.
+description: Collaboration boundaries that can use resources from multiple Organizations.
 ---
 
-A project groups related work and defines who can access it. Every issue belongs to exactly one project.
+A Project belongs to one Organization and defines which Users and Groups participate in that Project.
 
-## Project identity
+## Fields
 
-| Field       | Contract                                                              |
-| ----------- | --------------------------------------------------------------------- |
-| ID          | Stable internal identifier.                                           |
-| Key         | Globally unique, short uppercase identifier used in issue references. |
-| Name        | Human-readable project name.                                          |
-| Description | Optional project summary.                                             |
-| Status      | `ACTIVE` or `ARCHIVED`.                                               |
+- **ID**: stable internal identifier.
+- **Organization**: owning Organization.
+- **Key**: short identifier unique within the owning Organization.
+- **Name**: human-readable Project name.
+- **Description**: optional summary.
+- **Status**: `ACTIVE` or `ARCHIVED`.
 
-For a project with key `TM`, issue sequence 42 is presented as `TM-42`.
+Project ownership is fixed in the current model. Moving a Project between Organizations requires separate transfer
+semantics and is not a normal Project update.
 
-A project key is immutable after the first issue is created. This keeps references stable in notifications, external links, exports, and human communication.
+## Project Membership
 
-## Membership
+A Project Member references exactly one principal:
 
-A project member is a **principal**: either one user or one group. The member receives one or more roles.
+- a User; or
+- a Group.
+
+The principal may belong to any Organization.
+Each Project Member has one or more Roles owned by the Project's Organization.
 
 ```mermaid
 flowchart TD
-  project[Taskmigo project] --> phong[Phong / Manager]
-  project --> backend[Backend team / Developer]
-  backend --> alice[Alice]
-  backend --> bob[Bob]
+  customer[Company A] --> project[Project Alpha]
+  customer --> managerRole[Manager]
+  customer --> developerRole[Developer]
+
+  customer --> alice[Alice]
+  vendor[Company B] --> team[Backend team]
+
+  alice --> aliceMembership[Project member]
+  managerRole --> aliceMembership
+  aliceMembership --> project
+
+  team --> teamMembership[Project member]
+  developerRole --> teamMembership
+  teamMembership --> project
 ```
 
-A user may have both direct and group-derived membership. Effective roles are the union of every applicable assignment.
+## Ownership versus participation
+
+Adding Company B's Backend team to Project Alpha does not copy the Group into Company A.
+It creates only Project Membership that references the existing Group.
+
+Removing that membership removes the Group's participation in Project Alpha but leaves the Group and its Users under
+Company B.
 
 ## Archive behavior
 
-Archiving a project makes it read-only for ordinary project operations. Existing issues, comments, memberships, and audit history remain readable to users who still have access. Restoring an archived project returns it to `ACTIVE` without rewriting historical records.
-
-Project deletion is not part of the initial contract. Destructive lifecycle behavior should be designed separately from archival.
+An archived Project is read-only for ordinary Project mutations.
+Its ownership, memberships, and role assignments remain available for historical inspection.

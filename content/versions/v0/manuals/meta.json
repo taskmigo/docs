@@ -1,13 +1,4 @@
 {
   "title": "Manuals",
-  "pages": [
-    "index",
-    "core-concepts",
-    "users-and-groups",
-    "projects",
-    "roles-and-permissions",
-    "issues",
-    "workflows",
-    "status"
-  ]
+  "pages": ["index", "core-concepts", "organizations", "users", "groups", "roles", "projects"]
 }
