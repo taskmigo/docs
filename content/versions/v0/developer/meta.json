@@ -1,4 +1,4 @@
 {
   "title": "Developer",
-  "pages": ["index", "architecture", "domain-model", "authorization", "persistence", "implementation-plan"]
+  "pages": ["index", "resource-model"]
 }
