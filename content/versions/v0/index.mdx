@@ -1,32 +1,34 @@
 ---
 title: Taskmigo
-description: Define application UI as versioned resources and serve validated immutable runtime snapshots.
+description: Modern project and issue management for teams that want a focused, self-hostable Redmine alternative.
 ---
 
-Taskmigo lets teams describe an application with versioned YAML resources. The backend validates the complete Site, compiles an immutable snapshot, and serves that snapshot without rebuilding the application from mutable manifests on every request.
+Taskmigo is a project and issue management system for teams that need clear ownership, configurable workflows, and predictable access control without inheriting the complexity or interaction model of legacy trackers.
+
+The product starts with four foundations: **people**, **projects**, **authorization**, and **issues**. Everything else builds on those boundaries.
 
 ```mermaid
 flowchart LR
-  author["Author YAML Resources"] --> validate["Resolve + validate"]
-  validate --> snapshot["Immutable Site snapshot"]
-  snapshot --> binding["Browser runtime binding"]
-  binding --> ui["Rendered application"]
+  people["Users + Groups"] --> membership["Project membership"]
+  roles["Roles + Permissions"] --> membership
+  membership --> project["Project"]
+  project --> issue["Issues"]
+  workflow["Workflow"] --> issue
 ```
 
 <Cards>
   <Card
-    title='Learn and author Taskmigo'
+    title='Product manual'
     href='/versions/v0/manuals'
-    description='Understand the product model, build a Site, author manifests, and inspect runtime behavior.'
+    description='Understand projects, access control, issues, workflows, and the current product scope.'
   />
   <Card
-    title='Implement Taskmigo'
+    title='Developer guide'
     href='/versions/v0/developer'
-    description='Use the target architecture, persistence, runtime, API, and verification handbook.'
+    description='Use the domain boundaries, authorization rules, persistence invariants, and implementation sequence.'
   />
 </Cards>
 
-<Callout title='Contract status' type='info'>
-  Documentation maturity and delivery state are different. Check [Product status](/versions/v0/manuals/status) before
-  treating an RFC or planned capability as available runtime behavior.
+<Callout title='Not a Redmine compatibility layer' type='info'>
+  Taskmigo targets the same class of work as Redmine, but its data model and UX are designed independently. Compatibility with Redmine plugins, schemas, and APIs is not a product goal.
 </Callout>

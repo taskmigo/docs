@@ -1,0 +1,53 @@
+---
+title: Implementation plan
+description: Dependency-aware delivery sequence for the Taskmigo core.
+---
+
+The core should be delivered vertically, but the domain dependencies establish a clear order.
+
+## 1. Identity and groups
+
+Implement users, account status, system administrator privilege, groups, and flat group membership. Add uniqueness constraints and tests for membership changes. Authentication-provider integration may remain behind an interface until its external contract is selected.
+
+## 2. Projects and membership
+
+Implement projects, immutable-after-first-issue project keys, active/archive lifecycle, principal membership, and multi-role assignment. Validate that a project membership references an existing user or group.
+
+## 3. Roles and permissions
+
+Implement the fixed permission catalog, custom roles, role-permission grants, and the effective-role/effective-permission resolver. Test direct membership, group-derived membership, combined access, removal propagation, and inactive users.
+
+## 4. Issue configuration
+
+Implement issue types, priorities, statuses, workflows, transitions, transition-role grants, and project selection of one workflow per enabled issue type. Protect referenced configuration from deletion.
+
+## 5. Issues
+
+Implement concurrency-safe project-local sequencing, create/read/update, same-project parent validation, user/group assignment, optimistic concurrency, and journals. Status must not be mutable through the generic field-update path.
+
+## 6. Workflow transitions
+
+Implement the dedicated transition command with authorization, transition lookup, allowed-role intersection, optimistic concurrency, status mutation, and journal append in one transaction.
+
+## 7. Comments and activity
+
+Implement comments as separate records and expose one chronological activity read model combining journals and comments without collapsing their storage models.
+
+## Verification matrix
+
+A complete core implementation must prove at least these behaviors:
+
+- changing group membership changes effective project access;
+- direct and group roles are unioned with no precedence;
+- missing permissions reject an operation;
+- invalid workflow edges reject a transition even when the actor has `issue:transition`;
+- a permitted workflow edge succeeds when any effective role is allowed;
+- archived projects reject ordinary mutations;
+- concurrent issue creation never duplicates a sequence;
+- stale issue updates do not overwrite newer state;
+- issue parent cycles and cross-project parents are rejected;
+- issue mutation and journal persistence are atomic.
+
+## Definition of done
+
+The initial core is complete only when its product contract, persistence constraints, authorization tests, workflow tests, concurrency tests, API behavior, and UI behavior agree. Deferred capabilities listed in Product status are not prerequisites and must not be partially implemented in a way that changes the core contract.

@@ -2,16 +2,12 @@
   "title": "Manuals",
   "pages": [
     "index",
-    "getting-started",
-    "how-taskmigo-works",
-    "resources",
-    "manifests",
-    "expressions",
-    "ui-components",
-    "runtime",
-    "status",
-    "quality-assurance",
-    "product-planning",
-    "faq"
+    "core-concepts",
+    "users-and-groups",
+    "projects",
+    "roles-and-permissions",
+    "issues",
+    "workflows",
+    "status"
   ]
 }

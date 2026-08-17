@@ -1,41 +1,16 @@
 ---
-title: Manuals
-description: Learn how Taskmigo is composed, authored, activated, and served.
+title: Product manual
+description: The canonical product contract for Taskmigo.
 ---
 
-Start with the smallest working Site, then use the reference pages only when you need deeper rules.
+Taskmigo organizes work around projects. People join projects directly or through groups, receive project-scoped roles, and work on issues whose lifecycle is controlled by a workflow.
 
 <Cards>
-  <Card
-    title='Build your first Site'
-    href='/versions/v0/manuals/getting-started'
-    description='Create one Site, one Application, and one Page and see how they become a routed UI.'
-  />
-  <Card
-    title='Understand the mental model'
-    href='/versions/v0/manuals/how-taskmigo-works'
-    description='See how Resources, revisions, candidates, snapshots, and runtime bindings fit together.'
-  />
-  <Card
-    title='Choose a manifest'
-    href='/versions/v0/manuals/manifests'
-    description='Find the Resource kind that owns the behavior you want to define.'
-  />
-  <Card
-    title='Check availability'
-    href='/versions/v0/manuals/status'
-    description='Separate defined contracts from RFCs, planned capabilities, limitations, and open decisions.'
-  />
+  <Card title='Core concepts' href='/versions/v0/manuals/core-concepts' description='See how the core resources fit together.' />
+  <Card title='Users and groups' href='/versions/v0/manuals/users-and-groups' description='Manage people and reusable team membership.' />
+  <Card title='Projects' href='/versions/v0/manuals/projects' description='Understand the collaboration and security boundary.' />
+  <Card title='Roles and permissions' href='/versions/v0/manuals/roles-and-permissions' description='Understand additive project-scoped RBAC.' />
+  <Card title='Issues' href='/versions/v0/manuals/issues' description='Track units of work and their hierarchy.' />
+  <Card title='Workflows' href='/versions/v0/manuals/workflows' description='Control valid issue status transitions.' />
+  <Card title='Product status' href='/versions/v0/manuals/status' description='See what belongs to the initial product scope and what is deferred.' />
 </Cards>
-
-## Reference by question
-
-| Question                                                                 | Canonical page                                              |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| How are identity, revisions, tags, imports, and graph checksums defined? | [Resource model](/versions/v0/manuals/resources)            |
-| Where can dynamic values be used?                                        | [Expressions](/versions/v0/manuals/expressions)             |
-| Which built-in UI nodes can a Page render?                               | [UI Components](/versions/v0/manuals/ui-components)         |
-| Why is a saved change not active yet?                                    | [Runtime lifecycle](/versions/v0/manuals/runtime)           |
-| What should QC/QA verify?                                                | [Quality assurance](/versions/v0/manuals/quality-assurance) |
-| What is planned versus delivered?                                        | [Product planning](/versions/v0/manuals/product-planning)   |
-| Where is a short answer?                                                 | [FAQ](/versions/v0/manuals/faq)                             |
